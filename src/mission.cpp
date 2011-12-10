@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <string>
 
 #include "gfx/screen.h"
 #include "app.h"
@@ -48,7 +47,7 @@ Mission::Mission()
     max_x_ = 0;
     max_y_ = 0;
     cur_objective_ = 0;
-    minimap_c_ = NULL;
+    minimap_c_ = 0;
 }
 
 Mission::~Mission()
@@ -61,23 +60,18 @@ Mission::~Mission()
         delete weapons_[i];
     for (unsigned int i = 0; i < sfx_objects_.size(); i++)
         delete sfx_objects_[i];
-    for (unsigned int i = 0; i < prj_shots_.size(); i++)
-        delete prj_shots_[i];
-    // TODO: free statics
     clrSurfaces();
-    if (minimap_c_) {
+    if (minimap_c_)
         free(minimap_c_);
-        minimap_c_ = NULL;
-    }
 }
 
 #define copydata(x, y) memcpy(&level_data_.x, levelData + y, sizeof(level_data_.x))
 
-void Mission::objectiveMsg(std::string& msg) {
+void Mission::objectiveMsg(const char ** msg) {
     if (objectives_[cur_objective_].type == objv_None)
-        msg = "";
+        *msg = "";
     else
-        msg = objectives_[cur_objective_].msg;
+        *msg = objectives_[cur_objective_].msg;
 }
 
 bool Mission::loadLevel(uint8 * levelData)
@@ -158,16 +152,7 @@ bool Mission::loadLevel(uint8 * levelData)
         fclose(staticsFp);
     }
 #endif
-#ifdef _DEBUG
-    std::map <uint32, std::string> obj_ids;
-    // NOTE: not very useful way of remembering "Who is who"
-    obj_ids[0] = "Undefined";
-    obj_ids[1] = "Players Agents or Persuaded";
-    obj_ids[2] = "Enemy Agents";
-    obj_ids[3] = "Enemy Guards";
-    obj_ids[4] = "Policemen";
-    obj_ids[5] = "Civilians";
-#endif
+
     for (int i = 0; i < 256; i++) {
         LEVELDATA_PEOPLE & pedref = level_data_.people[i];
         if(pedref.type == 0x0 || pedref.desc == 0x0D || pedref.desc == 0x0C)
@@ -180,7 +165,6 @@ bool Mission::loadLevel(uint8 * levelData)
                     p->putInVehicle(vehicles_[driverindx[i]]);
                     p->setMap(-1);
                     vehicles_[driverindx[i]]->forceSetDriver(p);
-                    p->setIsIgnored(true);
                 } else {
                     uint16 vin = READ_LE_UINT16(pedref.offset_of_vehicle);
                     if (vin != 0) {
@@ -197,38 +181,14 @@ bool Mission::loadLevel(uint8 * levelData)
             }
             pindx[i] = peds_.size();
             peds_.push_back(p);
-            if (i < 4) {
-                p->setObjGroupID(1);
-                p->setObjGroupDef(PedInstance::og_dmAgent);
-                p->addEnemyGroupDef(2);
-                p->addEnemyGroupDef(3);
-                p->setHostileDesc(PedInstance::pd_smArmed);
-                // TODO: sightrange?
-            } else if (i > 7) {
-                unsigned int mt = p->getMainType() << 8;
-                //unsigned int objD = p->descState();
-                if (mt == PedInstance::og_dmAgent) {
-                    p->setObjGroupID(2);
-                    p->setObjGroupDef(PedInstance::og_dmAgent);
-                    p->addEnemyGroupDef(1);
-                } else if (mt == PedInstance::og_dmGuard) {
-                    p->setObjGroupID(3);
-                    p->setObjGroupDef(PedInstance::og_dmEnemy);
-                    p->addEnemyGroupDef(1);
+            if (i > 7) {
+                if (pedref.type_ped == PedInstance::m_tpAgent
+                    || pedref.type_ped == PedInstance::m_tpGuard) {
                     p->setHostile(true);
-                } else if (mt == PedInstance::og_dmPolice) {
-                    p->setObjGroupID(4);
-                    p->setObjGroupDef(PedInstance::og_dmPolice);
-                    p->setHostileDesc(PedInstance::pd_smArmed);
-                } else {
-                    p->setObjGroupID(5);
-                    p->setObjGroupDef(PedInstance::og_dmNeutral | mt);
-                    // civilians and criminals
                 }
-                // TODO: not tile based? realworld including offset calculation?
                 p->setSightRange(7);
-            } else if (i > 3 && i < 8) {
-                p->setMap(-1);
+            }
+            if (i > 3 && i < 8) {
                 p->setHealth(-1);
                 p->setIsIgnored(true);
             }
@@ -381,7 +341,7 @@ bool Mission::loadLevel(uint8 * levelData)
     for (unsigned char i = 0; i < 6; i++) {
         bool isset = false;
         ObjectiveDesc objd;
-        objd.clear();
+        memset(&objd, 0, sizeof(ObjectiveDesc));
         LEVELDATA_OBJECTIVES & obj = level_data_.objectives[i];
         unsigned int bindx = READ_LE_UINT16(obj.offset), cindx = 0;
         // TODO: checking is implemented for correct offset, because
@@ -401,9 +361,9 @@ bool Mission::loadLevel(uint8 * levelData)
                     cindx = (bindx - 2) / 92;
                     if ((cindx * 92 + 2) == bindx && pindx[cindx] != 0xFFFF) {
                         objd.type = objv_AquireControl;
-                        objd.targettype = MapObject::mjt_Ped;
+                        objd.targettype = MapObject::mt_Ped;
                         objd.targetindx = pindx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_PERSUADE");
+                        objd.msg = "PERSUADE";
                     } else
                         printf("0x01 incorrect offset");
                 } else
@@ -415,9 +375,9 @@ bool Mission::loadLevel(uint8 * levelData)
                     cindx = (bindx - 2) / 92;
                     if ((cindx * 92 + 2) == bindx && pindx[cindx] != 0xFFFF) {
                         objd.type = objv_DestroyObject;
-                        objd.targettype = MapObject::mjt_Ped;
+                        objd.targettype = MapObject::mt_Ped;
                         objd.targetindx = pindx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_ASSASSINATE");
+                        objd.msg = "ASSASSINATE";
                     } else
                         printf("0x02 incorrect offset");
                 } else
@@ -428,11 +388,10 @@ bool Mission::loadLevel(uint8 * levelData)
                 if (bindx > 0 && bindx < 0x5C02) {
                     cindx = (bindx - 2) / 92;
                     if ((cindx * 92 + 2) == bindx && pindx[cindx] != 0xFFFF) {
-                        //TODO: multiple commands are required here
-                        //objd.type = objv_Protect;
-                        objd.targettype = MapObject::mjt_Ped;
+                        objd.type = objv_Protect;
+                        objd.targettype = MapObject::mt_Ped;
                         objd.targetindx = pindx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_PROTECT");
+                        objd.msg = "PROTECT";
                     } else
                         printf("0x03 incorrect offset");
                 } else
@@ -444,10 +403,10 @@ bool Mission::loadLevel(uint8 * levelData)
                     bindx -= 0x9562;
                     cindx = bindx / 36;
                     if ((cindx * 36) == bindx && windx[cindx] != 0xFFFF) {
-                        objd.type = objv_PickUpObject;
-                        objd.targettype = MapObject::mjt_Weapon;
+                        objd.type = objv_GetObject;
+                        objd.targettype = MapObject::mt_Weapon;
                         objd.targetindx = windx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_TAKE_WEAPON");
+                        objd.msg = "TAKE WEAPON";
                     } else
                         printf("0x05 incorrect offset");
                 } else
@@ -456,21 +415,21 @@ bool Mission::loadLevel(uint8 * levelData)
                 break;
             case 0x0A:
                 objd.type = objv_DestroyObject;
-                objd.targettype = MapObject::mjt_Ped;
+                objd.targettype = MapObject::mt_Ped;
                 // maybe also guards should be eliminated?
                 objd.targetsubtype = 4;
-                objd.condition = 2;
+                objd.condition = 4;
                 objd.targetindx = pindx[cindx];
-                objd.msg = g_App.menus().getMessage("GOAL_ELIMINATE_POLICE");
+                objd.msg = "ELIMINATE POLICE";
                 isset = true;
                 break;
             case 0x0B:
                 objd.type = objv_DestroyObject;
-                objd.targettype = MapObject::mjt_Ped;
+                objd.targettype = MapObject::mt_Ped;
                 objd.targetsubtype = 2;
-                objd.condition = 2;
+                objd.condition = 4;
                 objd.targetindx = pindx[cindx];
-                objd.msg = g_App.menus().getMessage("GOAL_ELIMINATE_AGENTS");
+                objd.msg = "ELIMINATE AGENTS";
                 isset = true;
                 break;
             case 0x0E:
@@ -479,9 +438,9 @@ bool Mission::loadLevel(uint8 * levelData)
                     cindx = bindx / 42;
                     if ((cindx * 42) == bindx && vindx[cindx] != 0xFFFF) {
                         objd.type = objv_DestroyObject;
-                        objd.targettype = MapObject::mjt_Vehicle;
+                        objd.targettype = MapObject::mt_Vehicle;
                         objd.targetindx = vindx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_DESTROY_VEHICLE");
+                        objd.msg = "DESTROY VEHICLE";
                     } else
                         printf("0x0E incorrect offset");
                 } else
@@ -494,9 +453,9 @@ bool Mission::loadLevel(uint8 * levelData)
                     cindx = bindx / 42;
                     if ((cindx * 42) == bindx && vindx[cindx] != 0xFFFF) {
                         objd.type = objv_DestroyObject;
-                        objd.targettype = MapObject::mjt_Vehicle;
+                        objd.targettype = MapObject::mt_Vehicle;
                         objd.targetindx = vindx[cindx];
-                        objd.msg = g_App.menus().getMessage("GOAL_USE_VEHICLE");
+                        objd.msg = "USE VEHICLE";
                     } else
                         printf("0x0F incorrect offset");
                 } else
@@ -513,15 +472,15 @@ bool Mission::loadLevel(uint8 * levelData)
                 objd.poszo = obj.mapposz[0] & 0x7F;
                 if (objd.poszo != 0)
                     objd.poszt++;
-                objd.condition = 16;
-                objd.msg = g_App.menus().getMessage("GOAL_EVACUATE");
+                objd.condition = 32;
+                objd.msg = "EVACUATE";
                 isset = true;
                 break;
         }
         if (isset) {
             objectives_.push_back(objd);
         } else {
-            objd.clear();
+            memset(&objd, 0, sizeof(ObjectiveDesc));
             objectives_.push_back(objd);
             break;
         }
@@ -670,9 +629,7 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
     for (unsigned int i = 0; i < vehicles_.size(); i++) {
         VehicleInstance *v = vehicles_[i];
         if (v->tileX() >= tilex && v->tileX() < maxtilex
-            && v->tileY() >= tiley && v->tileY() < maxtiley)
-        {
-            // NOTE: a trick to make vehicles be drawn correctly z+1
+            && v->tileY() >= tiley && v->tileY() < maxtiley) {
             fast_vehicle_cache_.insert(fastKey(v->tileX(),
                 v->tileY(), v->tileZ() + 1));
             cache_vehicles_.push_back(v);
@@ -682,10 +639,9 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
     // peds
     for (unsigned int i = 0; i < 4; i++) {
         PedInstance *p = peds_[i];
-        if (p->agentIs() == PedInstance::Agent_Active && p->map() != -1) {
+        if (p->isAnAgent() == PedInstance::Agent_Active && p->map() != -1) {
             if (p->tileX() >= tilex && p->tileX() < maxtilex
-                && p->tileY() >= tiley && p->tileY() < maxtiley)
-            {
+                && p->tileY() >= tiley && p->tileY() < maxtiley) {
                 fast_ped_cache_.insert(fastKey(p));
                 cache_peds_.push_back(p);
             }
@@ -695,8 +651,7 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
         PedInstance *p = peds_[i];
         if (p->map() != -1) {
             if (p->tileX() >= tilex && p->tileX() < maxtilex
-                && p->tileY() >= tiley && p->tileY() < maxtiley)
-            {
+                && p->tileY() >= tiley && p->tileY() < maxtiley) {
                 fast_ped_cache_.insert(fastKey(p));
                 cache_peds_.push_back(p);
             }
@@ -708,8 +663,7 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
         WeaponInstance *w = weapons_[i];
         if (w->map() != -1) {
             if (w->tileX() >= tilex && w->tileX() < maxtilex
-                && w->tileY() >= tiley && w->tileY() < maxtiley)
-            {
+                && w->tileY() >= tiley && w->tileY() < maxtiley) {
                 fast_weapon_cache_.insert(fastKey(w));
                 cache_weapons_.push_back(w);
             }
@@ -720,8 +674,7 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
     for (unsigned int i = 0; i < statics_.size(); i++) {
         Static *s = statics_[i];
         if (s->tileX() >= tilex && s->tileX() < maxtilex
-            && s->tileY() >= tiley && s->tileY() < maxtiley)
-        {
+            && s->tileY() >= tiley && s->tileY() < maxtiley) {
             fast_statics_cache_.insert(fastKey(s));
             cache_statics_.push_back(s);
         }
@@ -731,8 +684,7 @@ void Mission::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
     for (unsigned int i = 0; i < sfx_objects_.size(); i++) {
         SFXObject *so = sfx_objects_[i];
         if (so->tileX() >= tilex && so->tileX() < maxtilex
-            && so->tileY() >= tiley && so->tileY() < maxtiley)
-        {
+            && so->tileY() >= tiley && so->tileY() < maxtiley) {
             fast_sfx_objects_cache_.insert(fastKey(so));
             cache_sfx_objects_.push_back(so);
         }
@@ -754,9 +706,8 @@ void Mission::drawAt(int tilex, int tiley, int tilez, int x, int y,
         for (unsigned int i = 0; i < cache_vehicles_.size(); i++)
             if (cache_vehicles_[i]->tileX() == tilex
                 && cache_vehicles_[i]->tileY() == tiley
-                // NOTE: a trick to make vehicles be drawn correctly z+1
                 && (cache_vehicles_[i]->tileZ() + 1) == tilez)
-                cache_vehicles_[i]->draw(x, y);
+                cache_vehicles_[i]->draw(x, y + TILE_HEIGHT / 3);
     }
 
     if (fast_ped_cache_.find(key) != fast_ped_cache_.end()) {
@@ -765,7 +716,7 @@ void Mission::drawAt(int tilex, int tiley, int tilez, int x, int y,
             if (cache_peds_[i]->tileX() == tilex
                 && cache_peds_[i]->tileY() == tiley
                 && cache_peds_[i]->tileZ() == tilez) {
-                cache_peds_[i]->draw(x, y);
+                cache_peds_[i]->draw(x, y, scrollX, scrollY);
 #if 0
                 g_Screen.drawLine(x - TILE_WIDTH / 2, y,
                                   x + TILE_WIDTH / 2, y, 11);
@@ -839,17 +790,16 @@ void Mission::start()
                     weapons_.push_back(wi);
                     peds_[i]->addWeapon(wi);
                     wi->setOwner(peds_[i]);
-                    wi->setIsIgnored(true);
                 }
-                peds_[i]->setAgentIs(PedInstance::Agent_Active);
+                peds_[i]->setIsAnAgent(PedInstance::Agent_Active);
             }else{
                 peds_[i]->setHealth(-1);
-                peds_[i]->setAgentIs(PedInstance::Agent_Non_Active);
+                peds_[i]->setIsAnAgent(PedInstance::Agent_Non_Active);
                 peds_[i]->setIsIgnored(true);
             }
         } else {
             peds_[i]->setHealth(-1);
-            peds_[i]->setAgentIs(PedInstance::Agent_Non_Active);
+            peds_[i]->setIsAnAgent(PedInstance::Agent_Non_Active);
             peds_[i]->setIsIgnored(true);
         }
     }    
@@ -868,14 +818,14 @@ void Mission::checkObjectives() {
                 break;
             case objv_AquireControl:
                 break;
-            //case objv_Protect:
-                //break;
-            case objv_PickUpObject:
+            case objv_Protect:
+                break;
+            case objv_GetObject:
                 break;
             case objv_DestroyObject:
                 switch (objd.targettype) {
                     case 1: //ped
-                        if ((objd.condition & 2) == 0) {
+                        if ((objd.condition & 4) == 0) {
                             if (peds_[objd.targetindx]->health() <= 0) {
                                 status_ = COMPLETED;
                                 cur_objective_ ++;
@@ -900,7 +850,7 @@ void Mission::checkObjectives() {
 
 void Mission::end()
 {
-    for (unsigned int i = 8; i < peds_.size(); i++) {
+    for (unsigned int i = 4; i < peds_.size(); i++) {
         if (peds_[i]->health() <= 0)
             switch (peds_[i]->getMainType()) {
                 case PedInstance::m_tpAgent:
@@ -954,6 +904,9 @@ void Mission::end()
                 }
             }
         }
+    for (unsigned int i = 0; i < sfx_objects_.size(); i++)
+        delete sfx_objects_[i];
+    sfx_objects_.clear();
 }
 
 void Mission::addWeapon(WeaponInstance * w)
@@ -970,53 +923,48 @@ MapObject * Mission::findAt(int tilex, int tiley, int tilez,
                             bool only)
 {
     switch(*majorT) {
-        case MapObject::mjt_Ped:
+        case MapObject::mt_Ped:
             for (unsigned int i = *searchIndex; i < peds_.size(); i++)
-                if ((!peds_[i]->isIgnored()) && peds_[i]->tileX() == tilex
-                    && peds_[i]->tileY() == tiley
-                    && peds_[i]->tileZ() == tilez)
-                {
+                if (peds_[i]->tileX() == tilex && peds_[i]->tileY() == tiley
+                    && peds_[i]->tileZ() == tilez) {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Ped;
+                    *majorT = MapObject::mt_Ped;
                     return peds_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Weapon:
+        case MapObject::mt_Weapon:
             for (unsigned int i = *searchIndex; i < weapons_.size(); i++)
-                if ((!weapons_[i]->isIgnored()) && weapons_[i]->tileX() == tilex
+                if (weapons_[i]->map() != -1 && weapons_[i]->tileX() == tilex
                     && weapons_[i]->tileY() == tiley
-                    && weapons_[i]->tileZ() == tilez)
-                {
+                    && weapons_[i]->tileZ() == tilez) {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Weapon;
+                    *majorT = MapObject::mt_Weapon;
                     return weapons_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Static:
+        case MapObject::mt_Static:
             for (unsigned int i = *searchIndex; i < statics_.size(); i++)
                 if (statics_[i]->tileX() == tilex
                     && statics_[i]->tileY() == tiley
-                    && statics_[i]->tileZ() == tilez)
-                {
+                    && statics_[i]->tileZ() == tilez) {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Static;
+                    *majorT = MapObject::mt_Static;
                     return statics_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Vehicle:
+        case MapObject::mt_Vehicle:
             for (unsigned int i = *searchIndex; i < vehicles_.size(); i++)
                 if (vehicles_[i]->tileX() == tilex
                     && vehicles_[i]->tileY() == tiley
-                    && vehicles_[i]->tileZ() == tilez)
-                {
+                    && vehicles_[i]->tileZ() == tilez) {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Vehicle;
+                    *majorT = MapObject::mt_Vehicle;
                     return vehicles_[i];
                 }
             break;
@@ -1264,7 +1212,7 @@ bool Mission::setSurfaces() {
                             upper_s = mtsurfaces_[xp + y + zp].twd;
                             if (isSurface(this_s) || this_s == 0x01) {
                                 if (sWalkable(this_s, upper_s)) {
-                                    sdirm |= 0x04;
+                                    sdirm |=0x04;
                                 } else {
                                     nxtfp->t = m_fdNonWalkable;
                                 }
@@ -2517,13 +2465,13 @@ bool Mission::getWalkable(int &x, int &y, int &z, int &ox, int &oy) {
                     } else {
                         if ((bx - 1) >= 0) {
                             cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                            if (mdpoints_[cindx].t == m_fdWalkable
-                                && mtsurfaces_[cindx].twd == 0x01)
-                            {
-                                gotit = true;
-                                bx--;
-                                box = dx + 256;
-                                boy = dy;
+                            if (mdpoints_[cindx].t == m_fdWalkable) {
+                                if (mtsurfaces_[cindx].twd == 0x01) {
+                                    gotit = true;
+                                    bx--;
+                                    box = dx + 256;
+                                    boy = dy;
+                                }
                             }
                         }
                     }
@@ -2540,26 +2488,26 @@ bool Mission::getWalkable(int &x, int &y, int &z, int &ox, int &oy) {
                             } else {
                                 if ((bx + 1) < mmax_x_) {
                                     cindx = (bx + 1) + by * mmax_x_ + bz * mmax_m_xy;
-                                    if (mdpoints_[cindx].t == m_fdWalkable
-                                        && mtsurfaces_[cindx].twd == 0x02)
-                                    {
-                                        gotit = true;
-                                        bx++;
-                                        box = dx - 256;
-                                        boy = dy;
+                                    if (mdpoints_[cindx].t == m_fdWalkable) {
+                                        if (mtsurfaces_[cindx].twd == 0x02) {
+                                            gotit = true;
+                                            bx++;
+                                            box = dx - 256;
+                                            boy = dy;
+                                        }
                                     }
                                 }
                             }
                         } else {
                             if ((bx - 1) >= 0) {
                                 cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                                if (mdpoints_[cindx].t == m_fdWalkable
-                                    && mtsurfaces_[cindx].twd == 0x02)
-                                {
-                                    gotit = true;
-                                    bx--;
-                                    box = dx + 256;
-                                    boy = dy;
+                                if (mdpoints_[cindx].t == m_fdWalkable) {
+                                    if (mtsurfaces_[cindx].twd == 0x02) {
+                                        gotit = true;
+                                        bx--;
+                                        box = dx + 256;
+                                        boy = dy;
+                                    }
                                 }
                             }
                         }
@@ -2577,26 +2525,26 @@ bool Mission::getWalkable(int &x, int &y, int &z, int &ox, int &oy) {
                             } else {
                                 if ((by + 1) < mmax_y_) {
                                     cindx = bx + (by + 1) * mmax_x_ + bz * mmax_m_xy;
-                                    if (mdpoints_[cindx].t == m_fdWalkable
-                                        && mtsurfaces_[cindx].twd == 0x03)
-                                    {
-                                        gotit = true;
-                                        by++;
-                                        box = dx;
-                                        boy = dy - 256;
+                                    if (mdpoints_[cindx].t == m_fdWalkable) {
+                                        if (mtsurfaces_[cindx].twd == 0x03) {
+                                            gotit = true;
+                                            by++;
+                                            box = dx;
+                                            boy = dy - 256;
+                                        }
                                     }
                                 }
                             }
                         } else {
                             if ((by - 1) >= 0) {
                                 cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                                if (mdpoints_[cindx].t == m_fdWalkable
-                                    && mtsurfaces_[cindx].twd == 0x03)
-                                {
-                                    gotit = true;
-                                    by--;
-                                    box = dx;
-                                    boy = dy + 256;
+                                if (mdpoints_[cindx].t == m_fdWalkable) {
+                                    if (mtsurfaces_[cindx].twd == 0x03) {
+                                        gotit = true;
+                                        by--;
+                                        box = dx;
+                                        boy = dy + 256;
+                                    }
                                 }
                             }
                         }
@@ -2612,13 +2560,13 @@ bool Mission::getWalkable(int &x, int &y, int &z, int &ox, int &oy) {
                     } else {
                         if ((by - 1) >= 0) {
                             cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                            if (mdpoints_[cindx].t == m_fdWalkable
-                                && mtsurfaces_[cindx].twd == 0x04)
-                            {
-                                gotit = true;
-                                by--;
-                                box = dx;
-                                boy = dy + 256;
+                            if (mdpoints_[cindx].t == m_fdWalkable) {
+                                if (mtsurfaces_[cindx].twd == 0x04) {
+                                    gotit = true;
+                                    by--;
+                                    box = dx;
+                                    boy = dy + 256;
+                                }
                             }
                         }
                     }
@@ -2628,84 +2576,88 @@ bool Mission::getWalkable(int &x, int &y, int &z, int &ox, int &oy) {
                 break;
             }
         } else {
-            if (box < 128 && (bx - 1) >= 0) {
-                cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                if (mdpoints_[cindx].t == m_fdWalkable) {
-                    int dx = 0;
-                    int dy = 0;
-                    twd = mtsurfaces_[cindx].twd;
-                    if (twd == 0x01) {
-                        dy = (boy * 2) / 3;
-                        dx = (box + 256) - dy / 2;
-                        if (dx < 256) {
-                            bx--;
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        }
-                    } else if (twd == 0x04) {
-                        dx = ((box + 256) * 2) / 3;
-                        dy = boy - dx / 2;
-                        if (dy >= 0) {
-                            bx--;
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        }
-                    }
-                }
-            }
-            if (!gotit && boy < 128 && (by - 1) >= 0) {
-                cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                if (mdpoints_[cindx].t == m_fdWalkable) {
-                    int dx = 0;
-                    int dy = 0;
-                    twd = mtsurfaces_[cindx].twd;
-                    if (twd == 0x01) {
-                        dy = ((boy + 256) * 2) / 3;
-                        dx = box - dy / 2;
-                        if (dx >= 0) {
-                            by--;
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        }
-                    } else if (twd == 0x04) {
-                        dx = (box * 2) / 3;
-                        dy = (boy + 256) - dx / 2;
-                        if (dy < 256) {
-                            by--;
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        }
-                    }
-                }
-                if(!gotit && box < 128 && (bx - 1) >= 0) {
-                    cindx--;
+            if (box < 128) {
+                if ((bx - 1) >= 0) {
+                    cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
                     if (mdpoints_[cindx].t == m_fdWalkable) {
                         int dx = 0;
                         int dy = 0;
                         twd = mtsurfaces_[cindx].twd;
                         if (twd == 0x01) {
-                            dy = ((boy + 256) * 2) / 3;
+                            dy = (boy * 2) / 3;
                             dx = (box + 256) - dy / 2;
-                            if (dx < 256 && dy < 256) {
+                            if (dx < 256) {
                                 bx--;
-                                by--;
                                 gotit = true;
                                 box = dx;
                                 boy = dy;
                             }
                         } else if (twd == 0x04) {
                             dx = ((box + 256) * 2) / 3;
-                            dy = (boy + 256) - dx / 2;
-                            if (dx < 256 && dy < 256) {
+                            dy = boy - dx / 2;
+                            if (dy >= 0) {
                                 bx--;
+                                gotit = true;
+                                box = dx;
+                                boy = dy;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!gotit && boy < 128) {
+                if ((by - 1) >= 0) {
+                    cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
+                    if (mdpoints_[cindx].t == m_fdWalkable) {
+                        int dx = 0;
+                        int dy = 0;
+                        twd = mtsurfaces_[cindx].twd;
+                        if (twd == 0x01) {
+                            dy = ((boy + 256) * 2) / 3;
+                            dx = box - dy / 2;
+                            if (dx >= 0) {
                                 by--;
                                 gotit = true;
                                 box = dx;
                                 boy = dy;
+                            }
+                        } else if (twd == 0x04) {
+                            dx = (box * 2) / 3;
+                            dy = (boy + 256) - dx / 2;
+                            if (dy < 256) {
+                                by--;
+                                gotit = true;
+                                box = dx;
+                                boy = dy;
+                            }
+                        }
+                    }
+                    if(!gotit && box < 128 && (bx - 1) >= 0) {
+                        cindx--;
+                        if (mdpoints_[cindx].t == m_fdWalkable) {
+                            int dx = 0;
+                            int dy = 0;
+                            twd = mtsurfaces_[cindx].twd;
+                            if (twd == 0x01) {
+                                dy = ((boy + 256) * 2) / 3;
+                                dx = (box + 256) - dy / 2;
+                                if (dx < 256 && dy < 256) {
+                                    bx--;
+                                    by--;
+                                    gotit = true;
+                                    box = dx;
+                                    boy = dy;
+                                }
+                            } else if (twd == 0x04) {
+                                dx = ((box + 256) * 2) / 3;
+                                dy = (boy + 256) - dx / 2;
+                                if (dx < 256 && dy < 256) {
+                                    bx--;
+                                    by--;
+                                    gotit = true;
+                                    box = dx;
+                                    boy = dy;
+                                }
                             }
                         }
                     }
@@ -2752,7 +2704,7 @@ void Mission::createMinimap() {
         return;
 
     minimap_c_ = (unsigned char *)( malloc(m->maxX() * m->maxY()) );
-    if(minimap_c_ == NULL) {
+    if(minimap_c_ == 0) {
         printf("ERROR: memory allocation failed in Mission::createMinimap");
         return;
     }
@@ -2849,16 +2801,17 @@ WeaponInstance *Mission::createWeaponInstance(uint8 * data)
 }
 
 /*
-* This function looks for statics, vehicles, peds
+* This function looks only for statics and vehicles
 */
 void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
                             double dist, MapObject** blockerObj)
 {
-    // TODO: add check for weapons when will add all weapons
     double inc_xyz[3];
     inc_xyz[0] = (endXYZ->x - startXYZ->x) / dist;
     inc_xyz[1] = (endXYZ->y - startXYZ->y) / dist;
     inc_xyz[2] = (endXYZ->z - startXYZ->z) / dist;
+    toDefineXYZ startZmin = *startXYZ;
+    startZmin.z -= 128;
     toDefineXYZ copyStartXYZ = *startXYZ;
     toDefineXYZ copyEndXYZ = *endXYZ;
     toDefineXYZ blockStartXYZ;
@@ -2869,57 +2822,66 @@ void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         MapObject * s_blocker = statics_[i];
         if (s_blocker->isIgnored())
             continue;
-        if (s_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = s_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+        double dist_blocker = s_blocker->distanceToPos(&startZmin);
+        if (dist_blocker <= dist) {
+            if (s_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
+                int cx = startXYZ->x - copyStartXYZ.x;
+                int cy = startXYZ->y - copyStartXYZ.y;
+                int cz = startXYZ->z - copyStartXYZ.z;
+                dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    *blockerObj = s_blocker;
+                    blockStartXYZ = copyStartXYZ;
+                    blockEndXYZ = copyEndXYZ;
+                }
+                copyStartXYZ = *startXYZ;
+                copyEndXYZ = *endXYZ;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
         }
     }
     for (unsigned int i = 0; i < vehicles_.size(); i++) {
         MapObject * v_blocker = vehicles_[i];
         if (v_blocker->isIgnored())
             continue;
-        if (v_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = v_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+        double dist_blocker = v_blocker->distanceToPos(&startZmin);
+        if (dist_blocker <= dist) {
+            if (v_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
+                int cx = startXYZ->x - copyStartXYZ.x;
+                int cy = startXYZ->y - copyStartXYZ.y;
+                int cz = startXYZ->z - copyStartXYZ.z;
+                dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    *blockerObj = v_blocker;
+                    blockStartXYZ = copyStartXYZ;
+                    blockEndXYZ = copyEndXYZ;
+                }
+                copyStartXYZ = *startXYZ;
+                copyEndXYZ = *endXYZ;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
         }
     }
     for (unsigned int i = 0; i < peds_.size(); i++) {
         MapObject * p_blocker = peds_[i];
         if (p_blocker->isIgnored())
             continue;
-        if (p_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = p_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+        double dist_blocker = p_blocker->distanceToPos(&startZmin);
+        if (dist_blocker <= dist) {
+            if (p_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
+                int cx = startXYZ->x - copyStartXYZ.x;
+                int cy = startXYZ->y - copyStartXYZ.y;
+                int cz = startXYZ->z - copyStartXYZ.z;
+                dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    *blockerObj = p_blocker;
+                    blockStartXYZ = copyStartXYZ;
+                    blockEndXYZ = copyEndXYZ;
+                }
+                copyStartXYZ = *startXYZ;
+                copyEndXYZ = *endXYZ;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
         }
     }
     if (*blockerObj != NULL) {
@@ -2928,15 +2890,7 @@ void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     }
 }
 
-/*
-* returns mask where bits are:
-* 0b - target in range(1); 1b - blocker is object, "t" is set(2)
-* 2b - blocker object, "pn" is set(4), 3b - reachable point set,
-* 4b - blocker tile, "pn" is set(16)
-* NOTE: only if "pn" or "t" are not null, variables are set
-*/
-//TODO: separate mask for pn blocker object, when called checkTileOnly
-// should be properly set(agents might ignore civilians, cars. etc)
+
 uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
     PathNode * pn, bool setBlocker, bool checkTileOnly, int maxr,
     double * distTo)
@@ -2988,10 +2942,10 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
         tx = cx + (int)((tx - cx) * dist_k);
         ty = cy + (int)((ty - cy) * dist_k);
         tz = cz + (int)((tz - cz) * dist_k);
-        block_mask = 8;
         if (setBlocker) {
             pn->setTileXYZ(tx / 256, ty / 256, tz / 128);
             pn->setOffXYZ(tx % 256, ty % 256, tz % 128);
+            block_mask = 8;
         }
     }
 
@@ -3015,53 +2969,25 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
         int nz = (int)sz / 128;
         if (((int)sz) % 128 != 0)
             nz++;
-        unsigned char twd = mtsurfaces_[nx + ny * mmax_x_
-            + nz * mmax_m_xy].twd;
-        if (oldx != nx || oldy != ny || oldz != nz
-            || (twd >= 0x01 && twd <= 0x04))
-        {
+        if (oldx != nx || oldy != ny || oldz != nz) {
+            unsigned char twd = mtsurfaces_[nx + ny * mmax_x_
+                + nz * mmax_m_xy].twd;
             if (!(twd == 0x00 || twd == 0x0C || twd == 0x10)) {
-                bool is_blocked = false;
-                int offz = (int)sz % 128;
-                switch (twd) {
-                    case 0x01:
-                        if (offz <= (127 - (((int)sy % 256) >> 1)))
-                            is_blocked = true;
-                        break;
-                    case 0x02:
-                        if (offz <= (((int)sy % 256) >> 1))
-                            is_blocked = true;
-                        break;
-                    case 0x03:
-                        if (offz <= (((int)sx % 256) >> 1))
-                            is_blocked = true;
-                        break;
-                    case 0x04:
-                        if (offz <= (127 - (((int)sx % 256) >> 1)))
-                            is_blocked = true;
-                        break;
-                    default:
-                        is_blocked = true;
-                }
-                if (is_blocked) {
-                    if (block_mask == 1)
-                        block_mask = 16;
-                    else
-                        block_mask |= 16;
-                    if (setBlocker) {
-                        if (pn) {
-                            sx -= inc_x;
-                            sy -= inc_y;
-                            sz -= inc_z;
-                            pn->setTileXYZ((int)sx / 256, (int)sy / 256,
-                                (int)sz / 128);
-                            pn->setOffXYZ((int)sx % 256, (int)sy % 256,
-                                (int)sz % 128);
-                        }
-                        break;
+                if (setBlocker) {
+                    if (pn) {
+                        sx -= inc_x;
+                        sy -= inc_y;
+                        sz -= inc_z;
+                        pn->setTileXYZ((int)sx / 256, (int)sy / 256,
+                            (int)sz / 128);
+                        pn->setOffXYZ((int)sx % 256, (int)sy % 256,
+                            (int)sz % 128);
                     }
+                    block_mask = 4;
                     break;
                 }
+                block_mask = 0;
+                break;
             }
             oldx = nx;
             oldy = ny;
@@ -3092,9 +3018,11 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
         (*t)->setIsIgnored(targetState);
 
     if (blockerObj) {
+        if (block_mask == 1)
+            block_mask = 0;
         if (setBlocker){
             if (pn) {
-                if (block_mask != 0) {
+                if (block_mask == 4) {
                     int dcx = cx - startXYZ.x;
                     int dcy = cy - startXYZ.y;
                     int dcz = cz - startXYZ.z;
@@ -3114,25 +3042,114 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
                         startXYZ.z / 128);
                     pn->setOffXYZ(startXYZ.x % 256, startXYZ.y % 256,
                         startXYZ.z % 128);
-                    block_mask |= 4;
                 }
             }
             if (t) {
                 *t = (ShootableMapObject *)blockerObj;
                 block_mask |= 2;
             }
-        } else
-            block_mask |= 6;
+        }
     }
 
     return block_mask;
+}
+
+
+void Mission::getInRangeOne(toDefineXYZ * cp,
+   ShootableMapObject * & target, uint8 mask, bool checkTileOnly, int maxr)
+{
+    // TODO: this function should do auto-targetting, check for hostile needed
+    bool found = false;
+    double dist = -1;
+    double d = -1;;
+
+    if (mask & MapObject::mt_Ped) {
+        for (int i = 0; i < numPeds(); i++) {
+            ShootableMapObject *p = ped(i);
+            if (!p->isIgnored())
+                if (inRangeCPos(cp, &p, NULL, false, checkTileOnly, maxr,
+                    &d) == 1)
+                {
+                    if (found) {
+                        if (d < dist) {
+                            target = p;
+                            dist = d;
+                        }
+                    } else {
+                        dist = d;
+                        target = p;
+                        found = true;
+                    }
+                }
+        }
+    }
+    if (mask & MapObject::mt_Static) {
+        for (int i = 0; i < numStatics(); i++) {
+            ShootableMapObject *st = statics(i);
+            if (!st->isIgnored())
+                if (inRangeCPos(cp, &st, NULL, false, checkTileOnly, maxr,
+                    &d) == 1)
+                {
+                    if (found) {
+                        if (d < dist) {
+                            target = st;
+                            dist = d;
+                        }
+                    } else {
+                        dist = d;
+                        target = st;
+                        found = true;
+                    }
+                }
+        }
+    }
+    if (mask & MapObject::mt_Vehicle) {
+        for (int i = 0; i < numVehicles(); i++) {
+            ShootableMapObject *v = vehicle(i);
+            if (!v->isIgnored())
+                if (inRangeCPos(cp, &v, NULL, false, checkTileOnly, maxr,
+                    &d) == 1)
+                {
+                    if (found) {
+                        if (d < dist) {
+                            target = v;
+                            dist = d;
+                        }
+                    } else {
+                        dist = d;
+                        target = v;
+                        found = true;
+                    }
+                }
+        }
+    }
+    if (mask & MapObject::mt_Weapon) {
+        for (int i = 0; i < numWeapons(); i++) {
+            ShootableMapObject *w = weapon(i);
+            if (!w->isIgnored())
+                if (inRangeCPos(cp, &w, NULL, false, checkTileOnly, maxr,
+                    &d) == 1)
+                {
+                    if (found) {
+                        if (d < dist) {
+                            target = w;
+                            dist = d;
+                        }
+                    } else {
+                        dist = d;
+                        target = w;
+                        found = true;
+                    }
+                }
+        }
+    }
 }
 
 void Mission::getInRangeAll(toDefineXYZ * cp,
    std::vector<ShootableMapObject *> & targets, uint8 mask,
    bool checkTileOnly, int maxr)
 {
-    if (mask & MapObject::mjt_Ped) {
+    if (mask & MapObject::mt_Ped) {
         for (int i = 0; i < numPeds(); i++) {
             ShootableMapObject *p = ped(i);
             if (!p->isIgnored())
@@ -3143,7 +3160,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Static) {
+    if (mask & MapObject::mt_Static) {
         for (int i = 0; i < numStatics(); i++) {
             ShootableMapObject *st = statics(i);
             if (!st->isIgnored())
@@ -3154,7 +3171,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Vehicle) {
+    if (mask & MapObject::mt_Vehicle) {
         for (int i = 0; i < numVehicles(); i++) {
             ShootableMapObject *v = vehicle(i);
             if (!v->isIgnored())
@@ -3165,7 +3182,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Weapon) {
+    if (mask & MapObject::mt_Weapon) {
         for (int i = 0; i < numWeapons(); i++) {
             ShootableMapObject *w = weapon(i);
             if (!w->isIgnored())
@@ -3178,14 +3195,11 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
     }
 }
 
-bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
-    int &oz)
-{
+bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy) {
     bool gotit = false;
     int bx, by, box, boy;
     int bz = mmax_z_;
     unsigned char twd;
-    unsigned int cindx;
     do {
         bz--;
         bx = x * 256 + ox + 128 * bz;
@@ -3197,224 +3211,15 @@ bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
         if (bz >= mmax_z_ || bx >= mmax_x_ || by >= mmax_y_)
             continue;
         twd = mtsurfaces_[bx + by * mmax_x_ + bz * mmax_m_xy].twd;
-        int dx = 0;
-        int dy = 0;
-        switch (twd) {
-            case 0x01:
-                dy = (boy * 2) / 3;
-                dx = box - dy / 2;
-                if (dx >= 0) {
-                    gotit = true;
-                    box = dx;
-                    boy = dy;
-                } else {
-                    if ((bx - 1) >= 0) {
-                        cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                        if (mtsurfaces_[cindx].twd == 0x01) {
-                            gotit = true;
-                            bx--;
-                            box = dx + 256;
-                            boy = dy;
-                        }
-                    }
-                }
-                break;
-            case 0x02:
-                dy = (boy - 128) * 2;
-                dx = (box + dy / 2) - 128;
-                if (dy >= 0) {
-                    if (dx >= 0) {
-                        if (dx < 256) {
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        } else {
-                            if ((bx + 1) < mmax_x_) {
-                                cindx = (bx + 1) + by * mmax_x_ + bz * mmax_m_xy;
-                                if (mtsurfaces_[cindx].twd == 0x02) {
-                                    gotit = true;
-                                    bx++;
-                                    box = dx - 256;
-                                    boy = dy;
-                                }
-                            }
-                        }
-                    } else {
-                        if ((bx - 1) >= 0) {
-                            cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                            if (mtsurfaces_[cindx].twd == 0x02) {
-                                gotit = true;
-                                bx--;
-                                box = dx + 256;
-                                boy = dy;
-                            }
-                        }
-                    }
-                }
-                break;
-            case 0x03:
-                dx = (box - 128) * 2;
-                dy = (boy + dx / 2) - 128;
-                if (dx >= 0) {
-                    if (dy >= 0) {
-                        if (dy < 256) {
-                            gotit = true;
-                            box = dx;
-                            boy = dy;
-                        } else {
-                            if ((by + 1) < mmax_y_) {
-                                cindx = bx + (by + 1) * mmax_x_ + bz * mmax_m_xy;
-                                if (mtsurfaces_[cindx].twd == 0x03) {
-                                    gotit = true;
-                                    by++;
-                                    box = dx;
-                                    boy = dy - 256;
-                                }
-                            }
-                        }
-                    } else {
-                        if ((by - 1) >= 0) {
-                            cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                            if (mtsurfaces_[cindx].twd == 0x03) {
-                                gotit = true;
-                                by--;
-                                box = dx;
-                                boy = dy + 256;
-                            }
-                        }
-                    }
-                }
-                break;
-            case 0x04:
-                dx = (box * 2) / 3;
-                dy = boy - dx / 2;
-                if (dy >= 0) {
-                    gotit = true;
-                    box = dx;
-                    boy = dy;
-                } else {
-                    if ((by - 1) >= 0) {
-                        cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                        if (mtsurfaces_[cindx].twd == 0x04) {
-                            gotit = true;
-                            by--;
-                            box = dx;
-                            boy = dy + 256;
-                        }
-                    }
-                }
-                break;
-            default:
-                if (!(twd == 0x00 || twd == 0x0C || twd == 0x10))
-                    gotit = true;
-            break;
-        }
-       if (!gotit) {
-            if (box < 128 && (bx - 1) >= 0) {
-                cindx = (bx - 1) + by * mmax_x_ + bz * mmax_m_xy;
-                twd = mtsurfaces_[cindx].twd;
-                if (twd == 0x01) {
-                    dy = (boy * 2) / 3;
-                    dx = (box + 256) - dy / 2;
-                    if (dx < 256) {
-                        bx--;
-                        gotit = true;
-                        box = dx;
-                        boy = dy;
-                    }
-                } else if (twd == 0x04) {
-                    dx = ((box + 256) * 2) / 3;
-                    dy = boy - dx / 2;
-                    if (dy >= 0) {
-                        bx--;
-                        gotit = true;
-                        box = dx;
-                        boy = dy;
-                    }
-                }
-            }
-            if (!gotit && boy < 128 && (by - 1) >= 0) {
-                cindx = bx + (by - 1) * mmax_x_ + bz * mmax_m_xy;
-                twd = mtsurfaces_[cindx].twd;
-                if (twd == 0x01) {
-                    dy = ((boy + 256) * 2) / 3;
-                    dx = box - dy / 2;
-                    if (dx >= 0) {
-                        by--;
-                        gotit = true;
-                        box = dx;
-                        boy = dy;
-                    }
-                } else if (twd == 0x04) {
-                    dx = (box * 2) / 3;
-                    dy = (boy + 256) - dx / 2;
-                    if (dy < 256) {
-                        by--;
-                        gotit = true;
-                        box = dx;
-                        boy = dy;
-                    }
-                }
-                if(!gotit && box < 128 && (bx - 1) >= 0) {
-                    cindx--;
-                    if (mdpoints_[cindx].t == m_fdWalkable) {
-                        int dx2 = 0;
-                        int dy2 = 0;
-                        twd = mtsurfaces_[cindx].twd;
-                        if (twd == 0x01) {
-                            dy2 = ((boy + 256) * 2) / 3;
-                            dx2 = (box + 256) - dy2 / 2;
-                            if (dx2 < 256 && dy2 < 256) {
-                                bx--;
-                                by--;
-                                gotit = true;
-                                box = dx2;
-                                boy = dy2;
-                            }
-                        } else if (twd == 0x04) {
-                            dx2 = ((box + 256) * 2) / 3;
-                            dy2 = (boy + 256) - dx2 / 2;
-                            if (dx2 < 256 && dy2 < 256) {
-                                bx--;
-                                by--;
-                                gotit = true;
-                                box = dx2;
-                                boy = dy2;
-                            }
-                        }
-                    }
-                }
-            }
-       }
+        if (!(twd == 0x00 || twd == 0x0C || twd == 0x10))
+            gotit = true;
     } while (bz != 0 && !gotit);
     if (gotit) {
-        twd = mtsurfaces_[bx + by * mmax_x_ + bz * mmax_m_xy].twd;
-        switch (twd) {
-            case 0x01:
-                oz = 127 - (boy >> 1);
-                bz--;
-                break;
-            case 0x02:
-                oz = boy >> 1;
-                bz--;
-                break;
-            case 0x03:
-                oz = box >> 1;
-                bz--;
-                break;
-            case 0x04:
-                oz = 127 - (box >> 1);
-                bz--;
-                break;
-            default:
-                oz = 0;
-        }
         x = bx;
         y = by;
         z = bz;
         ox = box;
         oy = boy;
-        assert(bz >= 0);
     }
     return gotit;
 }

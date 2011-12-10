@@ -26,15 +26,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Define this to enable sound effects and music
+// Define this to enable sound effects
 //#undef HAVE_SDL_MIXER
 #define HAVE_SDL_MIXER          1
+
+// Define this to enable music playback
+//#undef HAVE_SDL_MIXER_1_2_7
+#define HAVE_SDL_MIXER_1_2_7    1
 
 #define USE_INTRO_MP3           1
 #define USE_ASSASSINATE_MP3     1
 #define USE_OGG_INSTEAD_OF_MP3  1
-
-// Define this to display frame rate during gameplay
-//define TRACK_FPS  1
 
 #endif

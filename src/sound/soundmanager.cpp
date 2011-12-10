@@ -30,7 +30,7 @@
 #include "utils/file.h"
 #include "utils/log.h"
 
-SoundManager::SoundManager(bool disabled):tabentry_startoffset_(58), tabentry_offset_(32), disabled_(disabled)
+SoundManager::SoundManager():tabentry_startoffset_(58), tabentry_offset_(32)
 {
     volumeBeforeMute_ = -1;
 }
@@ -58,8 +58,8 @@ bool SoundManager::loadSounds(SampleSet set)
     switch (set) {
     case SAMPLES_INTRO:
         {
-            tabData = File::loadOriginalFile("ISNDS-0.TAB", tabSize);
-            data = File::loadOriginalFile("ISNDS-0.DAT", size);
+            tabData = File::loadFile("ISNDS-0.TAB", tabSize);
+            data = File::loadFile("ISNDS-0.DAT", size);
             bool loaded = loadSounds(tabData, tabSize, data);
             delete[] tabData;
             delete[] data;
@@ -67,8 +67,8 @@ bool SoundManager::loadSounds(SampleSet set)
                 printf("Error : Could not load sounds from file ISNDS-0.DAT\n");
                 return false;
             }
-            tabData = File::loadOriginalFile("ISNDS-1.TAB", tabSize);
-            data = File::loadOriginalFile("ISNDS-1.DAT", size);
+            tabData = File::loadFile("ISNDS-1.TAB", tabSize);
+            data = File::loadFile("ISNDS-1.DAT", size);
             loadSounds(tabData, tabSize, data);
             delete[] tabData;
             delete[] data;
@@ -80,13 +80,13 @@ bool SoundManager::loadSounds(SampleSet set)
         break;
     case SAMPLES_GAME:
         {
-            tabData = File::loadOriginalFile("SOUND-0.TAB", tabSize);
-            data = File::loadOriginalFile("SOUND-0.DAT", size);
+            tabData = File::loadFile("SOUND-0.TAB", tabSize);
+            data = File::loadFile("SOUND-0.DAT", size);
             loadSounds(tabData, tabSize, data);
             delete[] tabData;
             delete[] data;
-            tabData = File::loadOriginalFile("SOUND-1.TAB", tabSize);
-            data = File::loadOriginalFile("SOUND-1.DAT", size);
+            tabData = File::loadFile("SOUND-1.TAB", tabSize);
+            data = File::loadFile("SOUND-1.DAT", size);
             loadSounds(tabData, tabSize, data);
             delete[] tabData;
             delete[] data;
@@ -135,7 +135,6 @@ bool SoundManager::loadSounds(uint8 * tabData, int tabSize,
  *
  */
 void SoundManager::play(snd::InGameSample sample, int loops) {
-    if (disabled_) return;
     Sound *pSound = sound(sample);
 
     if (pSound) {
@@ -148,7 +147,6 @@ void SoundManager::play(snd::InGameSample sample, int loops) {
  *
  */
 void SoundManager::stop(snd::InGameSample sample) {
-    if (disabled_) return;
     Sound *pSound = sound(sample);
 
     if (pSound) {

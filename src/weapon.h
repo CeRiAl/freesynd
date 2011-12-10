@@ -7,7 +7,6 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
- *   Copyright (C) 2011  Mark <mentor66@users.sourceforge.net>          *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -73,16 +72,18 @@ public:
         Shotgun_Anim,
     } WeaponAnimIndex;
 
-    Weapon(const std::string& w_name, int smallIcon, int bigIcon, int w_cost,
+    Weapon(const char *w_name, int smallIcon, int bigIcon, int w_cost,
             int w_ammo, int w_range, int w_shot, int w_rank, int w_anim,
             WeaponAnimIndex w_idx, snd::InGameSample w_sample,
             WeaponType w_type, MapObject::DamageType w_dmg_type,
             int w_ammo_per_shot, int w_time_for_shot, int w_time_reload,
-            unsigned int w_shot_property, int w_hit_anim, int w_obj_hit_anim,
-            int w_rd_anim, int w_trace_anim, int w_range_dmg,
-            double w_shot_angle, double w_shot_accuracy);
+            unsigned int w_shot_property);
 
     const char *getName() { return name_.c_str(); }
+
+    void drawSmallIcon(int x, int y);
+    void drawBigIcon(int x, int y);
+    void drawInfo(int x, int y);
 
     int cost() { return cost_; }
     int ammo() { return ammo_; }
@@ -91,8 +92,6 @@ public:
     int rank() { return rank_; }
     int anim() { return anim_; }
     snd::InGameSample getSound() { return sample_; }
-	int getSmallIconId() { return small_icon_; }
-	int getBigIconId() { return big_icon_; }
 
     int selector() {
         return small_icon_ == 28 ? 1618 : small_icon_ - 14 + 1602;
@@ -112,58 +111,47 @@ public:
     void submitToSearch() { submittedToSearch_ = true; }
 
     typedef enum {
-        spe_None = 0x0,
+        spe_None = 0,
         // can shoot only at owner
-        spe_Owner = 0x0001,
-
-        spe_PointToPoint = 0x0002,
-        spe_PointToManyPoints = 0x0004,
-
-        spe_TargetReachInstant = 0x0008,
-
-        spe_TargetReachNeedTime = 0x0010,
-        spe_CreatesProjectile = 0x0010,
-
-        spe_RangeDamageOnReach = 0x0020,
+        spe_Owner = 1,
+        spe_PointToPoint = 2,
+        spe_PointToManyPoints = 4,
+        spe_TargetReachInstant = 8,
+        spe_TargetReachNeedTime = 16,
+        spe_CreatesProjectile = 16,
+        spe_RangeDamageOnReach = 32,
         // ignore accuracy
-        spe_ShootsWhileNoTarget = 0x0040,
-        spe_UsesAmmo = 0x0080,
-        spe_ChangeAttribute = 0x0100,
-        spe_SelfDestruction = 0x0200,
-        spe_TargetPedOnly = 0x0400,
-        spe_DamageAll = 0x0800
+        spe_NoTarget = 64,
+        spe_UsesAmmo = 128,
+        spe_ChangeAttribute = 256,
+        spe_SelfDestruction = 512,
     }ShotPropertyEnum;
 
     typedef enum {
         wspt_None = spe_None,
         wspt_Persuadatron = (spe_PointToPoint | spe_TargetReachInstant
-            | spe_ShootsWhileNoTarget | spe_TargetPedOnly),
+            | spe_NoTarget),
         wspt_Pistol =
-            (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo
-            | spe_DamageAll),
+            (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo),
         wspt_GaussGun =
             (spe_PointToPoint | spe_TargetReachNeedTime | spe_UsesAmmo
-            | spe_RangeDamageOnReach | spe_DamageAll),
+            | spe_RangeDamageOnReach),
         wspt_Shotgun =
-            (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo
-            | spe_DamageAll),
+            (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo),
         wspt_Uzi = (spe_PointToManyPoints | spe_TargetReachInstant
-            | spe_UsesAmmo | spe_DamageAll),
+            | spe_UsesAmmo),
         wspt_Minigun =
-            (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo
-            | spe_DamageAll),
+            (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo),
         wspt_Laser =
             (spe_PointToPoint | spe_TargetReachInstant
-            | spe_RangeDamageOnReach | spe_UsesAmmo | spe_DamageAll),
+            | spe_RangeDamageOnReach | spe_UsesAmmo),
         wspt_Flamer =
-            (spe_PointToPoint | spe_TargetReachNeedTime | spe_UsesAmmo
-            | spe_DamageAll),
+            (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo),
         wspt_LongRange =
-            (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo
-            | spe_DamageAll),
+            (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo),
         wspt_Scanner = (spe_Owner | spe_ChangeAttribute),
         wspt_MediKit = (spe_Owner | spe_UsesAmmo),
-        wspt_TimeBomb = (spe_ShootsWhileNoTarget | spe_TargetReachInstant
+        wspt_TimeBomb = (spe_NoTarget | spe_TargetReachInstant
             | spe_RangeDamageOnReach | spe_SelfDestruction),
         wspt_AccessCard = (spe_Owner | spe_ChangeAttribute),
         wspt_EnergyShield =
@@ -171,39 +159,23 @@ public:
     }WeaponShotPropertyType;
 
     typedef enum {
-        stm_AllObjects = MapObject::mjt_Ped | MapObject::mjt_Vehicle
-        | MapObject::mjt_Static | MapObject::mjt_Weapon,
+        stm_AllObjects = MapObject::mt_Ped | MapObject::mt_Vehicle
+        | MapObject::mt_Static | MapObject::mt_Weapon,
     }SearchTargetMask;
 
     typedef struct {
         PathNode tpn;
         toDefineXYZ tp;
-        ShootableMapObject::DamageInflictType d;
+        MapObject::DamageInflictType d;
         ShootableMapObject *smo;
     }ShotDesc;
 
-    typedef struct {
-        // when weapon hits something other then object, ground
-        int hit_anim;
-        int obj_hit_anim;
-        int trace_anim;
-        // if weapon can do range damage this is used for range definition
-        // with animation
-        int rd_anim;
-    }ad_HitAnims;
-
     unsigned int shotProperty() { return shot_property_; }
-
-    ad_HitAnims * anims() { return &anims_; }
-    int rangeDmg() { return range_dmg_; }
-    double shotAngle() { return shot_angle_; }
-    double shotAcurracy() { return shot_accuracy_; }
-    int ammoCost() { return ammo_cost_; }
 
 protected:
     std::string name_;
     int small_icon_, big_icon_;
-    int cost_, ammo_cost_, ammo_, range_, damage_per_shot_;
+    int cost_, ammo_, range_, damage_per_shot_;
     int anim_;
     int rank_;  //!> weapon rank
     WeaponType type_;
@@ -218,33 +190,21 @@ protected:
     /*! True when weapon was found and submit to search manager.*/
     bool submittedToSearch_;
     unsigned int shot_property_;
-    ad_HitAnims anims_;
-    int range_dmg_;
-    // some weapons have wider shot
-    double shot_angle_;
-    // agent accuracy will be applied to this, later to shot_angle_
-    double shot_accuracy_;
 };
 
 class ShotClass {
 public:
-    void setOwner(ShootableMapObject *owner) {
-        last_owner_ = owner_;
-        owner_ = owner;
-    }
+    void setOwner(ShootableMapObject *owner) { owner_ = owner; }
     ShootableMapObject *getOwner() { return owner_; }
-    bool hasOwner() { return owner_ != NULL; }
 
     void shotTargetRandomizer(toDefineXYZ * cp, toDefineXYZ * tp, double angle,
-        double dist_new = -1, bool exclude_z = false);
+        double dist_new = -1);
 
 protected:
-    void makeShot(bool rangeChecked, toDefineXYZ &cp, int anim_hit,
-        std::vector <Weapon::ShotDesc> &all_shots, int anim_obj_hit,
-        WeaponInstance *w = NULL);
+    void makeShot(bool rangeGenerated, toDefineXYZ &cp, int anim_type,
+        std::vector <Weapon::ShotDesc> &all_shots, WeaponInstance *w = NULL);
 protected:
     ShootableMapObject *owner_;
-    ShootableMapObject *last_owner_;
 };
 
 /*!
@@ -267,7 +227,6 @@ public:
     int range() { return pWeaponClass_->range(); }
     int ammo() { return pWeaponClass_->ammo(); }
     int rank() { return pWeaponClass_->rank(); }
-    unsigned int shotProperty() { return pWeaponClass_->shotProperty(); }
     const char * name() { return pWeaponClass_->getName(); }
 
     Weapon::WeaponAnimIndex index() { return pWeaponClass_->index(); }
@@ -282,13 +241,9 @@ public:
 
     void resetWeaponUsedTime() { weapon_used_time_ = 0; }
 
-    uint8 inRange(toDefineXYZ & cp, ShootableMapObject ** t,
-        PathNode * pn = NULL, bool setBlocker = false,
-        bool checkTileOnly = false, int maxr = -1);
-    uint8 inRangeNoCP(ShootableMapObject ** t, PathNode * pn = NULL,
+    uint8 inRange(ShootableMapObject ** t, PathNode * pn = NULL,
         bool setBlocker = false, bool checkTileOnly = false,
         int maxr = -1);
-
 
     int getShots(int elapsed = -1);
     void getInRangeOne(toDefineXYZ & cp, ShootableMapObject * & target,
@@ -296,14 +251,6 @@ public:
     void getInRangeAll(toDefineXYZ & cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, int maxr = -1);
     bool isReloading();
-    void activate();
-    void deactivate();
-
-    void getHostileInRange(toDefineXYZ * cp, ShootableMapObject * & target,
-        uint8 mask, bool checkTileOnly = true, int maxr = -1);
-    void getNonFriendInRange(toDefineXYZ * cp,
-        ShootableMapObject * & target, bool checkTileOnly = true,
-        int maxr = -1);
 
 protected:
     Weapon *pWeaponClass_;
@@ -312,22 +259,23 @@ protected:
     // if is greater then time_for_shot_ reload is in execution
     // if is greater then time_for_shot_ + time_reload_ then full shot is done
     int weapon_used_time_;
-    bool activated_;
 };
 
 class ProjectileShot: public ShotClass {
 public:
-    ProjectileShot(toDefineXYZ &cp, Weapon::ShotDesc & sd, int d_range,
-        Weapon::ad_HitAnims *panims, ShootableMapObject * ignrd_obj = NULL,
-        int range_max = 1);
+    ProjectileShot(toDefineXYZ &cp, toDefineXYZ &tp, MapObject::DamageType dt,
+        int d_value, int d_range, ShootableMapObject * ignrd_obj = NULL,
+        int range_max = 1, ShootableMapObject * w_owner = NULL);
     ~ProjectileShot() {}
     bool animate(int elapsed, Mission *m);
     bool prjsLifeOver() { return life_over_; }
 
 protected:
     toDefineXYZ cur_pos_;
+    toDefineXYZ target_pos_;
     toDefineXYZ base_pos_;
-    Weapon::ShotDesc sd_prj_;
+    MapObject::DamageType dmg_type_;
+    int dmg_value_;
     int dmg_range_;
     double dist_max_;
     double dist_passed_;
@@ -340,6 +288,5 @@ protected:
     double inc_x_;
     double inc_y_;
     double inc_z_;
-    Weapon::ad_HitAnims anims_;
 };
 #endif

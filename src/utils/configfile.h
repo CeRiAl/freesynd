@@ -1,7 +1,6 @@
 // ConfigFile.h
 // Class for reading named values from configuration files
 // Richard J. Wagner  v2.1  24 May 2004  wagnerr@umich.edu
-// Modified by Joey Parrish, June 2011 joey.parrish@gmail.com
 
 // Copyright (c) 2004 Richard J. Wagner
 // 
@@ -46,7 +45,6 @@
 
 #include <string>
 #include <map>
-#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -60,8 +58,6 @@ protected:
 	string myComment;    // separator between value and comments
 	string mySentry;     // optional string to signal end of file
 	std::map<string,string> myContents;  // extracted keys and values
-	std::vector<string> myLines;
-	std::map<string,int> myLineNumbers;
 	
 	typedef std::map<string,string>::iterator mapi;
 	typedef std::map<string,string>::const_iterator mapci;
@@ -71,7 +67,7 @@ public:
 	ConfigFile( string filename,
 	            string delimiter = "=",
 	            string comment = "#",
-	            string sentry = "" );
+				string sentry = "EndConfigFile" );
 	ConfigFile();
 	
 	// Search for key and read value or optional default value
@@ -129,14 +125,6 @@ string ConfigFile::T_as_string( const T& t )
 	std::ostringstream ost;
 	ost << t;
 	return ost.str();
-}
-
-
-/* static */
-template<>
-inline string ConfigFile::T_as_string<bool>( const bool& t )
-{
-    return t ? "true" : "false";
 }
 
 
@@ -239,11 +227,6 @@ void ConfigFile::add( string key, const T& value )
 	string v = T_as_string( value );
 	trim(key);
 	trim(v);
-	mapci p = myContents.find(key);
-	if (p == myContents.end()) {
-		myLineNumbers[key] = myLines.size();
-	}
-	myLines[myLineNumbers[key]] = key + " " + myDelimiter + " " + v;
 	myContents[key] = v;
 	return;
 }

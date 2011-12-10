@@ -29,19 +29,10 @@
 #ifdef SYSTEM_SDL
 #include "system_sdl.h"
 #endif
-MapObject::MapObject(int m):size_x_(1), size_y_(1), size_z_(2),
-map_(m), frame_(0), elapsed_carry_(0),
-frames_per_sec_(8), sub_type_(0), main_type_(0),
-major_type_(MapObject::mjt_Undefined),dir_(0),is_ignored_(false)
+MapObject::MapObject(int m):map_(m), frame_(0), elapsed_carry_(0),
+frames_per_sec_(8), sub_type_(0), main_type_(0), dir_(0), is_ignored_(false),
+size_x_(1), size_y_(1), size_z_(1), major_type_(MapObject::mt_Undefined)
 {
-}
-
-void MapObject::setTileVisZ(){
-    // from real z, we set tile based
-    vis_z_ = tile_z_;
-    if (off_z_ != 0)
-        tile_z_++;
-    assert(tile_z_ < g_Session.getMission()->mmax_z_);
 }
 
 int MapObject::screenX()
@@ -201,10 +192,10 @@ int MapObject::getDirection(int snum) {
 bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
                double * inc_xyz)
 {
-    // NOTE: algorithm used checks whether object is located within range
-    // defined by "start" and "end", then assuming that x coord belongs to
-    // vector calculates y from x range and compares range by y, if it is ok,
-    // calculates z from y range, then if in range by z, recalculates x and y
+    // NOTE: algorithm used check whether object is located within range
+    // defined by "start" and "end", then assuming that x ccord belongs to
+    // vector calculate y from x range and compare range by y, if it is ok,
+    // calculate z from y range, then if in range by z, recalculate x and y
 
     // range_x check
     int range_x_h = tile_x_ * 256 + off_x_;
@@ -249,7 +240,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
 
     // range_z check
     int range_z_l = vis_z_ * 128 + off_z_;
-    int range_z_h = range_z_l + size_z_;
+    int range_z_h = range_z_l + size_z_ * 2;
     range_z_h--;
     bool flipped_z = false;
     if (startXYZ->z > endXYZ->z) {
@@ -386,8 +377,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     return true;
 }
 
-SFXObject::SFXObject(int m, int type, int t_show):MapObject(m),
-    sfx_life_over_(false)
+SFXObject::SFXObject(int m, int type):MapObject(m), sfx_life_over_(false)
 {
     main_type_ = type;
     setTimeShowAnim(0);
@@ -418,7 +408,7 @@ SFXObject::SFXObject(int m, int type, int t_show):MapObject(m),
             break;
         case SFXObject::sfxt_LargeFire:
             anim_ = 243;
-            setTimeShowAnim(3000 + t_show);
+            setTimeShowAnim(4000);
             break;
     }
 }
@@ -465,7 +455,7 @@ ShootableMapObject::ShootableMapObject(int m):MapObject(m)
 
 ShootableMovableMapObject::
 ShootableMovableMapObject(int m):ShootableMapObject(m),
-speed_(0), dir_move_(-1), dist_to_pos_(0)
+speed_(0)
 {
 }
 
@@ -769,7 +759,7 @@ opening_anim_(openingAnim)
 {
     state_ = Static::sttdoor_Closed;
     rcv_damage_def_ = MapObject::ddmg_Invulnerable;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
 }
 
 void Door::draw(int x, int y)
@@ -815,7 +805,7 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             assert(i != 0 && j != 0);
             for(*i = 0; *i < 2; *i += 1) {
-                mt = MapObject::mjt_Ped; si = 0;
+                mt = MapObject::mt_Ped; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + inc_rel,
                         y + rel_inc, z, &mt, &si, true));
@@ -842,7 +832,7 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             assert(i != 0 && j != 0);
             *i = 1;
-            mt = MapObject::mjt_Ped; si = 0;
+            mt = MapObject::mt_Ped; si = 0;
             do {
                 p = (PedInstance *)(obj->findAt(x + inc_rel,
                     y + rel_inc, z, &mt, &si, true));
@@ -856,7 +846,7 @@ bool Door::animate(int elapsed, Mission *obj)
                 }
             } while (p);
             *i = 0;
-            mt = MapObject::mjt_Ped; si = 0;
+            mt = MapObject::mt_Ped; si = 0;
             do {
                 p = (PedInstance *)(obj->findAt(x + inc_rel,
                     y + rel_inc, z, &mt, &si, true));
@@ -892,7 +882,7 @@ closing_anim_(closingAnim), opening_anim_(openingAnim)
 {
     state_ = Static::sttdoor_Closed;
     rcv_damage_def_ = MapObject::ddmg_Invulnerable;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
 }
 
 void LargeDoor::draw(int x, int y)
@@ -940,7 +930,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             assert(i != 0 && j != 0);
             *j = -1;
             for(*i = -2; *i < 3; *i += 1) {
-                mt = MapObject::mjt_Vehicle; si = 0;
+                mt = MapObject::mt_Vehicle; si = 0;
                 v = (VehicleInstance *)(obj->findAt(x + inc_rel,
                     y + rel_inc,z, &mt, &si, true));
                 if (!v && state_ == Static::sttdoor_Open && (!found)) {
@@ -956,7 +946,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for(*i = -2; *i < 3; *i += 1) {
-                mt = MapObject::mjt_Vehicle; si = 0;
+                mt = MapObject::mt_Vehicle; si = 0;
                 v = (VehicleInstance *)(obj->findAt(x + inc_rel,
                     y + rel_inc,z,&mt,&si,true));
                 if (!v && state_ == Static::sttdoor_Open && (!found)) {
@@ -972,7 +962,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             for (int a = (y - 1); a <= (y + 1); a++ ) {
                 for (int b = (x - 1); b <= (x + 1); b++) {
-                    mt = MapObject::mjt_Ped; si = 0;
+                    mt = MapObject::mt_Ped; si = 0;
                     do {
                         p = (PedInstance *)(obj->findAt(b, a, z,
                             &mt, &si, true));
@@ -997,7 +987,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             assert(i != 0 && j != 0);
             *j = -1 * sign;
             *i = -2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            mt = MapObject::mt_Vehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
                 y + rel_inc,z,&mt,&si,true));
             if (v) {
@@ -1010,7 +1000,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1 * sign;
             *i = 2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            mt = MapObject::mt_Vehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
                 y + rel_inc,z,&mt,&si,true));
             if (v) {
@@ -1023,7 +1013,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = -1;
             for ( *i = -1; *i <= 1; *i += 1 ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                mt = MapObject::mt_Ped; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
                         y + inc_rel, z, &mt, &si, true));
@@ -1044,7 +1034,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for ( *i = -1; *i <= 1; *i += 1 ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                mt = MapObject::mt_Ped; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
                         y + inc_rel, z, &mt, &si, true));
@@ -1085,7 +1075,7 @@ Tree::Tree(int m, int anim, int burningAnim, int damagedAnim):Static(m),
 anim_(anim), burning_anim_(burningAnim), damaged_anim_(damagedAnim)
 {
     rcv_damage_def_ = MapObject::ddmg_StaticTree;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
     state_ = Static::stttree_Healthy;
 }
 
@@ -1119,7 +1109,7 @@ bool Tree::animate(int elapsed, Mission *obj) {
     return MapObject::animate(elapsed);
 }
 
-bool Tree::handleDamage(ShootableMapObject::DamageInflictType *d) {
+bool Tree::handleDamage(MapObject::DamageInflictType *d) {
     if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
         || (d->dtype & rcv_damage_def_) == 0)
         return false;
@@ -1127,7 +1117,7 @@ bool Tree::handleDamage(ShootableMapObject::DamageInflictType *d) {
     health_ -= d->dvalue;
     if (health_ <= 0) {
         state_ = Static::stttree_Burning;
-        setTimeShowAnim(10000);
+        setTimeShowAnim(7000);
         is_ignored_ = true;
     }
     return true;
@@ -1137,7 +1127,7 @@ WindowObj::WindowObj(int m, int anim, int breakingAnim, int damagedAnim):Static(
 anim_(anim), breaking_anim_(breakingAnim), damaged_anim_(damagedAnim)
 {
     rcv_damage_def_ = MapObject::ddmg_StaticWindow;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
 }
 
 void WindowObj::draw(int x, int y)
@@ -1150,7 +1140,7 @@ EtcObj::EtcObj(int m, int anim, int burningAnim , int damagedAnim):Static(m),
 anim_(anim), burning_anim_(burningAnim), damaged_anim_(damagedAnim)
 {
     rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
 }
 
 void EtcObj::draw(int x, int y)
@@ -1163,7 +1153,7 @@ NeonSign::NeonSign(int m, int anim):Static(m),
 anim_(anim)
 {
     rcv_damage_def_ = MapObject::ddmg_Invulnerable;
-    major_type_ = MapObject::mjt_Static;
+    major_type_ = MapObject::mt_Static;
 }
 
 void NeonSign::draw(int x, int y)

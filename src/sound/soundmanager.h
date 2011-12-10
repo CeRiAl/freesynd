@@ -42,7 +42,7 @@ public:
         SAMPLES_GAME
     };
 
-    SoundManager(bool disabled);
+    SoundManager();
     ~SoundManager();
 
     bool loadSounds(SampleSet set);
@@ -71,7 +71,6 @@ protected:
      * we can restore it after a unmute.
      */
     int volumeBeforeMute_;
-    bool disabled_;
 };
 
 #endif

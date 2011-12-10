@@ -1,32 +1,15 @@
 #include "gfx/screen.h"
 #include "gfx/spritemanager.h"
 #include "mapmanager.h"
-#include "mission.h"
 #include "utils/file.h"
 #include <png.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fstream>
-
-#ifdef _WIN32
-# include <direct.h>
-# define mkdir(path, mode) _mkdir(path)
-# define snprintf _snprintf
-#endif
 
 class App : public Singleton<App> {
 public:
     App();
-};
-
-class DummyHelper : public MapHelper {
-public:
-    virtual ~DummyHelper() {}
-    virtual void drawAt(int tilex, int tiley, int tilez, int x, int y,
-            int scrollX, int scrollY) {}
-    virtual void createFastKeys(int tilex, int tiley,
-        int maxtilex, int maxtiley) {}
 };
 
 int screen_width = 0;
@@ -91,115 +74,6 @@ void clear_screen() {
         memset(screen_data[i], 255, screen_width);
 }
 
-int dump_briefings() {
-    mkdir("briefings", 0755);
-
-    int i, lang;
-    for (i = 1; i < 51; i++) {
-        for (lang = 0; lang < 4; lang++) {
-            char tmp[100];
-            if (!lang) snprintf(tmp, 100, "miss%02d.dat", i);
-            else snprintf(tmp, 100, "miss%d%02d.dat", lang, i);
-
-            int size;
-            uint8 *data = File::loadOriginalFile(tmp, size);
-            if (data == NULL) continue;
-
-            snprintf(tmp, 100, "briefings/%d-%02d.txt", lang, i);
-            std::ofstream f(tmp, std::ios_base::out|std::ios_base::binary);
-            f << data;
-            delete[] data;
-        }
-    }
-
-    return 0;
-}
-
-int dump_fonts() {
-    int margin = 100;
-    screen_width = margin + 100;
-    screen_height = margin + 100;
-
-    App *app = new App();
-    Screen *screen = new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-    SpriteManager sprites;
-
-    uint8 *data, *tabData;
-    int size = 0, tabSize = 0;
-    tabData = File::loadOriginalFile("mspr-0.tab", tabSize);
-    data = File::loadOriginalFile("mspr-0.dat", size);
-    sprites.loadSprites(tabData, tabSize, data, true);
-    delete[] tabData;
-    delete[] data;
-
-    screen_data = (png_byte**) calloc(1, sizeof(png_byte *) * screen_height);
-
-    for (int i = 0; i < screen_height; i++)
-        screen_data[i] = (png_byte*) calloc(1, sizeof(png_byte) * screen_width);
-
-    int palsize = 0;
-    uint8 *pal = File::loadOriginalFile("mselect.pal", palsize);
-    assert(palsize == 768);
-
-    for (int i = 0; i < palsize / 3; ++i) {
-        uint8 r = pal[i * 3 + 0];
-        uint8 g = pal[i * 3 + 1];
-        uint8 b = pal[i * 3 + 2];
-
-        palette[i].red = (r << 2) | (r >> 4);
-        palette[i].green = (g << 2) | (g >> 4);
-        palette[i].blue = (b << 2) | (b >> 4);
-    }
-
-    mkdir("fonts", 0755);
-
-    for (int s = 0; s < sprites.spriteCount(); s++) {
-        clear_screen();
-        sprites.drawSpriteXYZ(s, 0, 0, 0);
-        int tw = screen_width;
-        int th = screen_height;
-        screen_width = sprites.sprite(s)->width();
-        screen_height = sprites.sprite(s)->height();
-        if (screen_width != 0 && screen_height != 0) {
-          char dest[100];
-          sprintf(dest, "fonts/%i.png", s);
-          write_png(dest);
-        }
-        screen_width = tw;
-        screen_height = th;
-    }
-
-    tabData = File::loadOriginalFile("mfnt-0.tab", tabSize);
-    data = File::loadOriginalFile("mfnt-0.dat", size);
-    sprites.clear();
-    sprites.loadSprites(tabData, tabSize, data, true);
-    delete[] tabData;
-    delete[] data;
-
-    mkdir("intro_font", 0755);
-
-    for (int s = 0; s < sprites.spriteCount(); s++) {
-        clear_screen();
-        sprites.drawSpriteXYZ(s, 0, 0, 0);
-        int tw = screen_width;
-        int th = screen_height;
-        screen_width = sprites.sprite(s)->width();
-        screen_height = sprites.sprite(s)->height();
-        if (screen_width != 0 && screen_height != 0) {
-          char dest[100];
-          sprintf(dest, "intro_font/%i.png", s);
-          write_png(dest);
-        }
-        screen_width = tw;
-        screen_height = th;
-    }
-
-    delete screen;
-    delete app;
-
-    return 0;
-}
-
 int dump_anims() {
   int margin = 100;
   screen_width = margin + 100;
@@ -215,7 +89,7 @@ int dump_anims() {
         screen_data[i] = (png_byte*) calloc(1, sizeof(png_byte) * screen_width);
 
     int palsize;
-    uint8 *pal = File::loadOriginalFile("hpal02.dat", palsize);
+    uint8 *pal = File::loadFile("hpal02.dat", palsize);
     assert(palsize == 768);
 
     for (int i = 0; i < palsize / 3; ++i) {
@@ -276,7 +150,6 @@ int dump_maps() {
 	screen_height = 4000;
 	App *app = new App();
     Screen *screen = new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-    DummyHelper helper;
     MapManager maps;
 
     screen_data = (png_byte **) calloc(1, sizeof(png_byte *) * screen_height);
@@ -285,7 +158,7 @@ int dump_maps() {
         screen_data[i] = (png_byte *)calloc(1, sizeof(png_byte) * screen_width);
 
     int palsize;
-    uint8 *pal = File::loadOriginalFile("hpal02.dat", palsize);
+    uint8 *pal = File::loadFile("hpal02.dat", palsize);
     assert(palsize == 768);
 
     mkdir("maps", 0755);
@@ -315,7 +188,7 @@ int dump_maps() {
 
         clear_screen();
         printf("drawing map %i\n", i);
-        maps.drawMap(i, screen_width / 2, screen_height / 2, &helper);
+        maps.drawMap(i, screen_width / 2, screen_height / 2);
 	char dest[100];
 	sprintf(dest, "maps/map%i.png", i);
         write_png(dest);
@@ -327,60 +200,18 @@ int dump_maps() {
 	return 0;
 }
 
-static void usage() {
-	printf("Usage: dump [-m] [-a] [-f] [-b] [-d <data dir>]\n");
-	printf("Options:\n");
-	printf("\t-m\tdump maps\n");
-	printf("\t-a\tdump animations\n");
-	printf("\t-f\tdump fonts\n");
-	printf("\t-b\tdump briefings\n");
-	exit(1);
-}
-
 int main(int argc, char **argv) {
-	const char *dataArg = "./data/";
-	int i;
-	int actions = 0;
 
-	for (i = 1; i < argc; i++) {
-		if (!strcmp("-m", argv[i])) {
-			actions++;
-		} else if (!strcmp("-a", argv[i])) {
-			actions++;
-		} else if (!strcmp("-f", argv[i])) {
-			actions++;
-		} else if (!strcmp("-b", argv[i])) {
-			actions++;
-		} else if (!strcmp("-d", argv[i])) {
-			i++;
-			dataArg = argv[i];
-		} else {
-			usage();
-		}
-	}
+    if (argc == 2) {
+        if (0 == strcmp("-m", argv[1])) {
+	  dump_maps();
+        } else if (0 == strcmp("-a", argv[1])) {
+	    dump_anims();
+        }
 
-	if (!dataArg || !actions) usage();
-
-	std::string dataDir(dataArg);
-	if (dataDir[dataDir.size() - 1] != '\\' && dataDir[dataDir.size() - 1] != '/') {
-		dataDir.push_back('/');
-	}
-
-	File::setDataPath(dataDir);
-	File::setOurDataPath(dataDir);
-
-	for (i = 1; i < argc; i++) {
-		if (!strcmp("-m", argv[i])) {
-			dump_maps();
-		} else if (!strcmp("-a", argv[i])) {
-			dump_anims();
-		} else if (!strcmp("-f", argv[i])) {
-			dump_fonts();
-		} else if (!strcmp("-b", argv[i])) {
-			dump_briefings();
-		} else if (!strcmp("-d", argv[i])) {
-		}
-	}
+    } else {
+      printf("usage : dump [-m|-a]\n");
+    }
 
 	return 0;
 }

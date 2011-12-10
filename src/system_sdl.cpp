@@ -31,7 +31,7 @@
 #include "utils/file.h"
 #include "utils/log.h"
 
-#include <SDL_image.h>
+#include "SDL_image.h"
 
 SDL_Joystick *joy = NULL;
 
@@ -178,7 +178,6 @@ Key SystemSDL::checkValidKey(SDL_keysym keysym) {
     switch(keysym.sym) {
         case SDLK_ESCAPE: key = KEY_ESCAPE; break;
         case SDLK_BACKSPACE: key = KEY_BACKSPACE; break;
-		case SDLK_RETURN: key = KEY_RETURN; break;
         case SDLK_SPACE: key = KEY_SPACE; break;
         case SDLK_BACKQUOTE: key = KEY_BACKQUOTE; break;
         case SDLK_DELETE: key = KEY_DELETE; break;
@@ -361,10 +360,6 @@ void SystemSDL::delay(int msec) {
     SDL_Delay(msec);
 }
 
-int SystemSDL::getTicks() {
-	return SDL_GetTicks();
-}
-
 bool like(int a, int b) {
     return a == b || a == b - 1 || a == b + 1;
 }
@@ -425,7 +420,7 @@ void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
 bool SystemSDL::loadCursorSprites() {
     cursor_rect_.w = cursor_rect_.h = CURSOR_WIDTH;
 
-    cursor_surf_ = IMG_Load(File::dataFullPath("cursors/cursors.png").c_str());
+    cursor_surf_ = IMG_Load(File::fileFullPath("cursors/cursors.png", false));
 
     if (!cursor_surf_) {
         printf("Cannot load cursors image: %s\n", IMG_GetError());

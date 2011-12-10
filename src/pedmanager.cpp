@@ -149,7 +149,7 @@ PedInstance *PedManager::loadInstance(uint8 * data, int map)
     newped->setStartHealth(hp);
 
     if (gamdata->state == 0x11) {
-        newped->setDrawnAnim(PedInstance::ad_DeadAnim);
+        newped->setDrawnAnim(PedInstance::DeadAnim);
         newped->setHealth(-1);
     } else
         newped->setHealth(hp);
@@ -165,7 +165,7 @@ PedInstance *PedManager::loadInstance(uint8 * data, int map)
     newped->setVisZ(z);
     newped->setSizeX(32);
     newped->setSizeY(32);
-    newped->setSizeZ(256);
+    newped->setSizeZ(128);
     if (oz > 0)
         z++;
     //printf("x %i y %i z %i ox %i oy %i oz %i\n", gamdata->mapposx[1], gamdata->mapposy[1], z, gamdata->mapposx[0], gamdata->mapposy[0], oz);

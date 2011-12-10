@@ -26,7 +26,11 @@
 #ifndef SYSTEM_SDL_H
 #define SYSTEM_SDL_H
 
+#ifdef _WIN32
 #include <SDL.h>
+#else
+#include <SDL/SDL.h>
+#endif
 
 #include "common.h"
 #include "system.h"
@@ -53,7 +57,6 @@ public:
     void updateScreen();
     void handleEvents();
     void delay(int msec);
-	int getTicks();
 
     void setPalette6b3(const uint8 *pal, int cols = 256);
     void setPalette8b3(const uint8 *pal, int cols = 256);

@@ -6,7 +6,6 @@
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -29,10 +28,6 @@
 #include "common.h"
 #include "agent.h"
 #include "utils/seqmodel.h"
-#include "utils/portablefile.h"
-
-extern const char * const g_AgentNames[];
-extern const int g_NumAgentNames;
 
 /*!
  * Agent Manager class.
@@ -59,9 +54,9 @@ public:
     SequenceModel * getAgents() { return &agents_; }
 
     //! Save instance to file
-    bool saveToFile(PortableFile &file);
+    bool saveToFile(std::ofstream &file);
     //! Load instance from file
-    bool loadFromFile(PortableFile &infile, const FormatVersion& v);
+    bool loadFromFile(std::ifstream &infile);
 
 protected:
     /*!

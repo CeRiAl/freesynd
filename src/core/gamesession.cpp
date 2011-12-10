@@ -3,7 +3,6 @@
  *  FreeSynd - a remake of the classic Bullfrog game "Syndicate".       *
  *                                                                      *
  *   Copyright (C) 2010  Benoit Blancard <benblan@users.sourceforge.net>*
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -487,62 +486,88 @@ int GameSession::updateCountries() {
 }
 
 //! Save instance to file
-bool GameSession::saveToFile(PortableFile &file) {
+bool GameSession::saveToFile(std::ofstream &file) {
+    char buf[16];
     // Company name
-    file.write_string(company_name_, 16);
+    strcpy(buf, company_name_.c_str());
+    file.write(buf, 15);
     // User name
-    file.write_string(username_, 16);
+    strcpy(buf, username_.c_str());
+    file.write(buf, 15);
     // Logo
-    file.write32(logo_);
+    file.write(reinterpret_cast<const char*>(&logo_), sizeof(int));
     // Logo colour
-    file.write32(logo_colour_);
+    file.write(reinterpret_cast<const char*>(&logo_colour_), sizeof(int));
     // Money
-    file.write32(money_);
+    file.write(reinterpret_cast<const char*>(&money_), sizeof(int));
     // Time
-    file.write32(time_year_);
-    file.write32(time_day_);
-    file.write32(time_hour_);
+    file.write(reinterpret_cast<const char*>(&time_year_), sizeof(int));
+    file.write(reinterpret_cast<const char*>(&time_day_), sizeof(int));
+    file.write(reinterpret_cast<const char*>(&time_hour_), sizeof(int));
 
     // Missions
     for (int i=0; i<GameSession::NB_MISSION; i++) {
-        file.write32(g_Blocks[i].population);
-        file.write32(g_Blocks[i].tax);
-        file.write32(g_Blocks[i].popStatus);
-        file.write32(g_Blocks[i].daysToNextStatus);
-        file.write32(g_Blocks[i].daysStatusElapsed);
-        file.write32(g_Blocks[i].status);
-        file.write8(g_Blocks[i].colour);
-        file.write8(g_Blocks[i].infoLevel);
-        // NOTE: format version 1.0 had a bug where infoLevel was written again instead of enhanceLevel.
-        file.write8(g_Blocks[i].enhanceLevel);
+        int ival = g_Blocks[i].population;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        ival = g_Blocks[i].tax;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        ival = g_Blocks[i].popStatus;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        ival = g_Blocks[i].daysToNextStatus;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        ival = g_Blocks[i].daysStatusElapsed;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        ival = g_Blocks[i].status;
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
+        uint8 ui8val = g_Blocks[i].colour;
+        file.write(reinterpret_cast<const char*>(&ui8val), sizeof(uint8));
+        unsigned char uchar = g_Blocks[i].infoLevel;
+        file.write(reinterpret_cast<const char*>(&uchar), sizeof(unsigned char));
+        ival = g_Blocks[i].enhanceLevel;
+        file.write(reinterpret_cast<const char*>(&uchar), sizeof(unsigned char));
     }
 
     return true;
 }
 
 //! Load instance from file
-bool GameSession::loadFromFile(PortableFile &infile, const FormatVersion& v) {
+bool GameSession::loadFromFile(std::ifstream &infile) {
+    char buf[16];
     // Read company name
-    company_name_ = infile.read_string((v == 0x0100) ? 17 : 16, true);
-    // Read user name
-    username_ = infile.read_string((v == 0x0100) ? 17 : 16, true);
+    buf[15] = 0;
+    infile.read(buf, 15);
+    setCompanyName(buf);
 
+    // Read user name
+    buf[15] = 0;
+    infile.read(buf, 15);
+    setUserName(buf);
+
+    int ival = 0;
     // Read logo id
-    logo_ = infile.read32();
+    infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+    setLogo(ival);
+
     // Read logo colour
-    logo_colour_ = infile.read32();
+    infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+    setLogoColour(ival);
+
     // Read money
-    money_ = infile.read32();
+    infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+    setMoney(ival);
+
     // Read time
-    time_year_ = infile.read32();
-    time_day_ = infile.read32();
-    time_hour_ = infile.read32();
+    infile.read(reinterpret_cast<char*>(&time_year_), sizeof(int)); // Year
+    infile.read(reinterpret_cast<char*>(&time_day_), sizeof(int)); // Day
+    infile.read(reinterpret_cast<char*>(&time_hour_), sizeof(int)); // Hour
 
     // Missions
     for (int i=0; i<GameSession::NB_MISSION; i++) {
-        g_Blocks[i].population = infile.read32();
-        g_Blocks[i].tax = infile.read32();
-        int ival = infile.read32();
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+        g_Blocks[i].population = ival;
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+        g_Blocks[i].tax = ival;
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
         switch (ival) {
             case 0: g_Blocks[i].popStatus = STAT_REBEL;break;
             case 1: g_Blocks[i].popStatus = STAT_DISCONTENT;break;
@@ -553,11 +578,12 @@ bool GameSession::loadFromFile(PortableFile &infile, const FormatVersion& v) {
             default: g_Blocks[i].popStatus = STAT_VERY_HAPPY;break;
         }
 
-        g_Blocks[i].daysToNextStatus = infile.read32();
-        g_Blocks[i].daysStatusElapsed = infile.read32();
-
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+        g_Blocks[i].daysToNextStatus = ival;
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
+        g_Blocks[i].daysStatusElapsed = ival;
         // Read status
-        ival = infile.read32();
+        infile.read(reinterpret_cast<char*>(&ival), sizeof(int));
         switch (ival) {
             case 0: g_Blocks[i].status = BLK_UNAVAIL;break;
             case 1: g_Blocks[i].status = BLK_AVAIL;break;
@@ -567,7 +593,9 @@ bool GameSession::loadFromFile(PortableFile &infile, const FormatVersion& v) {
         }
 
         // Read colour
-        g_Blocks[i].colour = infile.read8();
+        uint8 ui8val = 0;
+        infile.read(reinterpret_cast<char*>(&ui8val), sizeof(uint8));
+        g_Blocks[i].colour = ui8val;
         if (g_Blocks[i].status != BLK_FINISHED && g_Blocks[i].status != BLK_REBEL &&
             g_Blocks[i].colour == logo_colour_) {
             // Find a colour different from the user colour
@@ -577,8 +605,11 @@ bool GameSession::loadFromFile(PortableFile &infile, const FormatVersion& v) {
 		    } while (g_Blocks[i].colour == getLogoColour());
         }
 
-        g_Blocks[i].infoLevel = infile.read8();
-        g_Blocks[i].enhanceLevel = infile.read8();
+        unsigned char uchar = 0;
+        infile.read(reinterpret_cast<char*>(&uchar), sizeof(unsigned char));
+        g_Blocks[i].infoLevel = uchar;
+        infile.read(reinterpret_cast<char*>(&uchar), sizeof(unsigned char));
+        g_Blocks[i].enhanceLevel = uchar;
     }
 
     return true;

@@ -52,7 +52,7 @@ public:
         MOD_V3 = 2
     };
 
-    Mod(const std::string& mod_name, EModType type, EModVersion version, int mod_cost, const std::string& mod_desc,
+    Mod(const char *mod_name, EModType type, EModVersion version, int mod_cost, const char *mod_desc,
             int mod_icon, int mod_iconF = 0);
 
     const char *getName() { return name_.c_str(); }
@@ -63,6 +63,8 @@ public:
     int cost() { return cost_; }
     const char *desc() { return desc_.c_str(); }
     int icon(bool isMale) { return isMale ? icon_ : icon_f_; }
+
+    void drawInfo(int x, int y);
 
 protected:
     std::string name_, desc_;

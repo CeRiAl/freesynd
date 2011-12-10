@@ -36,33 +36,21 @@
  */
 class File {
 public:
-    //! Sets the path to the original data files.*/
-    static void setDataPath(const std::string& path);
-    //! Sets the path to our data files.*/
-    static void setOurDataPath(const std::string& path);
+    static void setPath(const char *path);
     //! Sets the path to the home of freesynd where freesynd.ini is.*/
-    static void setHomePath(const std::string& path);
-
-    static uint8 *loadOriginalFile(const std::string& filename, int &filesize);
-    static FILE *openOriginalFile(const std::string& filename);
-
-    //! Returns the full path of the given original game resource using the current root path.
-    static std::string originalDataFullPath(const std::string& filename, bool uppercase);
+    static void setHomePath(const char *path);
+    static uint8 *loadFile(const char *filename, int &filesize);
+    static FILE *loadTextFile(const char *filename);
     //! Returns the full path of the given resource using the current root path.
-    static std::string dataFullPath(const std::string& filename);
-
+    static const char *fileFullPath(const char *filename, bool uppercase);
     //! Sets the filename fullpath for the given slot (from 0 to 9)
     static void getFullPathForSaveSlot(int slot, std::string &path);
     //! Returns the list of game saved names
     static void getGameSavedNames(std::vector<std::string> &files);
 
 private:
-    static void processSaveFile(const std::string& filename, std::vector<std::string> &files);
-    static uint8 *loadOriginalFileToMem(const std::string& filename, int &filesize);
-    /*! The path to the original game data.*/
-    static std::string dataPath_;
-    /*! The path to our data files.*/
-    static std::string ourDataPath_;
+    static uint8 *loadFileToMem(const char *filename, int &filesize);
+    static char _path[240];
     /*! The path to the freesynd.ini file and save directory.*/
     static std::string homePath_;
 };

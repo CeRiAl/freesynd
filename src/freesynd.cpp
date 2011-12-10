@@ -32,11 +32,9 @@
 #include "utils/file.h"
 #include "app.h"
 #include "utils/log.h"
-#include "default_ini.h"
 
 #ifdef _WIN32
 #include <windows.h>
-#include <io.h>
 #else
 #include <time.h>
 #include <dirent.h>
@@ -122,24 +120,7 @@ void operator delete(void *p) {
 #endif
 
 void print_usage() {
-    printf("usage: freesynd [options...]\n");
-    printf("    -h, --help            display this help and exit.\n");
-    printf("    -i, --ini <path>      specify the location of the FreeSynd config file.\n");
-    printf("    --nosound             disable all sound.\n");
-
-#ifdef _WIN32
-    printf(" (default: freesynd.ini in the same folder as freesynd.exe)\n");
-#elif defined(__APPLE__)
-    printf(" (default: $HOME/Library/Application Support/FreeSynd/freesynd.ini)\n");
-#else
-    printf(" (default: $HOME/.freesynd/freesynd.ini)\n");
-#endif
-
-#ifdef _DEBUG
-    printf("    -m, --mission <num>   jump directly to the specified mission.\n");
-    printf("    -c, --cheat <codes>   apply the specified cheat codes.\n");
-    printf("                          separate multiple codes with a colon.\n");
-#endif
+    printf("usage: freesynd [-h|--help] [-p|--path path-to-data] [-f|--full-screen]\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -159,13 +140,10 @@ int main(int argc, char *argv[]) {
     int cheatCodeIndex = -1;
     // If different from -1, the game will start directly on mission
     // with the given id
-    int start_mission = -1;
-    // This variable stores the path to the Freesynd configuration file.
-    std::string iniPath;
-
-    bool disable_sound = false;
+    int  start_mission = -1;
 
     for (int i = 1; i < argc; ++i) {
+
 #ifdef _DEBUG
         // This parameter is used in debug phase to accelerate the starting
         // of a game and to jump directly to a mission
@@ -188,17 +166,6 @@ int main(int argc, char *argv[]) {
             i++;
         }
 #endif
-        if (0 == strcmp("-h", argv[i]) || 0 == strcmp("--help", argv[i])) {
-            print_usage();
-            return 1;
-        }
-        if (0 == strcmp("-i", argv[i]) || 0 == strcmp("--ini", argv[i])) {
-            i++;
-            iniPath = argv[i];
-        }
-        if (0 == strcmp("--nosound", argv[i])) {
-            disable_sound = true;
-        }
     }
 
 #ifdef _DEBUG
@@ -206,34 +173,38 @@ int main(int argc, char *argv[]) {
     Log::initialize(Log::k_FLG_ALL, "game.log");
 #endif
 
-	if (iniPath.size() == 0) {
-		iniPath.assign(App::defaultIniFolder());
-		iniPath.append("/freesynd.ini");
+    // The variable stores the directory where
+    // Freesynd configuration file should be
+    std::string confPath;
+
 #ifdef _WIN32
-		if (_access(iniPath.c_str(), 0) != 0)
+    // Under windows config file is in the same directory
+    // that the freesynd.exe file
+    confPath.append(argv[0]);
+    size_t pos = confPath.find_last_of('\\');
+    confPath.erase(pos + 1);
 #else
-		struct stat st;
-		if (stat(iniPath.c_str(), &st))
-#endif
-		{
-			FILE *f = fopen(iniPath.c_str(), "w");
-			if (!f) {
-				FSERR(Log::k_FLG_IO, "Freesynd", "main", ("Cannot create default ini file at %s", iniPath.c_str()))
-				return -1;
-			}
-			fwrite(embedded_default_ini_data, 1, embedded_default_ini_size, f);
-			fclose(f);
-		}
+    // Under unix it's in the user home directory
+    confPath.assign(getenv("HOME"));
+    confPath.append("/.freesynd/");
+	// create dir if it does not exist
+	DIR * rep = opendir(confPath.c_str());
+	if (rep == NULL) {
+		if (mkdir(confPath.c_str(), 0777) == -1) {
+        	FSERR(Log::k_FLG_IO, "Freesynd", "main", ("Cannot create home directory in %s", confPath.c_str()))
+        	return -1;
+     	}
 	}
-
+    
+#endif
     LOG(Log::k_FLG_INFO, "Main", "main", ("Initializing application..."))
-    std::auto_ptr<App> app(new App(disable_sound));
+    std::auto_ptr<App> app(new App());
 
-    if (app->initialize(iniPath)) {
+    if (app->initialize(confPath.c_str())) {
         // setting the cheat codes
         if (cheatCodeIndex != -1) {
-            std::string cheats = argv[cheatCodeIndex];
-            char *s = (char *)cheats.c_str();
+            char s[50];
+            strcpy(s, argv[cheatCodeIndex]);
             char *token = strtok(s, ":");
             while ( token != NULL ) {
                 LOG(Log::k_FLG_INFO, "Main", "main", ("Cheat code activated : %s", token))
@@ -244,7 +215,7 @@ int main(int argc, char *argv[]) {
 
         LOG(Log::k_FLG_INFO, "Main", "main", ("Initializing application completed"))
 
-        app->run(start_mission);
+        app->run(confPath.c_str(), start_mission);
     } else {
         LOG(Log::k_FLG_INFO, "Main", "main", ("Initializing application failed"))
     }

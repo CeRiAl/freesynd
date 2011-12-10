@@ -8,7 +8,6 @@
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
  *   Copyright (C) 2011  Benoit Blancard <benblan@users.sourceforge.net>*
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -152,124 +151,80 @@ Weapon * WeaponManager::loadWeapon(Weapon::WeaponType wt) {
        weapon here but it got scrapped early on and they used the large
        icon space to implement the all button.
      */
-    // TODO:calibrate weapon time for shot and reload, angle, accuracy
+    // TODO:calibrate weapon time for shot and reload
     Weapon *pWeapon = NULL;
     switch(wt) {
         case Weapon::Persuadatron:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_PERSUADERTRON"),
-        14, 64, 5000, -1, 256, -1,
+            pWeapon = new Weapon("PERSUADERTRON", 14, 64, 5000, -1, 256, -1,
         -1, 367, Weapon::Unarmed_Anim, snd::PERSUADE, Weapon::Persuadatron,
-        MapObject::dmg_Mental, 1, 150, 25, Weapon::wspt_Persuadatron,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 1.0, 1.0);
+        MapObject::dmg_Mental, 1, 150, 25, Weapon::wspt_Persuadatron);
             break;
         case Weapon::Pistol:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_PISTOL"),
-        15, 65, 0, 13, 1280, 1, 1, 368,
+            pWeapon = new Weapon("PISTOL", 15, 65, 0, 13, 1280, 1, 1, 368,
         Weapon::Pistol_Anim, snd::PISTOL, Weapon::Pistol,
-        MapObject::dmg_Bullet, 1, 200, 600, Weapon::wspt_Pistol,
-        SFXObject::sfxt_BulletHit, SFXObject::sfxt_BulletHit,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 5.0, 0.9);
+        MapObject::dmg_Bullet, 1, 200, 600, Weapon::wspt_Pistol);
             break;
         case Weapon::Minigun:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_MINI_GUN"),
-        19, 69, 10000, 500, 2304, 10, 6,
+            pWeapon = new Weapon("MINI-GUN", 19, 69, 10000, 500, 2304, 10, 6,
         372, Weapon::Minigun_Anim, snd::MINIGUN, Weapon::Minigun,
-        MapObject::dmg_Bullet, 5, 100, 100, Weapon::wspt_Minigun,
-        SFXObject::sfxt_BulletHit, SFXObject::sfxt_BulletHit,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 30.0, 0.5);
+        MapObject::dmg_Bullet, 5, 100, 100, Weapon::wspt_Minigun);
             break;
         case Weapon::Flamer:
-            // NOTE: range changed from 512 to 1152
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_FLAMER"),
-        21, 71, 1500, 1000, 1152, 1, 4, 374,
+            pWeapon = new Weapon("FLAMER", 21, 71, 1500, 1000, 512, 1, 4, 374,
         Weapon::Flamer_Anim, snd::FLAME, Weapon::Flamer, MapObject::dmg_Burn,
-        10, 50, 50, Weapon::wspt_Flamer, SFXObject::sfxt_FlamerFire,
-        SFXObject::sfxt_FlamerFire, SFXObject::sfxt_FlamerFire,
-        SFXObject::sfxt_Unknown, 0, 2.0, 0.9);
+        10, 50, 50, Weapon::wspt_Flamer);
             break;
         case Weapon::LongRange:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_LONG_RANGE"),
-        22, 72, 1000, 30, 6144, 2, 3,
+            pWeapon = new Weapon("LONG RANGE", 22, 72, 1000, 30, 6144, 2, 3,
         375, Weapon::LongRange_Anim, snd::LONGRANGE, Weapon::LongRange,
-        MapObject::dmg_Bullet, 1, 300, 400, Weapon::wspt_LongRange,
-        SFXObject::sfxt_BulletHit, SFXObject::sfxt_BulletHit,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 1.0, 1.0);
+        MapObject::dmg_Bullet, 1, 300, 400, Weapon::wspt_LongRange);
             break;
         case Weapon::EnergyShield:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_ENERGY_SHIELD"),
-        28, 78, 8000, 200, 768, 15,
+            pWeapon = new Weapon("ENERGY SHIELD", 28, 78, 8000, 200, 768, 15,
         -1, 381, Weapon::EnergyShield_Anim, snd::NO_SOUND,
         Weapon::EnergyShield, MapObject::dmg_None, 1, 75, 50,
-        Weapon::wspt_EnergyShield, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, 0, 0.0, 0.0);
+        Weapon::wspt_EnergyShield);
             break;
         case Weapon::Uzi:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_UZI"),
-        18, 68, 750, 50, 1792, 2, 5, 371,
+            pWeapon = new Weapon("UZI", 18, 68, 750, 50, 1792, 2, 5, 371,
         Weapon::Uzi_Anim, snd::UZI, Weapon::Uzi, MapObject::dmg_Bullet, 1,
-        150, 150, Weapon::wspt_Uzi, SFXObject::sfxt_BulletHit,
-        SFXObject::sfxt_BulletHit, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, 0, 10.0, 0.7);
+        150, 150, Weapon::wspt_Uzi);
             break;
         case Weapon::Laser:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_LASER"),
-        20, 70, 35000, 5, 4096, 2000, 7, 373,
+            pWeapon = new Weapon("LASER", 20, 70, 35000, 5, 4096, 2000, 7, 373,
         Weapon::Laser_Anim, snd::LASER, Weapon::Laser, MapObject::dmg_Laser,
-        1, 200, 200, Weapon::wspt_Laser, SFXObject::sfxt_Fire_LongSmoke,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, 512, 5.0, 0.99);
+        1, 200, 200, Weapon::wspt_Laser);
             break;
         case Weapon::GaussGun:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_GAUSS_GUN"),
-        16, 66, 50000, 3, 5120, 15000, 0,
+            pWeapon = new Weapon("GAUSS GUN", 16, 66, 50000, 3, 5120, 15000, 0,
         369, Weapon::Gauss_Anim, snd::GAUSSGUN, Weapon::GaussGun,
-        MapObject::dmg_Explosion, 1, 350, 500, Weapon::wspt_GaussGun,
-        SFXObject::sfxt_ExplosionFire,
-        SFXObject::sfxt_ExplosionBall, SFXObject::sfxt_Smoke,
-        SFXObject::sfxt_LargeFire, 512, 5.0, 0.99);
+        MapObject::dmg_Explosion, 1, 350, 500, Weapon::wspt_GaussGun);
             break;
         case Weapon::Shotgun:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_SHOTGUN"),
-        17, 67, 250, 12, 1024, 2, 2, 370,
+            pWeapon = new Weapon("SHOTGUN", 17, 67, 250, 12, 1024, 2, 2, 370,
         Weapon::Shotgun_Anim, snd::SHOTGUN, Weapon::Shotgun,
-        MapObject::dmg_Bullet, 2, 250, 200, Weapon::wspt_Shotgun,
-        SFXObject::sfxt_BulletHit, SFXObject::sfxt_BulletHit,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 10.0, 0.7);
+        MapObject::dmg_Bullet, 2, 250, 200, Weapon::wspt_Shotgun);
             break;
         case Weapon::MediKit:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_MEDIKIT"),
-        24, 74, 500, 1, 256, 1, -1, 377,
+            pWeapon = new Weapon("MEDIKIT", 24, 74, 500, 1, 256, 1, -1, 377,
         Weapon::Unarmed_Anim, snd::NO_SOUND, Weapon::MediKit,
-        MapObject::dmg_Heal, 1, 1, 1, Weapon::wspt_MediKit,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 0.0, 0.0);
+        MapObject::dmg_Heal, 1, 1, 1, Weapon::wspt_MediKit);
             break;
         case Weapon::Scanner:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_SCANNER"),
-        23, 73, 500, -1, 4096, -1, -1, 376,
+            pWeapon = new Weapon("SCANNER", 23, 73, 500, -1, 4096, -1, -1, 376,
         Weapon::Unarmed_Anim, snd::NO_SOUND, Weapon::Scanner,
-        MapObject::dmg_None, 1, 1, 1, Weapon::wspt_Scanner,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 0.0, 0.0);
+        MapObject::dmg_None, 1, 1, 1, Weapon::wspt_Scanner);
             break;
         case Weapon::AccessCard:
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_ACCESS_CARD"),
-        26, 76, 1000, -1, 256, -1, -1,
+            pWeapon = new Weapon("ACCESS CARD", 26, 76, 1000, -1, 256, -1, -1,
         379, Weapon::Unarmed_Anim, snd::NO_SOUND, Weapon::AccessCard,
-        MapObject::dmg_None, 1, 1, 1, Weapon::wspt_AccessCard,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_Unknown, 0, 0.0, 0.0);
+        MapObject::dmg_None, 1, 1, 1, Weapon::wspt_AccessCard);
             break;
         case Weapon::TimeBomb:
         // NOTE: what is real number for "shot"? for now = 7500
-            pWeapon = new Weapon(g_App.menus().getMessage("WEAPON_TIME_BOMB"),
-        25, 75, 25000, -1, 1000, 7500, -1,
+            pWeapon = new Weapon("TIME BOMB", 25, 75, 25000, -1, 1000, 7500, -1,
         378, Weapon::Unarmed_Anim, snd::TIMEBOMB, Weapon::TimeBomb,
-        MapObject::dmg_Explosion, 1, 15000, 1, Weapon::wspt_TimeBomb,
-        SFXObject::sfxt_ExplosionFire, SFXObject::sfxt_ExplosionBall,
-        SFXObject::sfxt_Unknown, SFXObject::sfxt_ExplosionFire, 512, 0.0, 0.0);
+        MapObject::dmg_Explosion, 1, 15000, 1, Weapon::wspt_TimeBomb);
             break;
         default:
             break;
@@ -278,23 +233,27 @@ Weapon * WeaponManager::loadWeapon(Weapon::WeaponType wt) {
     return pWeapon;
 }
 
-bool WeaponManager::saveToFile(PortableFile &file) {
-    file.write32(availableWeapons_.size());
+bool WeaponManager::saveToFile(std::ofstream &file) {
+    unsigned int isize = availableWeapons_.size();
+    file.write(reinterpret_cast<const char*>(&isize), sizeof(unsigned int));
 
-    for(unsigned int i=0; i<availableWeapons_.size(); i++) {
+    for(unsigned int i=0; i<isize; i++) {
         Weapon *pWeapon = availableWeapons_.get(i);
-        file.write32(pWeapon->getWeaponType());
+        int ival = pWeapon->getWeaponType();
+        file.write(reinterpret_cast<const char*>(&ival), sizeof(int));
     }
 
     return true;
 }
 
-bool WeaponManager::loadFromFile(PortableFile &infile, const FormatVersion& v) {
-    int nbWeap = infile.read32();
+bool WeaponManager::loadFromFile(std::ifstream &infile) {
+    int nbWeap = 0;
+    infile.read(reinterpret_cast<char*>(&nbWeap), sizeof(int));
 
     for (int i=0;i<nbWeap; i++) {
-        int type = infile.read32();
+        int type = 0;
         Weapon::WeaponType wt = Weapon::Unknown;
+        infile.read(reinterpret_cast<char*>(&type), sizeof(int));
         switch (type) {
             case 0: wt = Weapon::Persuadatron;break;
             case 1: wt = Weapon::Pistol;break;

@@ -115,7 +115,7 @@ public:
     //---
 
     const char *briefing() { return briefing_.c_str(); }
-    void objectiveMsg(std::string& msg);
+    void objectiveMsg(const char ** msg);
 
     int infoCost(unsigned char lvl) {
         assert(lvl < MAX_INFO_ENHANCE_LVL);
@@ -183,7 +183,7 @@ public:
     bool setSurfaces();
     void clrSurfaces();
     bool getWalkable(int &x, int &y, int &z, int &ox, int &oy);
-    bool getShootableTile(int &x, int &y, int &z, int &ox, int &oy, int &oz);
+    bool getShootableTile(int &x, int &y, int &z, int &ox, int &oy);
     void adjXYZ(int &x, int &y, int &z);
 
     void blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
@@ -191,6 +191,8 @@ public:
     uint8 inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
         PathNode * pn = NULL, bool setBlocker = false,
         bool checkTileOnly = false, int maxr = -1, double * distTo = NULL);
+    void getInRangeOne(toDefineXYZ * cp, ShootableMapObject * & target,
+        uint8 mask, bool checkTileOnly = true, int maxr = -1);
     void getInRangeAll(toDefineXYZ * cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, int maxr = -1);
 
@@ -473,42 +475,6 @@ public:
     unsigned int getMaxInfoLvl() {return max_info_lvl_; }
     unsigned int getMaxEnhanceLvl() {return max_enhance_lvl_; }
 
-    // this type is also used for actions_queue_ for pedinstance
-    typedef enum {
-        objv_None = 0x0,
-        // Setup control over object where possible to lose this control
-        objv_AquireControl = 0x0001,
-        // Leave control over object where possible to lose this control
-        objv_LoseControl = 0x0002,
-        // Obtain inventory object
-        objv_PickUpObject = 0x0008,
-        // Object of defined subtype (of type) should be destroyed
-        // defined by indx
-        objv_DestroyObject = 0x0010,
-        // Use of object untill condition is met
-        objv_UseObject = 0x0020,
-        objv_PutDownObject = 0x0040,
-        // Objects should be at defined location
-        objv_ReachLocation = 0x0080,
-        objv_FollowObject = 0x0100,
-        // Should wait some time
-        objv_Wait = 0x0200,
-        objv_AttackLocation = 0x0400,
-        // in range of current weapon or inrange of other friendly units:
-        // will execute objv_ReachLocation
-        objv_FindEnemy = 0x0800,
-        // in range of current weapon
-        objv_FindNonFriend = 0x1000,
-        // Objective(action) for defined object(s), has sub-objective
-        // NOTE: this can be used to set objective(s) for single ped or group
-        objv_ExecuteObjective = 0x2000,
-        objv_ExecuteObjectiveEnd = 0x4000,
-        objv_NonFinishable = 0x8000,
-        // Protect object at all cost, command(s) after this should have
-        // objv_ExecuteObjectiveEnd
-        // objv_Protect = objv_FollowObject | objv_ExecuteObjective,
-    }ObjectiveType;
-
 protected:
     bool sWalkable(char thisTile, char upperTile);
     bool isSurface(char thisTile);
@@ -532,17 +498,48 @@ protected:
     std::vector<Static *> cache_statics_;
     std::vector<SFXObject *> cache_sfx_objects_;
 
+    typedef enum {
+        objv_None,
+        // Setup control over object where possible to lose this control
+        objv_AquireControl,
+        // Leave control over object where possible to lose this control
+        // NOTE: reserved in case we will need it
+        objv_LoseControl,
+        // Protect object at all cost
+        objv_Protect,
+        // Obtain inventory object
+        // NOTE: maybe in future we have not only weapons, costumes? drones?
+        objv_GetObject,
+        // Object of defined subtype (of type) should be destroyed
+        // defined by indx
+        objv_DestroyObject,
+        // Use of object untill condition is met
+        objv_UseObject,
+        // Leave object
+        // NOTE: reserved in case we will need it
+        objv_LeaveObject,
+        // Objects should be at defined location
+        objv_ReachLocation,
+        // Objective for defined object(s), has sub-objective
+        // NOTE: this can be used to set objective(s) for single ped or group
+        objv_ExecuteObjective,
+        // Should wait some time
+        // NOTE: reserved in case we will need it
+        objv_Wait
+    }ObjectiveType;
+
     typedef struct {
         // type of objective
         ObjectiveType type;
         // 0 - not defined, 1 - ped, 2 - weapon, 3 - static, 4 - vehicle
         MapObject::MajorTypeEnum targettype;
-        // (objGroupDefMasks)
-        uint32 targetsubtype;
+        // 0 - not defined, 1 - our agent, 2 - enemy agent, 3 - guards
+        // 4 - police, 5 - civilians
+        uint8 targetsubtype;
         // index within vector of data
         uint16 targetindx;
-        // 0 - not defined, 0b - has sub objective, 1b - refers to all objects
-        // of subtype, 2b - completed, 3b - failed, 4b - check previous
+        // 0 - not defined, 1b - has sub objective, 2b - refers to all objects
+        // of subtype, 3b - completed, 4b - failed, 5b - check previous
         // objecives for fail
         uint32 condition;
         // indx for sub objective
@@ -556,25 +553,8 @@ protected:
         uint8 posyo;
         uint8 poszo;
         // This message should be setup during objective definition
-        std::string msg;
+        const char* msg;
         uint16 nxtobjindx;
-
-        void clear() {
-            type = (ObjectiveType)objv_None;
-            targettype = (MapObject::MajorTypeEnum)MapObject::mjt_Undefined;
-            targetsubtype = 0;
-            targetindx = 0;
-            condition = 0;
-            subobjindx = 0;
-            posxt = 0;
-            posyt = 0;
-            poszt = 0;
-            posxo = 0;
-            posyo = 0;
-            poszo = 0;
-            msg.clear();
-            nxtobjindx = 0;
-        }
     }ObjectiveDesc;
 
     std::vector <ObjectiveDesc> objectives_;

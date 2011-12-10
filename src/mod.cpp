@@ -27,10 +27,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include "mod.h"
+#include "app.h"
+#include "gfx/screen.h"
 
-Mod::Mod(const std::string& mod_name, EModType type, EModVersion version, 
-         int mod_cost, const std::string& mod_desc,
+Mod::Mod(const char *mod_name, EModType type, EModVersion version, 
+         int mod_cost, const char *mod_desc,
          int mod_icon, int mod_iconF):name_(mod_name),
 desc_(mod_desc), cost_(mod_cost), icon_(mod_icon),
 icon_f_(mod_iconF)
@@ -41,3 +42,11 @@ icon_f_(mod_iconF)
         icon_f_ = icon_;
 }
 
+void Mod::drawInfo(int x, int y)
+{
+    g_App.fonts().drawText(x, y, name_.c_str(), 0, false);
+    char tmp[100];
+    sprintf(tmp, "COST   :%d", cost_);
+    g_App.fonts().drawText(504, y + 14, tmp, 0, false);
+    g_App.fonts().drawText(504, y + 28, desc_.c_str(), 0, false);
+}

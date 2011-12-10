@@ -36,8 +36,6 @@
 #define EXECUTION_SPEED_TIME
 #endif
 
-//#define NEW_ANIMATE_HANDLING
-
 Ped::Ped() {
     memset(stand_anims_, 0, sizeof(stand_anims_));
     memset(walk_anims_, 0, sizeof(walk_anims_));
@@ -185,689 +183,9 @@ int Ped::lastPersuadeFrame() {
     return g_App.gameSprites().lastFrame(persuade_anim_);
 }
 
-void PedInstance::switchActionStateTo(uint32 as) {
-    switch(as) {
-        case pa_smNone:
-            printf("Ped has undefined state");
-            break;
-        case pa_smStanding:
-            action_state_ &= (pa_smAll ^(pa_smFollowing | pa_smFiring
-                | pa_smUsingCar | pa_smInCar));
-            action_state_ |= pa_smStanding;
-            break;
-        case pa_smWalking:
-            action_state_ &= (pa_smAll ^(pa_smFollowing | pa_smFiring
-                | pa_smUsingCar | pa_smInCar));
-            action_state_ |= pa_smWalking;
-            break;
-        case pa_smHit:
-            action_state_ = pa_smHit;
-            break;
-        case pa_smFiring:
-            action_state_ |= pa_smFiring;
-            break;
-        case pa_smFollowing:
-            action_state_ &= (pa_smAll ^(pa_smStanding | pa_smWalking
-                | pa_smFiring | pa_smUsingCar | pa_smInCar));
-            action_state_ |= pa_smFollowing;
-            break;
-        case pa_smPickUp:
-            action_state_ = pa_smPickUp;
-            break;
-        case pa_smPutDown:
-            action_state_ = pa_smPutDown;
-            break;
-        case pa_smBurning:
-            action_state_ = pa_smBurning;
-            break;
-        case pa_smGetInCar:
-            action_state_ = pa_smStanding | pa_smGetInCar;
-            break;
-        case pa_smUsingCar:
-            action_state_ = pa_smStanding | pa_smUsingCar;
-            break;
-        case pa_smInCar:
-            action_state_ = pa_smStanding | pa_smInCar;
-            break;
-        case pa_smLeaveCar:
-            action_state_ = pa_smStanding | pa_smLeaveCar;
-            break;
-        case pa_smDead:
-            action_state_ = pa_smDead;
-            break;
-        case pa_smUnavailable:
-            action_state_ = pa_smUnavailable;
-            break;
-    }
-}
-
-void PedInstance::switchActionStateFrom(uint32 as) {
-    switch(as) {
-        case pa_smNone:
-            printf("Ped has undefined state");
-            break;
-        case pa_smStanding:
-            action_state_ ^= pa_smStanding;
-            break;
-        case pa_smWalking:
-            action_state_ ^= pa_smWalking;
-            action_state_ |= pa_smStanding;
-            break;
-        case pa_smHit:
-            action_state_ ^= pa_smHit;
-            break;
-        case pa_smFiring:
-            action_state_ ^= pa_smFiring;
-            break;
-        case pa_smFollowing:
-            action_state_ ^= pa_smFollowing;
-            break;
-        case pa_smPickUp:
-            action_state_ = pa_smPickUp;
-            break;
-        case pa_smPutDown:
-            action_state_ ^= pa_smPutDown;
-            break;
-        case pa_smBurning:
-            action_state_ ^= pa_smBurning;
-            break;
-        case pa_smGetInCar:
-            action_state_ ^= (pa_smStanding | pa_smGetInCar);
-            break;
-        case pa_smUsingCar:
-            action_state_ ^= (pa_smStanding | pa_smUsingCar);
-            break;
-        case pa_smInCar:
-            action_state_ ^= (pa_smStanding | pa_smInCar);
-            break;
-        case pa_smLeaveCar:
-            action_state_ ^= (pa_smStanding | pa_smLeaveCar);
-            break;
-        case pa_smDead:
-            action_state_ = pa_smDead;
-            printf("It's alive!");
-            break;
-        case pa_smUnavailable:
-            action_state_ = pa_smUnavailable;
-            break;
-    }
-}
-
-#ifdef NEW_ANIMATE_HANDLING
 bool PedInstance::animate(int elapsed, Mission *mission) {
 
-    if (agent_is_ == PedInstance::Agent_Non_Active)
-        return true;
-
-    bool updated = false;
-    Weapon::WeaponAnimIndex weapon_idx =
-        selectedWeapon() ? selectedWeapon()->index() : Weapon::Unarmed_Anim;
-
-    // NOTE: some actions have remaining time, it is lost for now
-    if (actions_queue_.empty()) {
-        // TODO: use default_actions_ to fill it up
-    } else {
-        uint32 groups_processed = 0;
-        uint32 groups_max = 7;
-        uint32 stt_mask = 0;
-        for (std::vector <actionQueueGroupType>::iterator it =
-            actions_queue_.begin(); it != actions_queue_.end(); it++)
-        {
-            if ((it->group_desc & groups_processed) != 0)
-                break;
-            else {
-                uint32 acts_g_prcssd = 0;
-                for (uint32 indx = 0; indx < it->actions.size(); indx++)
-                {
-                    actionQueueType & aqt = it->actions[indx];
-                    if ((acts_g_prcssd & aqt.group_desc) != 0)
-                        break;
-                    if ((aqt.state & 12) != 0)
-                        continue;
-                    if ((aqt.ot_execute & Mission::objv_None) != 0)
-                    {
-                        printf("obj_None");
-                    }
-                    if ((aqt.ot_execute & Mission::objv_AquireControl) != 0)
-                    {
-                        if (aqt.t_smo->majorType() == MapObject::mjt_Ped) {
-                            WeaponInstance *wi = selectedWeapon();
-                            if (wi && wi->getMainType()
-                                == Weapon::Persuadatron)
-                            {
-                                // TODO: proper handling for time, add condition
-                                // of failure to inflict damage
-                                if (aqt.state == 1)
-                                    aqt.state |= 2;
-                                wi->inflictDamage(aqt.t_smo, NULL, elapsed);
-                                if (checkFriendIs((PedInstance *)aqt.t_smo))
-                                    aqt.state |= 4;
-                            } else {
-                                aqt.state |= 8;
-                            }
-                        } else if (aqt.t_smo->majorType()
-                            == MapObject::mjt_Vehicle)
-                        {
-                            VehicleInstance *v = (VehicleInstance *)aqt.t_smo;
-                            if (aqt.condition == 0) {
-                                v->setDriver(this);
-                                if (v->isInsideVehicle(this)) {
-                                    in_vehicle_ = v;
-                                    aqt.state |= 4;
-                                    is_ignored_ = true;
-                                    map_ = -1;
-                                } else {
-                                    aqt.state |= 8;
-                                }
-                            } else if (aqt.condition == 1) {
-                                if (v->hasDriver()) {
-                                    if (v->isDriver(this))
-                                        aqt.state |= 4;
-                                    else
-                                        aqt.state |= 8;
-                                } else {
-                                    v->setDriver(this);
-                                    in_vehicle_ = v;
-                                    aqt.state |= 4;
-                                    is_ignored_ = true;
-                                    map_ = -1;
-                                }
-                            }
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_LoseControl) != 0)
-                    {
-                        if (aqt.t_smo->majorType() == MapObject::mjt_Ped) {
-                            // TODO: but not now
-                        } else if (aqt.t_smo->majorType()
-                            == MapObject::mjt_Vehicle)
-                        {
-                            VehicleInstance *v = (VehicleInstance *)aqt.t_smo;
-                            //NOTE: check if inside?
-                            v->removeDriver(this);
-                            map_ = v->map();
-                            is_ignored_ = false;
-                            in_vehicle_ = NULL;
-                            aqt.state |= 4;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_PickUpObject) != 0)
-                    {
-                        WeaponInstance *wi = (WeaponInstance *)aqt.t_smo;
-                        if (wi->hasOwner() || weapons_.size() == 8)
-                            aqt.state |= 8;
-                        else {
-                            wi->setOwner(this);
-                            wi->setMap(-1);
-                            wi->setIsIgnored(true);
-                            aqt.state |= 4;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_DestroyObject) != 0)
-                    {
-                        if (aqt.t_smo->health() <= 0)
-                            // not object did it as such he failed,
-                            // but goal reached
-                            aqt.state |= 12;
-                        else {
-                            WeaponInstance *wi = selectedWeapon();
-                            if (!wi)
-                                selectBestWeapon();
-                            wi = selectedWeapon();
-                            if (wi && (wi->shotProperty()
-                                & Weapon::spe_DamageAll) != 0)
-                            {
-                                // TODO: set ignoreblocker properly,
-                                // more info from weapon
-                                wi->inflictDamage(aqt.t_smo, NULL, elapsed);
-                                // TODO: handle correctly
-                                if (aqt.t_smo->health() <= 0)
-                                    aqt.state |= 4;
-                                else
-                                    aqt.state |= 2;
-                            } else
-                                aqt.state |= 8;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_UseObject) != 0)
-                    {
-                    }
-                    if ((aqt.ot_execute & Mission::objv_PutDownObject) != 0)
-                    {
-                        WeaponInstance *wi = (WeaponInstance *)aqt.t_smo;
-                        if (wi->getOwner() != this)
-                            aqt.state |= 8;
-                        else {
-                            dropWeapon(wi);
-                            aqt.state |= 4;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_ReachLocation) != 0)
-                    {
-                        if (aqt.state == 1) {
-                            //TODO: IPA + mods
-                            int speed_set = 128;// aqt.multi_var.dist_var.speed
-                            if (aqt.condition == 0) {
-                                bool set_new_dest = true;
-                                dist_to_pos_ = aqt.multi_var.dist_var.dist;
-                                if (dist_to_pos_ != 0) {
-                                    toDefineXYZ xyz;
-                                    int dist_is = -1;
-                                    aqt.t_pn.convertPosToXYZ(&xyz);
-                                    dist_is = (int)distanceToPosXYZ(&xyz);
-                                    if (dist_is <= dist_to_pos_)
-                                        set_new_dest = false;
-                                }
-                                if (set_new_dest) {
-                                    aqt.state |= 2;
-                                    setDestinationP(mission, aqt.t_pn.tileX(),
-                                        aqt.t_pn.tileY(), aqt.t_pn.tileZ(),
-                                        aqt.t_pn.offX(), aqt.t_pn.offY(),
-                                        speed_set);
-                                    if (dest_path_.empty())
-                                        aqt.state |= 8;
-                                } else {
-                                    aqt.state |= 4;
-                                }
-                            } else if (aqt.condition == 1) {
-                                // TODO: directional movement
-                            } else if (aqt.condition == 2) {
-                                bool set_new_dest = true;
-                                dist_to_pos_ = aqt.multi_var.dist_var.dist;
-                                if (dist_to_pos_ != 0) {
-                                    int dist_is = -1;
-                                    dist_is = (int)distanceTo(
-                                        (MapObject *)aqt.t_smo);
-                                    if (dist_is <= dist_to_pos_)
-                                        set_new_dest = false;
-                                }
-                                if (set_new_dest) {
-                                    aqt.state |= 2;
-                                    setDestinationP(mission,
-                                        aqt.t_smo->tileX(), aqt.t_smo->tileY(),
-                                        aqt.t_smo->tileZ(), aqt.t_smo->offX(),
-                                        aqt.t_smo->offY(), speed_set);
-                                    if (dest_path_.empty())
-                                        aqt.state |= 8;
-                                } else {
-                                    aqt.state |= 4;
-                                }
-                            }
-                        }
-                        if ((aqt.state & 14) == 3) {
-                            //TODO: IPA + mods
-                            int speed_set = 128;
-                            speed_ = speed_set;
-                            if (aqt.condition == 0 || aqt.condition == 2) {
-                                updated = movementP(mission, elapsed);
-                                if (speed_ == 0)
-                                    aqt.state |= 4;
-                            } else if (aqt.condition == 1) {
-                                // TODO: later
-                            }
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_FollowObject) != 0)
-                    {
-                        if (aqt.state == 1 || aqt.state == 17) {
-                            int speed_set = 128;
-                            if (aqt.condition == 0) {
-                                bool set_new_dest = true;
-                                dist_to_pos_ = aqt.multi_var.dist_var.dist;
-                                int dist_is = -1;
-                                dist_is = (int)distanceTo(
-                                    (MapObject *)aqt.t_smo);
-                                if (dist_is <= dist_to_pos_)
-                                    set_new_dest = false;
-                                if (set_new_dest) {
-                                    aqt.state |= 2;
-                                    setDestinationP(mission,
-                                        aqt.t_smo->tileX(), aqt.t_smo->tileY(),
-                                        aqt.t_smo->tileZ(), aqt.t_smo->offX(),
-                                        aqt.t_smo->offY(), speed_set);
-                                    if (dest_path_.empty())
-                                        aqt.state |= 8;
-                                    if ((aqt.state & 16) != 0)
-                                        aqt.state ^= 16;
-                                } else {
-                                    aqt.state |= 16;
-                                }
-                            } else if (aqt.condition == 1) {
-                                WeaponInstance *wi = selectedWeapon();
-                                if (wi) {
-                                    bool set_new_dest = true;
-                                    // TODO: set checktile check value based
-                                    // on mode
-                                    if (wi->inRangeNoCP(&aqt.t_smo, NULL,
-                                        false, false) == 1) {
-                                        set_new_dest = false;
-                                    }
-                                    if (set_new_dest) {
-                                        aqt.state |= 2;
-                                        setDestinationP(mission,
-                                            aqt.t_smo->tileX(), aqt.t_smo->tileY(),
-                                            aqt.t_smo->tileZ(), aqt.t_smo->offX(),
-                                            aqt.t_smo->offY(), speed_set);
-                                        if (dest_path_.empty())
-                                            aqt.state |= 8;
-                                        if ((aqt.state & 16) != 0)
-                                            aqt.state ^= 16;
-                                    } else {
-                                        aqt.state |= 16;
-                                    }
-                                } else {
-                                    aqt.state |= 8;
-                                }
-                            }
-                        }
-                        if ((aqt.state & 30) == 2) {
-                            int speed_set = 128;
-                            speed_ = speed_set;
-                            if (aqt.condition == 0) {
-                                updated = movementP(mission, elapsed);
-                                if (speed_ == 0) {
-                                    aqt.state ^= 2;
-                                    aqt.state |= 16;
-                                } else {
-                                    PathNode &rp = dest_path_.back();
-                                    if (rp.tileX() != aqt.t_smo->tileX()
-                                        || rp.tileY() != aqt.t_smo->tileY()
-                                        || rp.tileZ() != aqt.t_smo->tileZ()
-                                        || rp.offX() != aqt.t_smo->offX()
-                                        || rp.offY() != aqt.t_smo->offY()
-                                        || rp.offZ() != aqt.t_smo->offZ())
-                                    {
-                                        // resetting target position
-                                        dest_path_.clear();
-                                        speed_ = 0;
-                                        aqt.state ^= 2;
-                                    }
-                                }
-                            } else if (aqt.condition == 1) {
-                                WeaponInstance *wi = selectedWeapon();
-                                if (wi) {
-                                    updated = movementP(mission, elapsed);
-                                    if (wi->inRangeNoCP(&aqt.t_smo) == 0) {
-                                        aqt.state ^= 2;
-                                        aqt.state |= 16;
-                                        dest_path_.clear();
-                                        speed_ = 0;
-                                    } else {
-                                        PathNode &rp = dest_path_.back();
-                                        if (rp.tileX() != aqt.t_smo->tileX()
-                                            || rp.tileY() != aqt.t_smo->tileY()
-                                            || rp.tileZ() != aqt.t_smo->tileZ()
-                                            || rp.offX() != aqt.t_smo->offX()
-                                            || rp.offY() != aqt.t_smo->offY()
-                                            || rp.offZ() != aqt.t_smo->offZ())
-                                        {
-                                            // resetting target position
-                                            dest_path_.clear();
-                                            speed_ = 0;
-                                            aqt.state ^= 2;
-                                        }
-                                    }
-                                } else {
-                                    aqt.state |= 8;
-                                }
-                            }
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_Wait) != 0)
-                    {
-                        if (aqt.state == 1) {
-                            aqt.multi_var.time_var.elapsed = 0;
-                            aqt.state |= 2;
-                        }
-                        if (aqt.state == 3) {
-                            aqt.multi_var.time_var.elapsed += elapsed;
-                            if (aqt.multi_var.time_var.elapsed
-                                >= aqt.multi_var.time_var.time_total)
-                                aqt.state |= 4;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_AttackLocation) != 0)
-                    {
-                        // TODO: additional conditions, single shot?
-                        WeaponInstance *wi = selectedWeapon();
-                        if (!wi)
-                            selectBestWeapon();
-                        if (wi && (wi->shotProperty()
-                            & Weapon::spe_DamageAll) != 0)
-                        {
-                            // TODO: proper handling, ignoreblocker,
-                            // more info from weapon needed
-                            wi->inflictDamage(NULL, &aqt.t_pn, elapsed);
-                            aqt.state |= 2;
-                        } else
-                            aqt.state |= 8;
-                    }
-                    if ((aqt.ot_execute & Mission::objv_FindEnemy) != 0)
-                    {
-                        // TODO: check inside of vehicles too, is_ignored_?
-                        if (!hostiles_found_.empty())
-                            verifyHostilesFound(mission);
-                        Msmod_t smo_dist;
-                        if (hostiles_found_.empty()) {
-                            // TODO: check for weapons, get the largest shooting
-                            // range and put it here
-                            int shot_rng = 1;
-                            int view_rng = (sight_range_ << 8);
-                            toDefineXYZ cur_xyz;
-                            convertPosToXYZ(&cur_xyz);
-                            cur_xyz.z += (size_z_ >> 1);
-                            if (obj_group_def_ == og_dmAgent
-                                || obj_group_def_ == og_dmPolice
-                                || obj_group_def_ == og_dmGuard)
-                            {
-                                int num_peds = mission->numPeds();
-                                for (int i = 0; i < num_peds; i++) {
-                                    PedInstance *p = mission->ped(i);
-                                    if ((actionStateMasks() &
-                                        pa_smCheckExcluded) != 0
-                                        || hostiles_found_.find(p)
-                                        != hostiles_found_.end()
-                                        || smo_dist.find(p)
-                                        != smo_dist.end())
-                                        continue;
-                                    if (p->objGroupDef() == obj_group_def_
-                                        && checkFriendIs(p))
-                                    {
-                                        Msmod_t::iterator it_s, it_e;
-                                        if (p->getHostilesFoundIt(it_s, it_e)) {
-                                            do {
-                                                double distTo = 0;
-                                                ShootableMapObject *smo = it_s->first;
-                                                // TODO: inrange check here might
-                                                // reduce speed, check
-                                                if (//inSightRange((MapObject *)(smo))
-                                                    //&&
-                                                    mission->inRangeCPos(
-                                                    &cur_xyz,
-                                                    &smo, NULL, false, false,
-                                                    view_rng, &distTo)
-                                                    == 1)
-                                                {
-                                                    hostiles_found_.insert(
-                                                        Pairsmod_t(smo, distTo));
-                                                } else if (shot_rng > 0
-                                                    && mission->inRangeCPos(
-                                                    &cur_xyz,
-                                                    &smo, NULL, false, false,
-                                                    shot_rng, &distTo) == 1)
-                                                {
-                                                    smo_dist.insert(
-                                                        Pairsmod_t(smo, distTo));
-                                                }
-                                                it_s++;
-                                            } while (it_s != it_e);
-                                        }
-                                    } else if (checkHostileIs(p) ) {
-                                        // TODO: hostile_desc_alt to checkHostileIs?
-                                        double distTo = 0;
-                                        if (//inSightRange((MapObject *)(p)) &&
-                                            // TODO: set ignoreblocker based
-                                            mission->inRangeCPos(
-                                            &cur_xyz,
-                                            (ShootableMapObject **)(&p),
-                                            NULL, false, false,
-                                            view_rng, &distTo)
-                                            == 1)
-                                        {
-                                            hostiles_found_.insert(
-                                                Pairsmod_t(
-                                                (ShootableMapObject *)p,
-                                                distTo));
-                                        }
-                                    }
-                                }
-                            } else {
-                                int num_peds = mission->numPeds();
-                                for (int i = 0; i < num_peds; i++) {
-                                    PedInstance *p = mission->ped(i);
-                                    if ((actionStateMasks() &
-                                        pa_smCheckExcluded) != 0
-                                        || hostiles_found_.find(p)
-                                        != hostiles_found_.end())
-                                        continue;
-                                    if (checkHostileIs(p) ) {
-                                        // TODO: hostile_desc_alt to checkHostileIs?
-                                        double distTo = 0;
-                                        if (//inSightRange((MapObject *)(p))
-                                            //&&
-                                            mission->inRangeCPos(
-                                            &cur_xyz,
-                                            (ShootableMapObject **)(&p),
-                                            NULL, false, false,
-                                            view_rng, &distTo)
-                                            == 1)
-                                        {
-                                            hostiles_found_.insert(
-                                                Pairsmod_t(
-                                                (ShootableMapObject *)p,
-                                                distTo));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        // NOTE: possible check for most dangerous weapon
-                        // or object, if is one of objectives to destroy, for
-                        // now only distance check
-                        if (hostiles_found_.empty()) {
-                            if (smo_dist.empty())
-                                aqt.state |= 8;
-                            else {
-                                Msmod_t::iterator it = smo_dist.begin();
-                                Pairsmod_t closest = *it;
-                                it++;
-                                while (it != smo_dist.end()) {
-                                    if (it->second < closest.second) {
-                                        closest = *it;
-                                    }
-                                }
-                                aqt.t_smo = closest.first;
-                                aqt.state |= 4;
-                            }
-                        } else {
-                            Msmod_t::iterator it = hostiles_found_.begin();
-                            Pairsmod_t closest = *it;
-                            it++;
-                            while (it != hostiles_found_.end()) {
-                                if (it->second < closest.second) {
-                                    closest = *it;
-                                }
-                            }
-                            aqt.t_smo = closest.first;
-                            aqt.state |= 4;
-                        }
-                    }
-                    if ((aqt.ot_execute & Mission::objv_FindNonFriend) != 0)
-                    {
-                        // TODO : check inside of vehicles, is_ignored_?
-                        // NOTE : can be done as objv_FindEnemy with objects
-                        // passing within same group + def
-                        Msmod_t nf_dist;
-                        toDefineXYZ cur_xyz;
-                        convertPosToXYZ(&cur_xyz);
-                        cur_xyz.z += (size_z_ >> 1);
-                        int num_peds = mission->numPeds();
-                        int view_rng = (sight_range_ << 8);
-                        for (int i = 0; i < num_peds; i++) {
-                            PedInstance *p = mission->ped(i);
-                            if ((actionStateMasks() &
-                                pa_smCheckExcluded) != 0)
-                                continue;
-                            if (!checkFriendIs(p) ) {
-                                double distTo = 0;
-                                if (//inSightRange((MapObject *)(p))
-                                    //&&
-                                    mission->inRangeCPos(
-                                    &cur_xyz,
-                                    (ShootableMapObject **)(&p),
-                                    NULL, false, false,
-                                    view_rng, &distTo)
-                                    == 1)
-                                {
-                                    nf_dist.insert(Pairsmod_t(
-                                        (ShootableMapObject *)p, distTo));
-                                }
-                            }
-                        }
-                        if (nf_dist.empty())
-                            aqt.state |= 8;
-                        else {
-                            Msmod_t::iterator it = nf_dist.begin();
-                            Pairsmod_t closest = *it;
-                            it++;
-                            while (it != nf_dist.end()) {
-                                if (it->second < closest.second) {
-                                    closest = *it;
-                                }
-                            }
-                            aqt.t_smo = closest.first;
-                            aqt.state |= 4;
-                        }
-                    }
-                    /*
-                    if ((aqt.ot_execute & Mission::objv_ExecuteObjective) != 0)
-                    {
-                    }
-                    if ((aqt.ot_execute & Mission::objv_ExecuteObjectiveEnd) != 0)
-                    {
-                    }
-                    */
-                    if ((aqt.ot_execute & Mission::objv_NonFinishable) != 0)
-                    {
-                    }
-                    if ((aqt.state & 16) != 0) {
-                    } else if ((aqt.state & 8) != 0) {
-                    } else if ((aqt.state & 4) != 0) {
-                        switchActionStateTo(aqt.as);
-                        acts_g_prcssd |= aqt.group_desc;
-                    } else if ((aqt.state & 2) != 0) {
-                        switchActionStateTo(aqt.as);
-                        acts_g_prcssd |= aqt.group_desc;
-                    } else if ((aqt.state & 1) != 0) {
-                        printf("should not get here");
-                    }
-                    if (acts_g_prcssd == groups_max)
-                        break;
-                }
-                it->state |= it->actions[it->main_act].state;
-                groups_processed |= acts_g_prcssd;
-            }
-            if (groups_processed == groups_max)
-                break;
-        }
-    }
-    return updated;
-}
-#endif
-#ifndef NEW_ANIMATE_HANDLING
-bool PedInstance::animate(int elapsed, Mission *mission) {
-
-    if (agent_is_ == PedInstance::Agent_Non_Active)
+    if (is_an_agent_ == PedInstance::Agent_Non_Active)
         return true;
 
     bool updated = false;
@@ -886,14 +204,15 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
             for (int i = 0; i < 4; i++) {
                 PedInstance * pinst = mission->ped(i);
                 if (pinst->health() > 0
-                    && selectedWeapon()->inRangeNoCP(
+                    && selectedWeapon()->inRange(
                         (ShootableMapObject **)(&pinst)) == 1) {
                     if (pinst->inVehicle())
                         setTarget(pinst->inVehicle());
                     else
                         setTarget(pinst);
 
-                    resetDest_Speed();
+                    clearDestination();
+                    speed_ = 0;
                 }
             }
 
@@ -945,6 +264,11 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
 
     if (in_vehicle_) {
         if (map_ == -1) {
+            tile_x_ = in_vehicle_->tileX();
+            tile_y_ = in_vehicle_->tileY();
+            tile_z_ = in_vehicle_->tileZ();
+            off_x_ = in_vehicle_->offX();
+            off_y_ = in_vehicle_->offY();
         } else if (samePosition(in_vehicle_)) {
             map_ = -1;
             in_vehicle_->setDriver(this);
@@ -973,110 +297,106 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
 
     if (pickup_weapon_ && pickup_weapon_->map() == -1) {
         pickup_weapon_ = NULL;
-        resetDest_Speed();
+        clearDestination();
+        speed_ = 0;
     }
 
     updated = MapObject::animate(elapsed);
     PedInstance::AnimationDrawn curanim = drawnAnim();
     switch (curanim) {
-        case PedInstance::ad_HitAnim:
+        case PedInstance::HitAnim:
             if (frame_ > ped_->lastHitFrame(getDirection())) {
                 if(speed_) {
-                    setDrawnAnim(PedInstance::ad_WalkAnim);
+                    setDrawnAnim(PedInstance::WalkAnim);
                 } else
-                    setDrawnAnim(PedInstance::ad_StandAnim);
+                    setDrawnAnim(PedInstance::StandAnim);
             } else 
                 if (health_ <= 0)
                     return updated;
             if (health_ > 0)
                 break;
-        case PedInstance::ad_DieAnim:
+        case PedInstance::DieAnim:
             if (frame_ <= ped_->lastDieFrame())
                 return updated;
-            setDrawnAnim(PedInstance::ad_DeadAnim);
+            setDrawnAnim(PedInstance::DeadAnim);
             return true;
             break;
-        case PedInstance::ad_DeadAnim:
+        case PedInstance::DeadAnim:
             return false;
             break;
-        case PedInstance::ad_DeadAgentAnim:
+        case PedInstance::DeadAgentAnim:
             return false;
             break;
-        case PedInstance::ad_PickupAnim:
-        case PedInstance::ad_PutdownAnim:
+        case PedInstance::PickupAnim:
+        case PedInstance::PutdownAnim:
             if (frame_ > ped_->lastPickupFrame()) {
                 if(speed_) {
-                    setDrawnAnim(PedInstance::ad_WalkAnim);
+                    setDrawnAnim(PedInstance::WalkAnim);
                 } else
-                    setDrawnAnim(PedInstance::ad_StandAnim);
+                    setDrawnAnim(PedInstance::StandAnim);
             } else
                 return updated;
             break;
-        case PedInstance::ad_WalkAnim:
+        case PedInstance::WalkAnim:
             break;
-        case PedInstance::ad_StandAnim:
+        case PedInstance::StandAnim:
             break;
-        case PedInstance::ad_WalkFireAnim:
+        case PedInstance::WalkFireAnim:
             if(frame_ > ped_->lastWalkFireFrame(getDirection(), weapon_idx)) {
                 if (speed_) {
-                    setDrawnAnim(PedInstance::ad_WalkAnim);
+                    setDrawnAnim(PedInstance::WalkAnim);
                 } else
-                    setDrawnAnim(PedInstance::ad_StandAnim);
+                    setDrawnAnim(PedInstance::StandAnim);
             }
             break;
-        case PedInstance::ad_StandFireAnim:
+        case PedInstance::StandFireAnim:
             if(frame_ > ped_->lastStandFireFrame(getDirection(), weapon_idx)) {
                 if (speed_) {
-                    setDrawnAnim(PedInstance::ad_WalkAnim);
+                    setDrawnAnim(PedInstance::WalkAnim);
                 } else
-                    setDrawnAnim(PedInstance::ad_StandAnim);
+                    setDrawnAnim(PedInstance::StandAnim);
             }
             break;
-        case PedInstance::ad_VaporizeAnim:
+        case PedInstance::VaporizeAnim:
             if (frame_ > ped_->lastVaporizeFrame(getDirection())) {
-                if (agent_is_ == PedInstance::Agent_Active) {
-                    setDrawnAnim(PedInstance::ad_DeadAgentAnim);
+                if (is_an_agent_ == PedInstance::Agent_Active) {
+                    setDrawnAnim(PedInstance::DeadAgentAnim);
                 } else {
-                    setDrawnAnim(PedInstance::ad_NoAnimation);
+                    setDrawnAnim(PedInstance::NoAnimation);
                 }
             }
             return updated;
-        case PedInstance::ad_SinkAnim:
+        case PedInstance::SinkAnim:
             // TODO: use this in future
             break;
-        case PedInstance::ad_WalkBurnAnim:
+        case PedInstance::WalkBurnAnim:
             updated |= movementP(mission, elapsed);
-        case PedInstance::ad_StandBurnAnim:
+        case PedInstance::StandBurnAnim:
             if (leftTimeShowAnim(elapsed))
                 return updated;
-            setDrawnAnim(PedInstance::ad_DieBurnAnim);
+            setDrawnAnim(PedInstance::DieBurnAnim);
             return updated;
-        case PedInstance::ad_DieBurnAnim:
+        case PedInstance::DieBurnAnim:
             if (frame_ > ped_->lastDieBurnFrame()) {
-                setDrawnAnim(PedInstance::ad_SmokeBurnAnim);
+                setDrawnAnim(PedInstance::SmokeBurnAnim);
                 setTimeShowAnim(7000);
             }
             return updated;
-        case PedInstance::ad_SmokeBurnAnim:
+        case PedInstance::SmokeBurnAnim:
             if (leftTimeShowAnim(elapsed))
                 return updated;
-            setDrawnAnim(PedInstance::ad_DeadBurnAnim);
+            setDrawnAnim(PedInstance::DeadBurnAnim);
             return updated;
-        case PedInstance::ad_DeadBurnAnim:
+        case PedInstance::DeadBurnAnim:
             return updated;
-        case PedInstance::ad_PersuadedAnim:
-            if (frame_ > ped_->lastPersuadeFrame()) {
-                setDrawnAnim(PedInstance::ad_StandAnim);
-            }
-            return updated;
-        case PedInstance::ad_NoAnimation:
+        case PedInstance::NoAnimation:
             return updated;
     }
 
-    if (curanim != PedInstance::ad_HitAnim
-        && curanim != PedInstance::ad_PickupAnim
-        && curanim != PedInstance::ad_PutdownAnim
-        && curanim != PedInstance::ad_StandFireAnim)
+    if (curanim != PedInstance::HitAnim
+        && curanim != PedInstance::PickupAnim
+        && curanim != PedInstance::PutdownAnim
+        && curanim != PedInstance::StandFireAnim)
     {
         updated |= movementP(mission, elapsed);
     }
@@ -1088,11 +408,11 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
         w->setVisZ(vis_z_);
         w->setOwner(NULL);
         w->setIsIgnored();
-        w->activate();
         putdown_weapon_ = NULL;
-        setDrawnAnim(PedInstance::ad_PutdownAnim);
+        setDrawnAnim(PedInstance::PutdownAnim);
         if(speed() != 0){
-            resetDest_Speed();
+            clearDestination();
+            setSpeed(0);
         }
         return true;
     }
@@ -1103,9 +423,8 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
             pickup_weapon_->setMap(-1);
             pickup_weapon_->setOwner(this);
             pickup_weapon_->setIsIgnored(true);
-            pickup_weapon_->deactivate();
             pickup_weapon_ = NULL;
-            setDrawnAnim(PedInstance::ad_PickupAnim);
+            setDrawnAnim(PedInstance::PickupAnim);
             return true;
         } else {
             if(health_ > 0) {
@@ -1128,14 +447,10 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
         }
     }
 
-    if (target_ && health_ > 0 && firing_ == PedInstance::Firing_Not) {    
-        if (target_->majorType() == MapObject::mjt_Ped
-            && checkFriendIs((PedInstance *)target_))
-            target_ = NULL;
-        if (target_ && target_->health() > 0) {
+    if (target_ && health_ > 0 && firing_ == PedInstance::Firing_Not) {
+        if(target_->health() > 0) {
             if (selectedWeapon()
-                && selectedWeapon()->inflictDamage(target_, NULL))
-            {
+                && selectedWeapon()->inflictDamage(target_, NULL)) {
                 firing_ = PedInstance::Firing_Fire;
                 updated = true;
 
@@ -1150,27 +465,27 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
     if (weapon_idx == Weapon::Unarmed_Anim) {
         firing_ = PedInstance::Firing_Not;
         if (speed_) {
-            setDrawnAnim(PedInstance::ad_WalkAnim);
+            setDrawnAnim(PedInstance::WalkAnim);
         } else
-            setDrawnAnim(PedInstance::ad_StandAnim);
+            setDrawnAnim(PedInstance::StandAnim);
     }
 
     if (health_ > 0) {
         updated = true;
         if (firing_ == PedInstance::Firing_Not) {
-            if (curanim != PedInstance::ad_HitAnim
-                && curanim != PedInstance::ad_StandFireAnim
-                && curanim != PedInstance::ad_WalkFireAnim) {
+            if (curanim != PedInstance::HitAnim
+                && curanim != PedInstance::StandFireAnim
+                && curanim != PedInstance::WalkFireAnim) {
                 if (speed_) {
-                    setDrawnAnim(PedInstance::ad_WalkAnim);
+                    setDrawnAnim(PedInstance::WalkAnim);
                 } else
-                    setDrawnAnim(PedInstance::ad_StandAnim);
+                    setDrawnAnim(PedInstance::StandAnim);
             }
         } else if (firing_ == PedInstance::Firing_Fire) {
             if (speed_) {
-                setDrawnAnim(PedInstance::ad_WalkFireAnim);
+                setDrawnAnim(PedInstance::WalkFireAnim);
             } else
-                setDrawnAnim(PedInstance::ad_StandFireAnim);
+                setDrawnAnim(PedInstance::StandFireAnim);
 
             if (!(target_ && target_->health() > 0))
                 firing_ = PedInstance::Firing_Stop;
@@ -1188,14 +503,14 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
         // miliseconds
         // TODO: this value should be influenced by IPA values
         int required = 1200;
-        if (agent_is_ == PedInstance::Agent_Active)
+        if (is_an_agent_ == PedInstance::Agent_Active)
             required = 500;
 
         if (weapon_idx == Weapon::Pistol_Anim
             || weapon_idx == Weapon::Shotgun_Anim)
         {
             required = 1500;
-            if (agent_is_ == PedInstance::Agent_Active)
+            if (is_an_agent_ == PedInstance::Agent_Active)
                 required = 750;
         }
 
@@ -1212,7 +527,6 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
 
     return updated;
 }
-#endif
 
 void PedInstance::stopFiring() {
     if (firing_ != PedInstance::Firing_Not)
@@ -1224,6 +538,7 @@ PedInstance *Ped::createInstance(int map) {
 }
 
 void PedInstance::kill() {
+    dead_ = true;
 }
 
 bool isOnScreen(int scrollX, int scrollY, int x, int y) {
@@ -1253,7 +568,7 @@ void PedInstance::showPath(int scrollX, int scrollY) {
     int px = screenX();
     int py = screenY() - tile_z_ * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
-    if (agent_is_ == PedInstance::Agent_Non_Active)
+    if (is_an_agent_ == PedInstance::Agent_Non_Active)
         return;
 
     for (std::list<PathNode>::iterator it = dest_path_.begin();
@@ -1295,22 +610,16 @@ void PedInstance::showPath(int scrollX, int scrollY) {
 }
 
 PedInstance::PedInstance(Ped *ped, int m) : ShootableMovableMapObject(m),
-    ped_(ped), firing_(PedInstance::Firing_Not),
-    action_state_(PedInstance::pa_smNone),
-    desc_state_(PedInstance::pd_smUndefined),
-    hostile_desc_(PedInstance::pd_smUndefined),
-    obj_group_def_(PedInstance::og_dmUndefined),
-    old_obj_group_def_(PedInstance::og_dmUndefined),
-    obj_group_id_(0), old_obj_group_id_(0),
-    drawn_anim_(PedInstance::ad_StandAnim), target_(NULL), target_pos_(NULL),
-    reach_obj_(NULL), reach_pos_(NULL), sight_range_(0),
-    is_hostile_(false), reload_count_(0), selected_weapon_(-1),
-    pickup_weapon_(NULL), putdown_weapon_(NULL), in_vehicle_(NULL),
-    agent_is_(PedInstance::Not_Agent)
+ped_(ped), firing_(PedInstance::Firing_Not),
+drawn_anim_(PedInstance::StandAnim), target_(NULL), sight_range_(0),
+is_hostile_(false), reload_count_(0), selected_weapon_(-1),
+pickup_weapon_(NULL), putdown_weapon_(NULL), in_vehicle_(NULL),
+is_an_agent_(PedInstance::Not_Agent), target_pos_(NULL), reach_obj_(NULL),
+reach_pos_(NULL)
 {
     hold_on_.wayFree = 0;
     rcv_damage_def_ = MapObject::ddmg_Ped;
-    major_type_ = MapObject::mjt_Ped;
+    major_type_ = MapObject::mt_Ped;
 }
 
 PedInstance::~PedInstance(){
@@ -1322,9 +631,9 @@ PedInstance::~PedInstance(){
         delete reach_pos_;
 }
 
-void PedInstance::draw(int x, int y) {
+void PedInstance::draw(int x, int y, int scrollX, int scrollY) {
 
-    if (agent_is_ == PedInstance::Agent_Non_Active)
+    if (is_an_agent_ == PedInstance::Agent_Non_Active)
         return;
 
     Weapon::WeaponAnimIndex weapon_idx =
@@ -1341,129 +650,123 @@ void PedInstance::draw(int x, int y) {
     }
 
     switch(drawnAnim()){
-        case PedInstance::ad_HitAnim:
+        case PedInstance::HitAnim:
             ped_->drawHitFrame(x, y, getDirection(), frame_);
             break;
-        case PedInstance::ad_DieAnim:
+        case PedInstance::DieAnim:
             ped_->drawDieFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadAnim:
+        case PedInstance::DeadAnim:
             ped_->drawDeadFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadAgentAnim:
+        case PedInstance::DeadAgentAnim:
             break;
-        case PedInstance::ad_PickupAnim:
+        case PedInstance::PickupAnim:
             ped_->drawPickupFrame(x, y, frame_);
             break;
-        case PedInstance::ad_PutdownAnim:
+        case PedInstance::PutdownAnim:
             ped_->drawPickupFrame(x, y, frame_);
             break;
-        case PedInstance::ad_WalkAnim:
+        case PedInstance::WalkAnim:
             ped_->drawWalkFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_StandAnim:
+        case PedInstance::StandAnim:
             ped_->drawStandFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_WalkFireAnim:
+        case PedInstance::WalkFireAnim:
             ped_->drawWalkFireFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_StandFireAnim:
+        case PedInstance::StandFireAnim:
             ped_->drawStandFireFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_VaporizeAnim:
+        case PedInstance::VaporizeAnim:
             ped_->drawVaporizeFrame(x, y, getDirection(), frame_);
             break;
-        case PedInstance::ad_SinkAnim:
+        case PedInstance::SinkAnim:
             ped_->drawSinkFrame(x, y, frame_);
             break;
-        case PedInstance::ad_StandBurnAnim:
+        case PedInstance::StandBurnAnim:
             ped_->drawStandBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_WalkBurnAnim:
+        case PedInstance::WalkBurnAnim:
             ped_->drawWalkBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DieBurnAnim:
+        case PedInstance::DieBurnAnim:
             ped_->drawDieBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_SmokeBurnAnim:
+        case PedInstance::SmokeBurnAnim:
             ped_->drawSmokeBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadBurnAnim:
+        case PedInstance::DeadBurnAnim:
             ped_->drawDeadBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_PersuadedAnim:
-            ped_->drawPersuadeFrame(x, y, frame_);
-            break;
-        case PedInstance::ad_NoAnimation:
+        case PedInstance::NoAnimation:
             break;
     }
 }
 
 void PedInstance::drawSelectorAnim(int x, int y) {
 
-    if (agent_is_ == PedInstance::Agent_Non_Active)
+    if (is_an_agent_ == PedInstance::Agent_Non_Active)
         return;
 
     Weapon::WeaponAnimIndex weapon_idx =
         selectedWeapon() ? selectedWeapon()->index() : Weapon::Unarmed_Anim;
 
     switch(drawnAnim()) {
-        case PedInstance::ad_HitAnim:
+        case PedInstance::HitAnim:
             ped_->drawHitFrame(x, y, getDirection(), frame_);
             break;
-        case PedInstance::ad_DieAnim:
+        case PedInstance::DieAnim:
             ped_->drawDieFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadAnim:
+        case PedInstance::DeadAnim:
             ped_->drawDeadFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadAgentAnim:
+        case PedInstance::DeadAgentAnim:
             ped_->drawDeadAgentFrame(x, y, frame_);
             break;
-        case PedInstance::ad_PickupAnim:
+        case PedInstance::PickupAnim:
             ped_->drawPickupFrame(x, y, frame_);
             break;
-        case PedInstance::ad_PutdownAnim:
+        case PedInstance::PutdownAnim:
             ped_->drawPickupFrame(x, y, frame_);
             break;
-        case PedInstance::ad_WalkAnim:
+        case PedInstance::WalkAnim:
             ped_->drawWalkFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_StandAnim:
+        case PedInstance::StandAnim:
             ped_->drawStandFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_WalkFireAnim:
+        case PedInstance::WalkFireAnim:
             ped_->drawWalkFireFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_StandFireAnim:
+        case PedInstance::StandFireAnim:
             ped_->drawStandFireFrame(x, y, getDirection(), frame_, weapon_idx);
             break;
-        case PedInstance::ad_VaporizeAnim:
+        case PedInstance::VaporizeAnim:
             ped_->drawVaporizeFrame(x, y, getDirection(), frame_);
             break;
-        case PedInstance::ad_SinkAnim:
+        case PedInstance::SinkAnim:
             ped_->drawSinkFrame(x, y, frame_);
             break;
-        case PedInstance::ad_StandBurnAnim:
+        case PedInstance::StandBurnAnim:
             ped_->drawStandBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_WalkBurnAnim:
+        case PedInstance::WalkBurnAnim:
             ped_->drawWalkBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DieBurnAnim:
+        case PedInstance::DieBurnAnim:
             ped_->drawDieBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_SmokeBurnAnim:
+        case PedInstance::SmokeBurnAnim:
             ped_->drawSmokeBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_DeadBurnAnim:
+        case PedInstance::DeadBurnAnim:
             ped_->drawDeadBurnFrame(x, y, frame_);
             break;
-        case PedInstance::ad_PersuadedAnim:
-            ped_->drawPersuadeFrame(x, y, frame_);
-            break;
-        case PedInstance::ad_NoAnimation:
-            printf("hmm ad_NoAnimation\n");
+        case PedInstance::NoAnimation:
+            printf("hmm NoAnimation\n");
             break;
     }
 }
@@ -1550,48 +853,27 @@ void PedInstance::dropWeapon(int n) {
     putdown_weapon_ = w;
 }
 
-void PedInstance::dropWeapon(WeaponInstance *wi) {
-    if (selectedWeapon() == wi) {
-        selected_weapon_ = -1;
-        if (wi->getWeaponType() == Weapon::EnergyShield)
-            setRcvDamageDef(MapObject::ddmg_PedWithEnergyShield);
-        else
-            setRcvDamageDef(MapObject::ddmg_Ped);
-    }
-    for (std::vector <WeaponInstance *>::iterator it
-        = weapons_.begin(); it != weapons_.end(); it++)
-    {
-        if ((*it) == wi) {
-            weapons_.erase(it);
-            break;
-        }
-    }
-    wi->setOwner(NULL);
-    wi->setMap(map_);
-    wi->setIsIgnored();
-    wi->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
-    wi->setVisZ(vis_z_);
-    wi->activate();
-}
-
 void PedInstance::dropAllWeapons() {
 
     setRcvDamageDef(MapObject::ddmg_Ped);
     selected_weapon_ = -1;
 
-    for (std::vector < WeaponInstance * >::iterator it
-        = weapons_.begin(); it != weapons_.end(); it++)
-    {
-        WeaponInstance *w = *it;
+    std::vector < WeaponInstance * >::iterator it;
+    int n = 0;
+
+    for (it = weapons_.begin(); it != weapons_.end(); it++) {
+        WeaponInstance *w = weapons_[n];
         w->setMap(map());
-        // TODO: drop weapons not on same place
         w->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
         w->setVisZ(vis_z_);
         w->setOwner(NULL);
         w->setIsIgnored();
-        w->activate();
+        n++;
     }
-    weapons_.clear();
+
+    while(weapons_.size())
+        weapons_.pop_back();
+
 }
 
 void PedInstance::pickupWeapon(WeaponInstance * w) {
@@ -1645,61 +927,58 @@ void PedInstance::setDrawnAnim(PedInstance::AnimationDrawn drawn_anim) {
     drawn_anim_ = drawn_anim;
     frame_ = 0;
     switch (drawn_anim_) {
-        case PedInstance::ad_HitAnim:
+        case PedInstance::HitAnim:
             setFramesPerSec(6);
             break;
-        case PedInstance::ad_DieAnim:
+        case PedInstance::DieAnim:
             setFramesPerSec(10);
             break;
-        case PedInstance::ad_DeadAnim:
+        case PedInstance::DeadAnim:
             setFramesPerSec(2);
             break;
-        case PedInstance::ad_DeadAgentAnim:
+        case PedInstance::DeadAgentAnim:
             setFramesPerSec(2);
             break;
-        case PedInstance::ad_PickupAnim:
+        case PedInstance::PickupAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_PutdownAnim:
+        case PedInstance::PutdownAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_WalkAnim:
+        case PedInstance::WalkAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_StandAnim:
+        case PedInstance::StandAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_WalkFireAnim:
+        case PedInstance::WalkFireAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_StandFireAnim:
+        case PedInstance::StandFireAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_VaporizeAnim:
+        case PedInstance::VaporizeAnim:
             setFramesPerSec(6);
             break;
-        case PedInstance::ad_SinkAnim:
+        case PedInstance::SinkAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_StandBurnAnim:
+        case PedInstance::StandBurnAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_WalkBurnAnim:
+        case PedInstance::WalkBurnAnim:
             setFramesPerSec(8);
             break;
-        case PedInstance::ad_DieBurnAnim:
+        case PedInstance::DieBurnAnim:
             setFramesPerSec(6);
             break;
-        case PedInstance::ad_SmokeBurnAnim:
+        case PedInstance::SmokeBurnAnim:
             setFramesPerSec(2);
             break;
-        case PedInstance::ad_DeadBurnAnim:
+        case PedInstance::DeadBurnAnim:
             setFramesPerSec(2);
             break;
-        case PedInstance::ad_NoAnimation:
-            break;
-        case PedInstance::ad_PersuadedAnim:
-            setFramesPerSec(8);
+        case PedInstance::NoAnimation:
             break;
     }
 }
@@ -1745,6 +1024,9 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     }
 #endif
 
+    //if (map_ == -1 || health_ <= 0)
+        //return;
+
     if(targetd->t == m_fdNonWalkable || map_ == -1 || health_ <= 0) {
         return;
     }
@@ -1756,7 +1038,6 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
         return;
     }
 
-#ifndef NEW_ANIMATE_HANDLING
     if (in_vehicle_) {
         if(in_vehicle_->tileX() != x
             || in_vehicle_->tileY() != y
@@ -1773,7 +1054,6 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
             || pickup_weapon_->offY() != oy)
         pickup_weapon_ = 0;
     }
-#endif
 
     if (tile_x_ == x && tile_y_ == y && tile_z_ == z) {
         dest_path_.push_back(PathNode(x, y, z, ox, oy));
@@ -3768,32 +3048,27 @@ bool PedInstance::movementP(Mission *m, int elapsed)
                     speed_ = 0;
                     // TODO: "current action drop" function will be
                     // better for this purpose
-#ifndef NEW_ANIMATE_HANDLING
                     if (in_vehicle_) {
                         in_vehicle_ = NULL;
                     }
                     if (pickup_weapon_) {
                         pickup_weapon_ = NULL;
                     }
-#endif
                     return updated;
                 } else
                     hold_on_.wayFree = 0;
             } else {
                 if (hold_on_.tilex == nxtTileX && hold_on_.tiley == nxtTileY
-                    && hold_on_.tilez == nxtTileZ)
-                {
+                    && hold_on_.tilez == nxtTileZ) {
                     dest_path_.clear();
                     speed_ = 0;
                     // TODO: same as above
-#ifndef NEW_ANIMATE_HANDLING
                     if (in_vehicle_) {
                         in_vehicle_ = NULL;
                     }
                     if (pickup_weapon_) {
                         pickup_weapon_ = NULL;
                     }
-#endif
                     return updated;
                 } else
                     hold_on_.wayFree = 0;
@@ -3814,7 +3089,7 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             tile_y_ = nxtTileY;
             tile_x_ = nxtTileX;
             dest_path_.pop_front();
-            if (dest_path_.empty())
+            if (dest_path_.size() == 0)
                 speed_ = 0;
             updated = true;
         } else {
@@ -3822,18 +3097,6 @@ bool PedInstance::movementP(Mission *m, int elapsed)
 
             int dx = 0, dy = 0;
             double d = sqrt((double)(diffx * diffx + diffy * diffy));
-#ifdef NEW_ANIMATE_HANDLING
-            bool reached_dist = false;
-            if (dist_to_pos_ != 0) {
-                toDefineXYZ xyz;
-                dest_path_.back().convertPosToXYZ(&xyz);
-                double dist_cur = distanceToPosXYZ(&xyz);
-                if (dist_cur > (double)dist_to_pos_) {
-                    d = (double)dist_to_pos_;
-                    reached_dist = true;
-                }
-            }
-#endif
 
             if (abs(diffx) > 0)
                 // dx = diffx * (speed_ * elapsed / 1000) / d;
@@ -3848,7 +3111,7 @@ bool PedInstance::movementP(Mission *m, int elapsed)
                 dy = diffy;
 
             updatePlacement(off_x_ + dx, off_y_ + dy);
-            // TODO :
+            // TODO : remove bool on return, make void?
             // what obstacles? cars? doors are already
             // setting stop signal, reuse it?
 #if 0
@@ -3861,22 +3124,13 @@ bool PedInstance::movementP(Mission *m, int elapsed)
 #endif
             if(nxtTileX == tile_x_ && nxtTileY == tile_y_)
                 tile_z_ = nxtTileZ;
-#ifdef NEW_ANIMATE_HANDLING
-            if (reached_dist) {
-                dest_path_.clear();
+            if(nxtTileX == tile_x_ && nxtTileY == tile_y_
+                && nxtTileZ == tile_z_ 
+                && dest_path_.front().offX() == off_x_
+                && dest_path_.front().offY() == off_y_)
+                dest_path_.pop_front();
+            if (dest_path_.size() == 0)
                 speed_ = 0;
-            } else {
-#endif
-                if(nxtTileX == tile_x_ && nxtTileY == tile_y_
-                    && nxtTileZ == tile_z_ 
-                    && dest_path_.front().offX() == off_x_
-                    && dest_path_.front().offY() == off_y_)
-                    dest_path_.pop_front();
-                if (dest_path_.size() == 0)
-                    speed_ = 0;
-#ifdef NEW_ANIMATE_HANDLING
-            }
-#endif
 
             updated = true;
         }
@@ -3885,7 +3139,7 @@ bool PedInstance::movementP(Mission *m, int elapsed)
         switch (twd) {
             case 0x01:
                 vis_z_ = tile_z_ - 1;
-                off_z_ = 127 - (off_y_ >> 1);
+                off_z_ = 127 - (off_y_ / 2);
                 break;
             case 0x02:
                 vis_z_ = tile_z_ - 1;
@@ -3897,7 +3151,7 @@ bool PedInstance::movementP(Mission *m, int elapsed)
                 break;
             case 0x04:
                 vis_z_ = tile_z_ - 1;
-                off_z_ = 127 - (off_x_ >> 1);
+                off_z_ = 127 - (off_x_ / 2);
                 break;
             default:
                 vis_z_ = tile_z_;
@@ -3912,64 +3166,44 @@ bool PedInstance::movementP(Mission *m, int elapsed)
     return updated;
 }
 
-bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
+bool PedInstance::handleDamage(MapObject::DamageInflictType *d) {
     if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
         || (d->dtype & rcv_damage_def_) == 0)
         return false;
 
-    if ((d->dtype & MapObject::dmg_Physical) != 0)
-        health_ -= d->dvalue;
-    else if (d->dtype == MapObject::dmg_Mental) {
-#ifndef NEW_ANIMATE_HANDLING
-        speed_ = 0;
-        clearDestination();
-        putdown_weapon_ = NULL;
-        pickup_weapon_ = NULL;
-        target_ = NULL;
-#endif
-        // TODO: check for required number of persuade points before applying
-        setObjGroupDef((obj_group_def_ & 0xFFFFFF00) |
-            (((PedInstance *)d->d_owner)->objGroupDef() & 0xFF));
-        setObjGroupID(((PedInstance *)d->d_owner)->objGroupID());
-        setDrawnAnim(PedInstance::ad_PersuadedAnim);
-        return true;
-    }
+    health_ -= d->dvalue;
     if (d->ddir != -1) {
         dir_ = (d->ddir + 128) % 256;
     }
     if (health_ <= 0) {
         health_ = -1;
-        // TODO: "current action drop" function will be
-        // better for this purpose
-#ifndef NEW_ANIMATE_HANDLING
-        resetDest_Speed();
+        speed_ = 0;
+        clearDestination();
         putdown_weapon_ = NULL;
         pickup_weapon_ = NULL;
         target_ = NULL;
-#endif
-
         switch ((unsigned int)d->dtype) {
             case MapObject::dmg_Bullet:
-                setDrawnAnim(PedInstance::ad_DieAnim);
+                setDrawnAnim(PedInstance::DieAnim);
                 break;
             case MapObject::dmg_Laser:
-                setDrawnAnim(PedInstance::ad_VaporizeAnim);
+                setDrawnAnim(PedInstance::VaporizeAnim);
                 destroyAllWeapons();
                 break;
             case MapObject::dmg_Burn:
                 // TODO: sometimes we will walk burning
-                setDrawnAnim(PedInstance::ad_StandBurnAnim);
+                setDrawnAnim(PedInstance::StandBurnAnim);
                 destroyAllWeapons();
                 setTimeShowAnim(4000);
                 break;
             case MapObject::dmg_Explosion:
                 // TODO: sometimes we will walk burning
-                setDrawnAnim(PedInstance::ad_StandBurnAnim);
+                setDrawnAnim(PedInstance::StandBurnAnim);
                 destroyAllWeapons();
                 setTimeShowAnim(4000);
                 break;
             case MapObject::dmg_Hit:
-                setDrawnAnim(PedInstance::ad_HitAnim);
+                setDrawnAnim(PedInstance::HitAnim);
                 break;
         }
         if (numWeapons())
@@ -3977,7 +3211,7 @@ bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
         is_ignored_ = true;
     } else {
         // TODO: agent sometimes can survive explosion, they need to walk burning?
-        setDrawnAnim(PedInstance::ad_HitAnim);
+        setDrawnAnim(PedInstance::HitAnim);
     }
     return true;
 }
@@ -3992,332 +3226,4 @@ void PedInstance::destroyAllWeapons() {
         w->setIsIgnored(true);
     }
     selected_weapon_ = -1;
-}
-
-void PedInstance::addEnemyGroupDef(uint32 eg_id, uint32 eg_def) {
-    enemy_group_defs_.add(eg_id, eg_def);
-}
-
-void PedInstance::rmEnemyGroupDef(uint32 eg_id, uint32 eg_def) {
-    enemy_group_defs_.rm(eg_id, eg_def);
-}
-
-bool PedInstance::isInEnemyGroupDef(uint32 eg_id, uint32 eg_def) {
-    return enemy_group_defs_.isIn(eg_id, eg_def);
-}
-
-void PedInstance::addEmulatedGroupDef(uint32 eg_id, uint32 eg_def) {
-    emulated_group_defs_.add(eg_id, eg_def);
-}
-void PedInstance::rmEmulatedGroupDef(uint32 eg_id, uint32 eg_def) {
-    emulated_group_defs_.rm(eg_id, eg_def);
-}
-
-bool PedInstance::isInEmulatedGroupDef(uint32 eg_id, uint32 eg_def) {
-    return emulated_group_defs_.isIn(eg_id, eg_def);
-}
-
-bool PedInstance::isInEmulatedGroupDef(PedInstance::Mmuu32_t &r_egd,
-        bool id_only)
-{
-    if (id_only) {
-        return emulated_group_defs_.isIn_KeyOnly(r_egd);
-    }
-    return emulated_group_defs_.isIn_All(r_egd);
-}
-
-bool PedInstance::checkHostileIs(ShootableMapObject *obj,
-    unsigned int hostile_desc_alt)
-{
-    bool hostile_rsp = false;
-    if (obj->majorType() == MapObject::mjt_Vehicle) {
-        // TODO: add this check later, create a list of all in vehicle
-    } else if (obj->majorType() == MapObject::mjt_Ped) {
-        if (((PedInstance *)obj)->emulatedGroupDefsEmpty()) {
-            hostile_rsp =
-                isInEnemyGroupDef(((PedInstance *)obj)->objGroupID(),
-                ((PedInstance *)obj)->objGroupDef());
-            if (!hostile_rsp) {
-                if (hostile_desc_alt == PedInstance::pd_smUndefined)
-                    hostile_desc_alt = hostile_desc_;
-                hostile_rsp =
-                    (((PedInstance *)obj)->descStateMasks() & hostile_desc_alt) != 0;
-            }
-        } else {
-            hostile_rsp =
-                ((PedInstance *)obj)->isInEmulatedGroupDef(enemy_group_defs_);
-        }
-        if (!hostile_rsp) {
-            hostile_rsp = hostiles_found_.find(obj) != hostiles_found_.end();
-        }
-    }
-    return hostile_rsp;
-}
-
-bool PedInstance::checkFriendIs(PedInstance *p) {
-    // TODO: friend list check add
-    if (p->isInEmulatedGroupDef(obj_group_id_))
-        return true;
-    if (!hostiles_found_.empty()) {
-        if (hostiles_found_.find((ShootableMapObject *)p) !=
-            hostiles_found_.end())
-            return false;
-    }
-    return (p->objGroupID() == obj_group_id_);
-}
-
-void PedInstance::verifyHostilesFound(Mission *m) {
-    std::vector <ShootableMapObject *> rm_set;
-    toDefineXYZ cur_xyz;
-    convertPosToXYZ(&cur_xyz);
-    for (Msmod_t::iterator it = hostiles_found_.begin();
-        it != hostiles_found_.end(); it++)
-    {
-        ShootableMapObject *smo = it->first;
-        double distTo = 0;
-        if (smo->health() <= 0 || (smo->majorType() == MapObject::mjt_Ped
-            && checkFriendIs((PedInstance *)(smo)))
-            || (m->inRangeCPos(&cur_xyz, &smo, NULL, false, false,
-            (sight_range_ << 8), &distTo) != 1))
-        {
-            rm_set.push_back(smo);
-        }
-    }
-    while (!rm_set.empty()) {
-        hostiles_found_.erase(hostiles_found_.find(rm_set.back()));
-        rm_set.pop_back();
-    }
-}
-
-void PedInstance::createActQStanding(actionQueueGroupType &as) {
-    as.state = 1;
-    as.main_act = 0;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.ot_execute = Mission::objv_Wait;
-    aq.as = PedInstance::pa_smStanding;
-    aq.state = 1;
-    aq.multi_var.time_var.elapsed = 0;
-    aq.multi_var.time_var.time_total = -1;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQWalking(actionQueueGroupType &as, PathNode *tpn,
-    ShootableMapObject *tsmo, int32 dir, int32 dist)
-{
-    as.state = 1;
-    as.main_act = 0;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smWalking;
-    aq.ot_execute = Mission::objv_ReachLocation;
-    aq.state = 1;
-    aq.multi_var.dist_var.dir = dir;
-    aq.multi_var.dist_var.dist = dist;
-    if (dir == -1) {
-        if (tpn) {
-            aq.t_pn = *tpn;
-            aq.condition = 0;
-        } else {
-            aq.t_smo = tsmo;
-            aq.condition = 2;
-        }
-    } else {
-        aq.condition = 1;
-    }
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQHit(actionQueueGroupType &as, PathNode *tpn,
-    int32 dir)
-{
-    as.state = 1;
-    as.main_act = 0;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smHit;
-    aq.ot_execute = Mission::objv_ReachLocation;
-    aq.state = 1;
-    // TODO: set directional movement to
-    aq.multi_var.dist_var.dir = dir;
-    aq.condition = 1;
-    // calculate direction from this point
-    if (dir == -1)
-        aq.t_pn = *tpn;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQFiring(actionQueueGroupType &as, PathNode &tpn,
-    ShootableMapObject *tsmo)
-{
-    as.main_act = 0;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smFiring;
-    if (tsmo) {
-        aq.t_smo = tsmo;
-        aq.ot_execute = Mission::objv_DestroyObject;
-    } else {
-#ifdef _DEBUG
-        aq.t_smo = NULL;
-#endif
-        aq.t_pn = tpn;
-        aq.ot_execute = Mission::objv_AttackLocation;
-    }
-    aq.state = 1;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQFollowing(actionQueueGroupType &as,
-    ShootableMapObject *tsmo, uint32 condition, int32 dist)
-{
-    as.main_act = 0;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smFollowing;
-    aq.ot_execute = Mission::objv_FollowObject;
-    aq.state = 1;
-    aq.t_smo = tsmo;
-    aq.multi_var.dist_var.dist = dist;
-    aq.condition = condition;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQPickUp(actionQueueGroupType &as,
-    ShootableMapObject *tsmo)
-{
-    as.main_act = 1;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smWalking;
-    aq.ot_execute = Mission::objv_ReachLocation;
-    aq.state = 1;
-    aq.t_smo = tsmo;
-    aq.multi_var.dist_var.dir = -1;
-    aq.multi_var.dist_var.dist = 0;
-    aq.condition = 2;
-    as.actions.push_back(aq);
-    aq.as = PedInstance::pa_smPickUp;
-    aq.ot_execute = Mission::objv_PickUpObject;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQPutDown(actionQueueGroupType &as,
-    ShootableMapObject *tsmo)
-{
-    as.main_act = 0;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smPutDown;
-    aq.ot_execute = Mission::objv_PutDownObject;
-    aq.state = 1;
-    aq.t_smo = tsmo;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQBurning(actionQueueGroupType &as) {
-    as.main_act = 3;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smBurning;
-    aq.ot_execute = Mission::objv_ReachLocation;
-    aq.multi_var.dist_var.dir = rand() % 256;
-    aq.multi_var.dist_var.dist = rand() % 256 + 128;
-    aq.state = 1;
-    aq.condition = 1;
-    as.actions.push_back(aq);
-    aq.as = PedInstance::pa_smBurning;
-    aq.multi_var.dist_var.dir = rand() % 256;
-    aq.multi_var.dist_var.dist = rand() % 256 + 128;
-    as.actions.push_back(aq);
-    aq.as = PedInstance::pa_smBurning;
-    aq.multi_var.dist_var.dir = rand() % 256;
-    aq.multi_var.dist_var.dist = rand() % 256 + 128;
-    as.actions.push_back(aq);
-    aq.as = PedInstance::pa_smBurning;
-    aq.ot_execute = Mission::objv_Wait;
-    aq.multi_var.time_var.elapsed = 0;
-    aq.multi_var.time_var.time_total = 1000;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQGetInCar(actionQueueGroupType &as,
-    ShootableMapObject *tsmo)
-{
-    as.main_act = 1;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smWalking;
-    aq.ot_execute = Mission::objv_ReachLocation;
-    aq.state = 1;
-    aq.t_smo = tsmo;
-    aq.condition = 2;
-    aq.multi_var.dist_var.dist = 0;
-    aq.multi_var.dist_var.dir = -1;
-    as.actions.push_back(aq);
-    // TODO: change this
-    aq.condition = 0;
-    aq.as = PedInstance::pa_smGetInCar;
-    aq.ot_execute = Mission::objv_AquireControl;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::createActQUsingCar(actionQueueGroupType &as, PathNode *tpn,
-    ShootableMapObject *tsmo, uint32 condition)
-{
-}
-
-void PedInstance::createActQInCar(actionQueueGroupType &as, PathNode *tpn,
-    ShootableMapObject *tsmo, uint32 condition)
-{
-}
-
-void PedInstance::createActQLeaveCar(actionQueueGroupType &as) {
-    as.main_act = 0;
-    as.state = 1;
-    as.actions.clear();
-    actionQueueType aq;
-    aq.as = PedInstance::pa_smLeaveCar;
-    aq.ot_execute = Mission::objv_LoseControl;
-    aq.state = 1;
-    aq.t_smo = NULL;
-    as.actions.push_back(aq);
-}
-
-void PedInstance::setActQInQueue(actionQueueGroupType &as) {
-    // NOTE: if action is invalidated all remaining actions in queue are
-    // invalid, they should be removed
-    for (std::vector <actionQueueGroupType>::iterator it = actions_queue_.begin();
-        it != actions_queue_.end(); it++)
-    {
-        if ((it->group_desc & as.group_desc) != 0) {
-            actions_queue_.erase(it, actions_queue_.end());
-            break;
-        }
-    }
-    if ((as.group_desc & 1) != 0)
-        resetDest_Speed();
-    actions_queue_.push_back(as);
-}
-
-bool PedInstance::addActQToQueue(actionQueueGroupType &as) {
-    actions_queue_.push_back(as);
-    return true;
-}
-
-bool PedInstance::addDefActsToActions(actionQueueGroupType &as) {
-    /*
-    for (std::vector <actionQueueGroupType>::iterator it = actions_queue_.begin();
-        it != actions_queue_.end(); it++)
-    {
-    }
-    */
-    actions_queue_.push_back(as);
-    return true;
 }

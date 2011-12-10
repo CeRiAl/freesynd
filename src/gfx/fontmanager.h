@@ -6,7 +6,6 @@
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -33,7 +32,7 @@
 class SpriteManager;
 
 /*!
- * Manager for all fonts used in the application.
+ * Font manager class.
  */
 class FontManager {
 public:
@@ -48,41 +47,20 @@ public:
     FontManager();
     ~FontManager();
 
-	//! Creates all fonts
-	bool loadFonts(SpriteManager *pMenuSprites, SpriteManager *pIntroFontSprites_);
+    bool loadFont(SpriteManager *sprites, EFontSize size, bool dark, int offset = 0,
+            char base = '!');
 
-	/*! 
-	 * Returns the font used in menus.
-	 * \param size Size of the font
-	 */
-	MenuFont * getMenuFont(FontManager::EFontSize size) { return menuFonts_[size]; }
+    void drawText(int x, int y, const char *text, int size, bool dark,
+            bool x2 = true);
 
-	/*!
-	 * Returns the font used in the gameplay menu.
-	 */
-	GameFont *gameFont() {
-        return pGameFont_;
-    }
-
-	/*!
-	 * Returns the font used in the intro animation.
-	 */
-	Font * introFont() {
-        return pIntroFont_;
-    }
+    void drawText(int x, int y, const char *text, EFontSize size, bool dark,
+            bool x2 = true);
+    int textWidth(const char *text, EFontSize size, bool x2 = true);
+    int textHeight(EFontSize size, bool x2 = true);
 
 protected:
-	//! Create a menu font for the given size
-	MenuFont * createMenuFontForSize(SpriteManager *sprites, EFontSize size, int darkOffset, int lightOffset,
-            char base, const std::string& valid_chars);
-
-protected:
-	/*!
-	 * Menu fonts have different sizes.
-	 */
-    MenuFont * menuFonts_[4];
-	GameFont *pGameFont_;
-	Font *pIntroFont_;
+    Font * dark_fonts_[4];
+    Font *light_fonts_[4];
 };
 
 #endif

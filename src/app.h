@@ -36,7 +36,8 @@
 #include "system.h"
 #include "gfx/screen.h"
 #include "path.h"
-#include "menus/menumanager.h"
+#include "gfx/fontmanager.h"
+#include "menumanager.h"
 #include "mapmanager.h"
 #include "mission.h"
 #include "missionmanager.h"
@@ -55,11 +56,11 @@
  */
 class App : public Singleton < App > {
   public:
-    App(bool disable_sound);
+    App();
     virtual ~App();
 
     //! Initialize application
-    bool initialize(const std::string& iniPath);
+    bool initialize(const char *dir);
 
     uint8 walkdata_[256];
     // patched version
@@ -71,8 +72,24 @@ class App : public Singleton < App > {
         return session_;
     }
 
+    SpriteManager &menuSprites() {
+        return menu_sprites_;
+    }
+
     GameSpriteManager &gameSprites() {
         return game_sprites_;
+    }
+
+    FontManager &fonts() {
+        return fonts_;
+    }
+
+    Font &introFont() {
+        return intro_font_;
+    }
+
+    HFont &gameFont() {
+        return game_font_;
     }
 
     MenuManager &menus() {
@@ -120,7 +137,7 @@ class App : public Singleton < App > {
     }
 
     //! Main application method
-    void run(int start_mission);
+    void run(const char *dir, int start_mission);
     //! Reset the application data
     bool reset();
 
@@ -165,14 +182,12 @@ class App : public Singleton < App > {
     //! Load game from a file
     bool loadGameFromFile(int fileSlot);
 
-    static std::string defaultIniFolder();
-
 private:
     //! Reads the configuration file
-    bool readConfiguration();
+    bool readConfiguration(const char *dir);
 
     //! Sets the intro flag to false in the config file
-    void updateIntroFlag();
+    void updateIntroFlag(const char *dir);
 
     void cheatFunds() {
         session_.setMoney(100000000);
@@ -199,9 +214,12 @@ private:
     std::auto_ptr<Screen> screen_;
     std::auto_ptr<System> system_;
 
-    std::string iniPath_;
-
+    SpriteManager menu_sprites_;
     GameSpriteManager game_sprites_;
+    FontManager fonts_;
+    HFont game_font_;
+    Font intro_font_;
+    SpriteManager intro_font_sprites_;
     MenuManager menus_;
     MissionManager missions_;
     AgentManager agents_;

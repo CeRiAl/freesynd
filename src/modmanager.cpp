@@ -6,7 +6,6 @@
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -27,7 +26,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include "modmanager.h"
-#include "app.h"
 
 ModManager::ModManager()
 {
@@ -131,104 +129,103 @@ Mod *ModManager::getMod(Mod::EModType mt, Mod::EModVersion ver) {
 Mod *ModManager::loadMod(Mod::EModType mt, Mod::EModVersion ver) {
     if (mt == Mod::MOD_LEGS) {
         if (ver == Mod::MOD_V1) {
-            return new
-                  Mod(g_App.menus().getMessage("MOD_LEGS_V1"), Mod::MOD_LEGS, Mod::MOD_V1, 6000,
-                        g_App.menus().getMessage("MOD_LEGS_V1_DESC"),
+            return new Mod("LEGS V1", Mod::MOD_LEGS, Mod::MOD_V1, 6000,
+                        "REPLACEMENT\nMETAL LEGS.\nSERVO ASSISTED\nHYDRAULICS\nALLOW QUICKER\nMOVEMENT.",
                         33, 37);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_LEGS_V2"), Mod::MOD_LEGS, Mod::MOD_V2, 30000,
-                      g_App.menus().getMessage("MOD_LEGS_V2_DESC"),
+                  Mod("LEGS V2", Mod::MOD_LEGS, Mod::MOD_V2, 30000,
+                      "PLASTEEL LEGS.\nLIGHTER AND\nTOUGHER THAN\nMETAL LEGS.\nENHANCED\nHYDRAULIC\nSYSTEM AND\nBALANCE\nCONTROL.",
                       34, 38);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_LEGS_V3"), Mod::MOD_LEGS, Mod::MOD_V3, 60000,
-                      g_App.menus().getMessage("MOD_LEGS_V3_DESC"),
+                  Mod("LEGS V3", Mod::MOD_LEGS, Mod::MOD_V3, 60000,
+                      "CYBERMESH LEGS.\nPLASTEEL CORE\nWITH SYNTHETIC\nMUSCLE FIBRE.\nSUPERB\nRESPONSE AND\nBALANCE\nCOUPLED WITH\nHIGH SPEED.",
                       35, 39);
         }
     } else if (mt == Mod::MOD_ARMS) {
         if (ver == Mod::MOD_V1) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_ARMS_V1"), Mod::MOD_ARMS, Mod::MOD_V1, 5000,
-                      g_App.menus().getMessage("MOD_ARMS_V1_DESC"),
+                  Mod("ARMS V1", Mod::MOD_ARMS, Mod::MOD_V1, 5000,
+                      "REPLACEMENT\nMETAL LEGS.\nSERVO ASSISTED\nHYDRAULICS\nALLOW THE\nCARRYING OF\nHEAVIER ITEMS.",
                       41, 45);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_ARMS_V2"), Mod::MOD_ARMS, Mod::MOD_V2, 25000,
-                      g_App.menus().getMessage("MOD_ARMS_V2_DESC"),
+                  Mod("ARMS V2", Mod::MOD_ARMS, Mod::MOD_V2, 25000,
+                      "PLASTEEL ARMS.\nLIGHTER AND\nTOUGHER THAN\nMETAL ARMS.\nENHANCED\nHYDRAULIC\nSYSTEM AND\nPRESSURE\nCONTROL.",
                       42, 46);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_ARMS_V3"), Mod::MOD_ARMS, Mod::MOD_V3, 50000,
-                      g_App.menus().getMessage("MOD_ARMS_V3_DESC"),
+                  Mod("ARMS V3", Mod::MOD_ARMS, Mod::MOD_V3, 50000,
+                      "CYBERMESH ARMS.\nPLASTEEL CORE\nWITH SYNTHETIC\nMUSCLE FIBRE.\nEXCELLENT\nTACTILE\nCONTROL AND\nWEIGHT LOADING.",
                       43, 47);
         }
     } else if (mt == Mod::MOD_CHEST) {
         if (ver == Mod::MOD_V1) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_CHEST_V1"), Mod::MOD_CHEST, Mod::MOD_V1, 8000,
-                      g_App.menus().getMessage("MOD_CHEST_V1_DESC"),
+                  Mod("CHEST V1", Mod::MOD_CHEST, Mod::MOD_V1, 8000,
+                      "METAL CHEST\nCAGE. ALL\nINTERNAL\nORGANS ARE\nSHIELDED BY\nHEAVY METAL\nCASING.",
                       48, 51);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_CHEST_V2"), Mod::MOD_CHEST, Mod::MOD_V2, 40000,
-                      g_App.menus().getMessage("MOD_CHEST_V2_DESC"),
+                  Mod("CHEST V2", Mod::MOD_CHEST, Mod::MOD_V2, 40000,
+                      "PLASTEEL CHEST\nCAGE. LIGHTER\nAND TOUGHER\nTHAN THE METAL\nVERSION WITH\nBETTER\nMOBILITY.",
                       49, 52);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_CHEST_V3"), Mod::MOD_CHEST, Mod::MOD_V3, 80000,
-                      g_App.menus().getMessage("MOD_CHEST_V3_DESC"),
+                  Mod("CHEST V3", Mod::MOD_CHEST, Mod::MOD_V3, 80000,
+                      "CYBERMESH\nCHEST CAGE\nWITH POWER\nSHIELDING. ALL\nINTERNAL\nORGANS ARE\nSHIELDED BY A\nLOW POWER\nFIELD\nGENERATOR.",
                       50, 53);
         }
     } else if (mt == Mod::MOD_HEART) {
         if (ver == Mod::MOD_V1) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_HEART_V1"), Mod::MOD_HEART, Mod::MOD_V1, 4500,
-                      g_App.menus().getMessage("MOD_HEART_V1_DESC"),
+                  Mod("HEART V1", Mod::MOD_HEART, Mod::MOD_V1, 4500,
+                      "HEART\nSTIMULATOR.\nMONITORS AND\nMAINTAINS THE\nHEART RATE OF\nTHE INDIVIDUAL.",
                       54);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_HEART_V2"), Mod::MOD_HEART, Mod::MOD_V2, 22500,
-                      g_App.menus().getMessage("MOD_HEART_V2_DESC"),
+                  Mod("HEART V2", Mod::MOD_HEART, Mod::MOD_V2, 22500,
+                      "HEART\nACCELERATOR\nAND MONITOR.\nHEART RATE IS\nALMOST DOUBLED\nALLOWING THE\nQUICKER\nDISTRIBUTION\nOF HORMONES.",
                       55);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_HEART_V3"), Mod::MOD_HEART, Mod::MOD_V3, 45000,
-                      g_App.menus().getMessage("MOD_HEART_V3_DESC"),
+                  Mod("HEART V3", Mod::MOD_HEART, Mod::MOD_V3, 45000,
+                      "CYBERNETIC\nHEART. POWERFUL\nPUMP WITH IN\nBUILT SYSTEM\nANALYSIS AND\nOVERIDE\nFACILITIES.\nTRIPLES OUTPUT\nOF A STANDARD\nHUMAN HEART.",
                       56);
         }
     } else if (mt == Mod::MOD_EYES) {
         if (ver == Mod::MOD_V1) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_EYES_V1"), Mod::MOD_EYES, Mod::MOD_V1, 4500,
-                      g_App.menus().getMessage("MOD_EYES_V1_DESC"),
+                  Mod("EYES V1", Mod::MOD_EYES, Mod::MOD_V1, 4500,
+                      "VISION\nENHANCER WITH\nLIMITED ZOOM\nFACILITY.\nALLOWS NEAR\nPERFECT SIGHT\nEVEN AT NIGHT.",
                       60);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_EYES_V2"), Mod::MOD_EYES, Mod::MOD_V2, 22500,
-                      g_App.menus().getMessage("MOD_EYES_V2_DESC"),
+                  Mod("EYES V2", Mod::MOD_EYES, Mod::MOD_V2, 22500,
+                      "ENHANCED MODEL\nOF THE V1\nINCORPORATING\nA TARGET\nAQUISITION\nFACILITY AND\nRANGE FINDER.",
                       61);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_EYES_V3"), Mod::MOD_EYES, Mod::MOD_V3, 45000,
-                      g_App.menus().getMessage("MOD_EYES_V3_DESC"),
+                  Mod("EYES V3", Mod::MOD_EYES, Mod::MOD_V3, 45000,
+                      "LATEST\nNEUROCYBERNETIC\nIMPLANTS. GIVES\nPERFECT NIGHT\nVISION WITH\nTHE AID OF\nTARGETERS\nRANGE FINDERS\nAND THREAT\nIDENTIFIER.",
                       62);
         }
     } else if (mt == Mod::MOD_BRAIN) {
         if (ver == Mod::MOD_V1) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_BRAIN_V1"), Mod::MOD_BRAIN, Mod::MOD_V1, 4500,
-                      g_App.menus().getMessage("MOD_BRAIN_V1_DESC"),
+                  Mod("BRAIN V1", Mod::MOD_BRAIN, Mod::MOD_V1, 4500,
+                      "NEURAL\nENHANCER THAT\nSPEEDS UP\nBRAIN STEM\nRESPONSE TIME.",
                       57);
         } else if (ver == Mod::MOD_V2) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_BRAIN_V2"), Mod::MOD_BRAIN, Mod::MOD_V2, 22500,
-                      g_App.menus().getMessage("MOD_BRAIN_V2_DESC"),
+                  Mod("BRAIN V2", Mod::MOD_BRAIN, Mod::MOD_V2, 22500,
+                      "NEURO CNS\nDEVICE THAT\nINTERCEPTS\nMOST LOW LEVEL\nFUNCTIONS\nLEAVING THE\nBRAIN FREE TO\nDEAL WITH HIGH\nEND DESICIONS.",
                       58);
         } else if (ver == Mod::MOD_V3) {
             return new
-                  Mod(g_App.menus().getMessage("MOD_BRAIN_V3"), Mod::MOD_BRAIN, Mod::MOD_V3, 45000, 
-                      g_App.menus().getMessage("MOD_BRAIN_V3_DESC"),
+                  Mod("BRAIN V3", Mod::MOD_BRAIN, Mod::MOD_V3, 45000, 
+                      "CEREBRAL\nMULTIPLIER\nCONNECTED TO A\nCOMPUNET\nGIVING ACCESS\nTO A MASS OF\nTACTICAL INFO.\nADAPTED FROM\nTHE MILITARY\nVERSION.",
                       59);
         }
     }
@@ -236,25 +233,30 @@ Mod *ModManager::loadMod(Mod::EModType mt, Mod::EModVersion ver) {
     return NULL;
 }
 
-bool ModManager::saveToFile(PortableFile &file) {
-    file.write32(mods_.size());
+bool ModManager::saveToFile(std::ofstream &file) {
+    unsigned int isize = mods_.size();
+    file.write(reinterpret_cast<const char*>(&isize), sizeof(unsigned int));
 
-    for(unsigned int i=0; i<mods_.size(); i++) {
+    for(unsigned int i=0; i<isize; i++) {
         Mod *pMod = mods_.get(i);
-        file.write32(pMod->getType());
-        file.write32(pMod->getVersion());
+        int type = pMod->getType();
+        file.write(reinterpret_cast<const char*>(&type), sizeof(int));
+        int ver = pMod->getVersion();
+        file.write(reinterpret_cast<const char*>(&ver), sizeof(int));
     }
     return true;
 }
 
-bool ModManager::loadFromFile(PortableFile &infile, const FormatVersion& v) {
+bool ModManager::loadFromFile(std::ifstream &infile) {
 
-    int nbMods = infile.read32();
+    int nbMods = 0;
+    infile.read(reinterpret_cast<char*>(&nbMods), sizeof(int));
 
     for (int i=0;i<nbMods; i++) {
-        int type = infile.read32();
+        int type = 0;
         Mod::EModType mt = Mod::Unknown;
         Mod::EModVersion mv = Mod::MOD_V1;
+        infile.read(reinterpret_cast<char*>(&type), sizeof(int));
         switch (type) {
             case 0: mt = Mod::MOD_LEGS;break;
             case 1: mt = Mod::MOD_ARMS;break;
@@ -265,7 +267,8 @@ bool ModManager::loadFromFile(PortableFile &infile, const FormatVersion& v) {
             default: mt = Mod::Unknown;
         }
 
-        int ver = infile.read32();
+        int ver = 0;
+        infile.read(reinterpret_cast<char*>(&ver), sizeof(int));
         switch (ver) {
             case 0: mv = Mod::MOD_V1;break;
             case 1: mv = Mod::MOD_V2;break;

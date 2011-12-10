@@ -7,7 +7,6 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2010  Benoit Blancard <benblan@users.sourceforge.net>*
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -31,20 +30,11 @@
 #include <windows.h>
 #else
 #include <unistd.h>
-#include <sys/stat.h>
 #endif
 
 #include <iostream>
 #include <fstream>
 #include <set>
-
-#ifdef __APPLE__
-// Carbon includes an AIFF header which conflicts with fliplayer.h
-// So we will redefine ChunkHeader temporarily to work around that.
-#define ChunkHeader CarbonChunkHeader
-#include <Carbon/Carbon.h>
-#undef ChunkHeader
-#endif
 
 #ifdef SYSTEM_SDL
 #include "system_sdl.h"
@@ -57,16 +47,14 @@
 #include "utils/file.h"
 #include "utils/log.h"
 #include "utils/configfile.h"
-#include "utils/portablefile.h"
 
-App::App(bool disable_sound): running_(true), playingFli_(false),
+App::App(): running_(true), playingFli_(false),
 skipFli_(false), screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT))
 #ifdef SYSTEM_SDL
     , system_(new SystemSDL())
 #else
 #error A suitable System object has not been defined!
 #endif
-    , intro_sounds_(disable_sound), game_sounds_(disable_sound), music_(disable_sound)
 {
     fullscreen_ = false;
     playIntro_ = true;
@@ -82,123 +70,20 @@ void App::destroy() {
     menus_.destroy();
 }
 
-static void addMissingSlash(string& str) {
-    if (str[str.length() - 1] != '/') str.push_back('/');
-}
-
-#ifdef __APPLE__
-static bool getResourcePath(string& resourcePath) {
-    // let's check to see if we're inside an application bundle first.
-    CFBundleRef main = CFBundleGetMainBundle();
-    CFStringRef appid = NULL;
-    if (main) appid = CFBundleGetIdentifier(main);
-    if (!appid) return false;
-
-    // we're in an app bundle.
-    printf("OS X application bundle detected.\n");
-    CFURLRef url = CFBundleCopyResourcesDirectoryURL(main);
-    if (!url) {
-        // this shouldn't happen.
-        printf("Unable to locate resources.\n");
-        exit(1);
-    }
-    FSRef fs;
-    if (!CFURLGetFSRef(url, &fs)) {
-        // this shouldn't happen.
-        printf("Unable to translate URL.\n");
-        exit(1);
-    }
-
-    char *buf = (char *)malloc(1024);
-    FSRefMakePath(&fs, (UInt8 *)buf, 1024);
-    CFRelease(url);
-
-    resourcePath.assign(buf);
-    resourcePath.push_back('/');
-    free(buf);
-    return true;
-}
-#endif
-
-#ifdef _WIN32
-static string exeFolder() {
-	char buf[1024];
-	GetModuleFileName(NULL, buf, 1024);
-	string tmp(buf);
-	size_t pos = tmp.find_last_of('\\');
-	if (pos != std::string::npos) tmp.erase(pos + 1);
-	else tmp = ".";
-	return tmp;
-}
-#endif
-
-string App::defaultIniFolder()
-{
-	string folder;
-#ifdef _WIN32
-	// Under windows config file is in the same directory as freesynd.exe
-	folder.assign(exeFolder());
-	// Since we're defaulting to the exe's folder, no need to try to create a directory.
-#elif defined(__APPLE__)
-	// Make a symlink for convenience for *nix people who own Macs.
-	folder.assign(getenv("HOME"));
-	folder.append("/.freesynd");
-	symlink("Library/Application Support/FreeSynd", folder.c_str());
-	// On OS X, applications tend to store config files in this sort of path.
-	folder.assign(getenv("HOME"));
-	folder.append("/Library/Application Support/FreeSynd");
-	mkdir(folder.c_str(), 0755);
-#else
-	// Under unix it's in the user home directory
-	folder.assign(getenv("HOME"));
-	folder.append("/.freesynd");
-	mkdir(folder.c_str(), 0755);
-#endif
-	// note that we don't care if the mkdir() calls above succeed or not.
-	// if they fail because they already exist, then it's no problem.
-	// if they fail for any other reason, then we won't be able to open
-	// or create freesynd.ini, and we'll surely detect that below.
-
-	return folder;
-}
-
-bool App::readConfiguration() {
-    File::setHomePath(defaultIniFolder());
+bool App::readConfiguration(const char *dir) {
+    std::string path(dir);
+    path.append("freesynd.ini");
+    
+    File::setHomePath(dir);
 
     try {
-        ConfigFile conf(iniPath_);
-        string origDataDir;
-        string ourDataDir;
+        ConfigFile conf(path);
         conf.readInto(fullscreen_, "fullscreen", false);
         conf.readInto(playIntro_, "play_intro", true);
-        bool origDataDirFound = conf.readInto(origDataDir, "data_dir");
-        bool ourDataDirFound = conf.readInto(ourDataDir, "freesynd_data_dir");
-
-        if (ourDataDirFound == false) {
-#ifdef _WIN32
-            ourDataDir = exeFolder() + "\\data";
-#elif defined(__APPLE__)
-            if (getResourcePath(ourDataDir)) {
-                // this is an app bundle, so let's default the data dir
-                // to the one included in the app bundle's resources.
-                ourDataDir += "data/";
-            } else {
-                LOG(Log::k_FLG_GFX, "App", "readConfiguration", ("Unable to locate app bundle resources.\n"));
-                return false;
-            }
-#else
-            ourDataDir = PREFIX"/share/freesynd/data";
-#endif
-        }
-        addMissingSlash(ourDataDir);
-        File::setOurDataPath(ourDataDir);
-
-        if (origDataDirFound == false) {
-            origDataDir = ourDataDir;
-        }
-        addMissingSlash(origDataDir);
-        File::setDataPath(origDataDir);
-
+        string dataDir;
+        conf.readInto(dataDir, "data_dir");
+        File::setPath(dataDir.c_str());
+        
         switch (conf.read("language", 0)) {
             case 0:
                 menus_.setLanguage(MenuManager::ENGLISH);
@@ -219,17 +104,35 @@ bool App::readConfiguration() {
 
         return true;
     } catch (...) {
-        LOG(Log::k_FLG_GFX, "App", "readConfiguration", ("failed to load config file \"%s\"\n", iniPath_.c_str()));
-        return false;
+      LOG(Log::k_FLG_GFX, "App", "readConfiguration", ("creating default configuration file in %s", path.c_str()))
+        ConfigFile conf;
+        conf.add("fullscreen", false);
+        conf.add("play_intro", true);
+        conf.add("data_dir", "./");
+        conf.add("language", 0);
+
+        menus_.setLanguage(MenuManager::ENGLISH);
+
+        std::ofstream file(path.c_str(), std::ios::out | std::ios::trunc);
+        if (file) {
+            file << conf;
+            file.close();
+            return true;
+        } else {
+	  printf("Error : Failed to create config file in %s\n", path.c_str());
+            return false;
+        }
     }
 }
 
-void App::updateIntroFlag() {
+void App::updateIntroFlag(const char *dir) {
+    std::string path(dir);
+    path.append("freesynd.ini");
     try {
-        ConfigFile conf(iniPath_);
+        ConfigFile conf(path);
         conf.add("play_intro", false);
 
-        std::ofstream file(iniPath_.c_str(), std::ios::out | std::ios::trunc);
+        std::ofstream file(path.c_str(), std::ios::out | std::ios::trunc);
         if (file) {
             file << conf;
             file.close();
@@ -243,14 +146,13 @@ void App::updateIntroFlag() {
 
 /*!
  * Initialize application.
- * \param iniPath The path to the config file.
+ * \param dir True if application runs in full screen.
  * \return True if initialization is ok.
  */
-bool App::initialize(const std::string& iniPath) {
-    iniPath_ = iniPath;
-
+bool App::initialize(const char *dir) {
+    
     LOG(Log::k_FLG_INFO, "App", "initialize", ("reading configuration..."))
-    if (!readConfiguration()) {
+    if (!readConfiguration(dir)) {
         LOG(Log::k_FLG_GFX, "App", "initialize", ("failed to read configuration..."))
         return false;
     }
@@ -259,11 +161,6 @@ bool App::initialize(const std::string& iniPath) {
     if (!system_->initialize(fullscreen_)) {
         return false;
     }
-
-	LOG(Log::k_FLG_INFO, "App", "initialize", ("initializing menus..."))
-	if (!menus_.initialize(playIntro_)) {
-		return false;
-	}
 
     LOG(Log::k_FLG_INFO, "App", "initialize", ("Loading intro sounds..."))
     if (!intro_sounds_.loadSounds(SoundManager::SAMPLES_INTRO)) {
@@ -353,7 +250,7 @@ void App::cheatEquipFancyWeapons() {
         agents_.agent(i)->addWeapon(
             weapons_.getWeapon(Weapon::Uzi)->createInstance());
         agents_.agent(i)->addWeapon(
-            weapons_.getWeapon(Weapon::Persuadatron)->createInstance());
+            weapons_.getWeapon(Weapon::EnergyShield)->createInstance());
         agents_.agent(i)->addWeapon(
             weapons_.getWeapon(Weapon::Laser)->createInstance());
         agents_.agent(i)->addWeapon(
@@ -558,7 +455,7 @@ void App::waitForKeyPress() {
 
 void App::setPalette(const char *fname, bool sixbit) {
     int size;
-    uint8 *data = File::loadOriginalFile(fname, size);
+    uint8 *data = File::loadFile(fname, size);
 
     if (sixbit)
         system_->setPalette6b3(data);
@@ -570,32 +467,43 @@ void App::setPalette(const char *fname, bool sixbit) {
 
 /*!
  * This method defines the application loop.
+ * \param dir Directory of the application config file
  * \param start_mission Mission id used to start the application
  */
-void App::run(int start_mission) {
+void App::run(const char *dir, int start_mission) {
     int size = 0, tabSize = 0;
-    uint8 *data;
+    uint8 *data, *tabData;
 
     FliPlayer fliPlayer;
 
     // Play intro only the first time the application is run
     // start_mission is available only in DEBUG mode to jump to a mission
     if (playIntro_ && start_mission == -1) {
+        LOG(Log::k_FLG_GFX, "App", "run", ("Loading resource for the intro"))
+        // this font is for the intro
+        tabData = File::loadFile("mfnt-0.tab", tabSize);
+        data = File::loadFile("mfnt-0.dat", size);
+        intro_font_sprites_.loadSprites(tabData, tabSize, data, true);
+        LOG(Log::k_FLG_GFX, "App", "run", ("%d sprites loaded from mfnt-0.dat", tabSize / 6))
+        delete[] tabData;
+        delete[] data;
+        intro_font_.setSpriteManager(&intro_font_sprites_, 1);
+
         // play intro
         LOG(Log::k_FLG_GFX, "App", "run", ("Playing the intro"))
-        data = File::loadOriginalFile("intro.dat", size);
+        data = File::loadFile("intro.dat", size);
         fliPlayer.loadFliData(data);
         music().playTrack(MusicManager::TRACK_INTRO);
-        fliPlayer.play(true, menus_.fonts().introFont());
+        fliPlayer.play(true);
         music().stopPlayback();
         delete[] data;
 
         // Update intro flag so intro won't be played next time
-        updateIntroFlag();
+        updateIntroFlag(dir);
     }
 
     // load palette
-    data = File::loadOriginalFile("hpal01.dat", size);
+    data = File::loadFile("hpal01.dat", size);
     system_->setPalette6b3(data);
     delete[] data;
 
@@ -604,8 +512,26 @@ void App::run(int start_mission) {
 
     // load "req"
     // TODO: what's this for?
-    data = File::loadOriginalFile("hreq.dat", size);
+    data = File::loadFile("hreq.dat", size);
     delete[] data;
+
+    // load mspr-0 sprites
+    LOG(Log::k_FLG_GFX, "App", "run", ("Loading sprites from mspr-0.dat ..."))
+    tabData = File::loadFile("mspr-0.tab", tabSize);
+    data = File::loadFile("mspr-0.dat", size);
+    LOG(Log::k_FLG_GFX, "App", "run", ("%d sprites loaded", tabSize / 6))
+    menu_sprites_.loadSprites(tabData, tabSize, data, true);
+    delete[] tabData;
+    delete[] data;
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_4, true, 1076, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_3, true, 802, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_2, true, 528, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_1, true, 254, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_4, false, 939, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_3, false, 665, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_2, false, 391, 'A');
+    fonts_.loadFont(&menu_sprites_, FontManager::SIZE_1, false, 117, 'A');
+    game_font_.load();
 
 #if 0
     system_->updateScreen();
@@ -631,7 +557,7 @@ void App::run(int start_mission) {
 #endif
     //this is walk data
     // load "col01"
-    data = File::loadOriginalFile("col01.dat", size);
+    data = File::loadFile("col01.dat", size);
     // original walk data
     memcpy(walkdata_, data, 256);
     // walkdata_ patched version
@@ -661,7 +587,7 @@ void App::run(int start_mission) {
 
     if (start_mission == -1) {
         // play title
-        data = File::loadOriginalFile("mtitle.dat", size);
+        data = File::loadFile("mtitle.dat", size);
         fliPlayer.loadFliData(data);
         fliPlayer.play();
         delete[] data;
@@ -671,7 +597,7 @@ void App::run(int start_mission) {
 
         // play the groovy menu startup anim
 	    g_App.gameSounds().play(snd::MENU_UP);
-        data = File::loadOriginalFile("mscrenup.dat", size);
+        data = File::loadFile("mscrenup.dat", size);
         fliPlayer.loadFliData(data);
         fliPlayer.play();
         delete[] data;
@@ -680,12 +606,12 @@ void App::run(int start_mission) {
             gameSprites().load();
     }
 
+    menus_.createAllMenus();
+
     if (start_mission == -1) {
         // Regular scenario : start with the main menu
-		menus_.gotoMenu(Menu::MENU_MAIN);
-    }
-#ifdef _DEBUG
-    else {
+        menus_.changeCurrentMenu("main");
+    } else {
         // Debug scenario : start directly with the brief menu
         // in the given mission
         // First, we find the block associated with the given
@@ -696,12 +622,11 @@ void App::run(int start_mission) {
             }
         }
         // Then we go to the brief menu
-		menus_.gotoMenu(Menu::MENU_BRIEF);
+        menus_.changeCurrentMenu("brief");
         // show the cursor because at first it's hidden
         // and normally it's the main menu which shows it
         g_System.showCursor();
     }
-#endif
 
     int lasttick = SDL_GetTicks();
     while (running_) {
@@ -730,21 +655,24 @@ void App::run(int start_mission) {
 bool App::saveGameToFile(int fileSlot, std::string name) {
     LOG(Log::k_FLG_IO, "App", "saveGameToFile", ("Saving %s in slot %d", name.c_str(), fileSlot))
     
-    PortableFile outfile;
+    std::ofstream outfile;
     std::string path;
             
     File::getFullPathForSaveSlot(fileSlot, path);
     LOG(Log::k_FLG_IO, "App", "saveGameToFile", ("Saving to file %s", path.c_str()))
 
-    outfile.open_to_overwrite(path.c_str());
+    outfile.open(path.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
 
-    if (outfile) {
+    if (outfile.is_open()) {
         // write file format version
-        outfile.write8(1); // major
-        outfile.write8(1); // minor
+        unsigned char vMaj = 1, vMin = 0;
+        outfile.write(reinterpret_cast<const char*>(&vMaj), sizeof(unsigned char));
+        outfile.write(reinterpret_cast<const char*>(&vMin), sizeof(unsigned char));
 
-        // Slot name is 31 characters long, nul-padded
-        outfile.write_string(name, 31);
+        char buf[26];
+        // Slot name is on 25 caracters max
+        strcpy(buf, name.c_str());
+        outfile.write(buf, 25);
         
         // Session
         session_.saveToFile(outfile);
@@ -762,11 +690,13 @@ bool App::saveGameToFile(int fileSlot, std::string name) {
         for (int i=0; i<4; i++) {
             Agent *pAgent = session_.teamMember(i);
             int id = pAgent ? pAgent->getId() : 0;
-            outfile.write32(id);
+            outfile.write(reinterpret_cast<const char*>(&id), sizeof(int));
         }
 
         // save researches
         session_.researchManager().saveToFile(outfile);
+
+        outfile.close();
 
         return true;
     }
@@ -777,60 +707,40 @@ bool App::saveGameToFile(int fileSlot, std::string name) {
 bool App::loadGameFromFile(int fileSlot) {
 
     std::string path;
-    PortableFile infile;
+    std::ifstream infile;
 
     File::getFullPathForSaveSlot(fileSlot, path);
 
-    infile.open_to_read(path.c_str());
+    infile.open(path.c_str(), std::ios::in | std::ios::binary);
 
-    if (infile) {
-        // FIXME: detect original game saves
-
+    if (infile.is_open()) {
         // Read version
-        unsigned char vMaj = infile.read8();
-        unsigned char vMin = infile.read8();
-        FormatVersion v(vMaj, vMin);
+        unsigned char vMaj = 1, vMin = 0;
+        infile.read(reinterpret_cast<char*>(&vMaj), sizeof(unsigned char));
+        infile.read(reinterpret_cast<char*>(&vMin), sizeof(unsigned char));
 
-        // validate that this is a supported version.
-        if (v.majorVersion() == 1) {
-            // versions 1.0 and 1.1 are supported.
-
-            if (v.minorVersion() > 1) {
-                // future version.
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        if (v == 0x0100) {
-            // the 1.0 format is in native byte order instead of big-endian.
-            infile.set_system_endian();
-        }
+        char buf[26];
+        buf[25] = 0;
 
         reset();
+        //Read slot name
+        infile.read(buf, 25);
 
-        // Read slot name
-        std::string slotName;
-        // Original game: 20 chars on screen, 20 written, 19 read.
-        // v1.0: 25 characters.
-        // v1.1: 31 characters.
-        slotName = infile.read_string((v == 0x0100) ? 25 : 31, true);
-
-        session_.loadFromFile(infile, v);
+        session_.loadFromFile(infile);
 
         // Weapons
-        weapons_.loadFromFile(infile, v);
+        weapons_.loadFromFile(infile);
 
         // Mods
-        mods_.loadFromFile(infile, v);
+        mods_.loadFromFile(infile);
 
         // Agents
-        agents_.loadFromFile(infile, v);
+        agents_.loadFromFile(infile);
 
         // Read squad
         for (int squadInd=0; squadInd<4; squadInd++) {
-            int id = infile.read32();
+            int id = 0;
+            infile.read(reinterpret_cast<char*>(&id), sizeof(int));
             if (id != 0) {
                 for (int iAgnt=0; iAgnt<AgentManager::MAX_AGENT; iAgnt++) {
                     Agent *pAgent = agents_.agent(iAgnt);
@@ -845,8 +755,9 @@ bool App::loadGameFromFile(int fileSlot) {
         }
 
         // Research
-        session_.researchManager().loadFromFile(infile, v);
+        session_.researchManager().loadFromFile(infile);
 
+        infile.close();
         return true;
     }
 

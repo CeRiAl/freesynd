@@ -123,14 +123,14 @@ public:
     /*!
      * Use this constructor to left align text. Widget width will depend on text and font.
      */
-    MenuText(int x, int y, const char *text, MenuFont *pFont, bool highlighted,
+    MenuText(int x, int y, const char *text, FontManager::EFontSize size, bool dark,
             bool visible = true);
 
     /*!
      * Use this constructor to specify text alignment. Widget width will be fixed but text position
      * will depend of font size and text length.
      */
-    MenuText(int x, int y, int width, const char *text, MenuFont *pFont, bool highlighted,
+    MenuText(int x, int y, int width, const char *text, FontManager::EFontSize size, bool dark,
             bool visible = true, bool centered = true);
 
     virtual ~MenuText() {}
@@ -144,11 +144,8 @@ public:
     void setTextFormated(const char * format, ...);
     std::string getText() { return text_; }
 
-    void setHighlighted(bool highlighted);
-    bool isHighlighted() { return highlighted_; }
-
-	/*! Returns the font size. */
-	MenuFont * getFont() { return pFont_; }
+    void setDark(bool dark);
+    bool isDark() { return dark_; }
 
 protected:
     /*!
@@ -159,7 +156,7 @@ protected:
 protected:
     /*! The text to be displayed.*/
     std::string text_;
-    bool highlighted_;
+    bool dark_;
     /*! True means the text is centered, false the text is anchored
      * to the left.
      */
@@ -168,8 +165,8 @@ protected:
     int anchorX_;
     /*! Real location of text.*/
     int anchorY_;
-    /*! Font used to draw the text. */
-    MenuFont *pFont_;
+    /*! Size of text font. */
+    FontManager::EFontSize size_;
 };
 
 class Menu;
@@ -180,15 +177,10 @@ class Sprite;
  */
 class ActionWidget : public Widget {
 public:
-    ActionWidget(Menu *peer, int x, int y, int width, int height, bool visible, bool isEnabled = true) 
+    ActionWidget(Menu *peer, int x, int y, int width, int height, bool visible) 
         : Widget(x, y, width, height, visible) {
             peer_ = peer;
-			enabled_ = isEnabled;
     }
-
-	void setenabled(bool enabled);
-
-	bool isenabled() { return enabled_; }
 
     //! Tells whether the pointer is over the widget or not
     bool isMouseOver(int x, int y);
@@ -205,7 +197,6 @@ public:
 
 protected:
     Menu *peer_;
-	bool enabled_;
 };
 
 //! A button widget.
@@ -216,16 +207,15 @@ protected:
  */
 class Option : public ActionWidget {
 public:
-	//! Returns the Key associated with the given caracter.
-	static Key getKeyForChar(char c);
+
+    /*! The name of the next menu.*/
+    const char *to_;
 
     //! Constructs a new button.
-    Option(Menu *peer, int x, int y, int width, int height, const char *text, MenuFont *pFont,
-            int to, bool visible, bool centered = true, int dark_widget = 0, int light_widget = 0);
+    Option(Menu *peer, int x, int y, int width, int height, const char *text, FontManager::EFontSize size,
+            const char *to, bool visible, bool centered = true, int dark_widget = 0, int light_widget = 0);
 
     ~Option();
-
-	Key getHotKey() { return hotKey_; }
 
     //! Draw the widget on screen
     void draw();
@@ -241,8 +231,6 @@ public:
 protected:
 
     MenuText text_;
-	/*! The id of the next menu.*/
-    int to_;
     /*! 
      * The widget to display when button is dark.
      * When id is zero, there is no widget.
@@ -253,10 +241,6 @@ protected:
      * When id is zero, there is no widget.
      */
     Sprite *lightWidget_;
-	/*!
-	 * This button can have an acceleration key.
-	 */
-	Key hotKey_;
 };
 
 class ToggleAction;
@@ -291,7 +275,7 @@ class ToggleAction : public Option {
 public:
     //! Constructs a new button.
     ToggleAction(Menu *peer, int x, int y, int width, int height, 
-                    const char *text, MenuFont *pFont, bool selected, Group *pGroup);
+                    const char *text, FontManager::EFontSize size, bool selected, Group *pGroup);
 
     void executeAction(const int modKeys);
 
@@ -318,7 +302,7 @@ protected:
 class ListBox : public ActionWidget , public ModelListener {
 public:
     //! Constructs a new list box.
-    ListBox(Menu *peer, int x, int y, int width, int height, MenuFont *pFont, bool visible = true);
+    ListBox(Menu *peer, int x, int y, int width, int height, bool visible = true);
 
     virtual ~ListBox();
 
@@ -341,8 +325,6 @@ protected:
     SequenceModel *pModel_;
     /*! The line that the mouse is on. -1 if no line is hovered.*/
     int focusedLine_;
-	/*! Font used to draw the text. */
-    MenuFont *pFont_;
 };
 
 /*!
@@ -353,7 +335,7 @@ protected:
 class TeamListBox : public ListBox {
 public:
     //! Constructs a new list box.
-    TeamListBox(Menu *peer, int x, int y, int width, int height, MenuFont *pFont, bool visible = true);
+    TeamListBox(Menu *peer, int x, int y, int width, int height, bool visible = true);
 
     ~TeamListBox();
 
@@ -381,55 +363,6 @@ protected:
     int yOrigin_;
     /*! Stores the lines for the current squad members.*/
     int squadLines_[4];
-};
-
-//! A text field widget.
-/*!
- * 
- */
-class TextField : public ActionWidget {
-public:
-	static void setEmptyLabel(std::string str) { emptyLbl_ = str; }
-
-    //! Constructs a new textfield.
-    TextField(Menu *peer, int x, int y, int width, int height, MenuFont *pFont,
-            int maxSize, bool displayEmpty, bool visible);
-
-    ~TextField();
-
-	void setText(const char* text);
-	std::string getText() { return text_.getText(); }
-
-	void setHighlighted(bool highlighted) { text_.setHighlighted(highlighted); }
-    bool isHighlighted() { return text_.isHighlighted(); }
-
-    //! Draw the widget on screen
-    void draw();
-
-    void handleMouseDown(int x, int y, int button, const int modKeys);
-
-	void handleCaptureGained();
-	void handleCaptureLost();
-
-	bool handleKey(Key key, const int modKeys);
-
-protected:
-	void drawCaret();
-
-protected:
-	/*! Label for empty lines.*/
-    static std::string emptyLbl_;
-
-	/*! This holds the text value.*/
-    MenuText text_;
-	/*! Displays or not a default string if textfield is empty.*/
-	bool isDisplayEmpty_;
-	/*! Position of caret in the name.*/
-    size_t caretPosition_;
-	/*! Tells whether the field is being edited.*/
-	bool isInEdition_;
-	/*! Maximum size of the text.*/
-	size_t maxSize_;
 };
 
 #endif // WIDGET_H

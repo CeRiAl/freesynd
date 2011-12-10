@@ -43,7 +43,6 @@ public:
     MapObject(int m);
     virtual ~MapObject() {}
 
-    virtual void draw(int x, int y) = 0;
     typedef enum {
         dmg_None = 0,
         dmg_Bullet = 1,
@@ -51,7 +50,6 @@ public:
         dmg_Burn = 4,
         dmg_Explosion = 8,
         dmg_Hit = 16,
-        dmg_Physical = (dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion | dmg_Hit),
         dmg_Mental = 32,
         dmg_Heal = 64,
         dmg_All = 127,
@@ -67,6 +65,13 @@ public:
         ddmg_StaticGeneral = dmg_Laser | dmg_Explosion,
         ddmg_WeaponBomb = dmg_Bullet | dmg_Laser | dmg_Explosion,
     } DefDamageType;
+
+    typedef struct {
+        DamageType dtype;
+        int dvalue;
+        // direction damage comes from, should be angle 256 degree based
+        int ddir;
+    } DamageInflictType;
 
     void setPosition(int tile_x, int tile_y, int tile_z, int off_x = 0,
             int off_y = 0, int off_z = 0) {
@@ -87,13 +92,10 @@ public:
     void setTileY(int y) { tile_y_ = y; }
     void setTileZ(int z) { tile_z_ = z; }
     void setVisZ() {
-        // from tile based, we set vis_z_
         vis_z_ = tile_z_;
         if (off_z_ != 0)
             vis_z_--;
-        assert(vis_z_ >= 0);
     }
-    void setTileVisZ();
     void setVisZ(int z) { vis_z_ = z; }
 
     int offX() { return off_x_; }
@@ -128,30 +130,17 @@ public:
     }
 
     double distanceTo(MapObject *t) {
-        int cx = tile_x_ * 256 + off_x_ - (t->tile_x_ * 256 + t->off_x_);
-        int cy = tile_y_ * 256 + off_y_ - (t->tile_y_ * 256 + t->off_y_);
-        int cz = vis_z_ * 128 + off_z_ - (t->vis_z_ * 128 + t->off_z_);
+        int cx = tile_x_ * 256 + off_x_ - (t->tileX() * 256 + t->offX());
+        int cy = tile_y_ * 256 + off_y_ - (t->tileY() * 256 + t->offY());
+        int cz = vis_z_ * 128 + off_z_ - (t->visZ() * 128 + t->offZ());
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
     }
 
-    double distanceToPosXYZ(toDefineXYZ *xyz) {
+    double distanceToPos(toDefineXYZ *xyz) {
         int cx = tile_x_ * 256 + off_x_ - (xyz->x);
         int cy = tile_y_ * 256 + off_y_ - (xyz->y);
-        int cz = vis_z_ * 128 + off_z_  - (xyz->z);
+        int cz = vis_z_ * 128 + off_z_ - (xyz->z);
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
-    }
-
-    double distanceToPosSz(toDefineXYZ *xyz) {
-        int cx = tile_x_ * 256 + off_x_ - (xyz->x);
-        int cy = tile_y_ * 256 + off_y_ - (xyz->y);
-        int cz = vis_z_ * 128 + off_z_ + (size_z_ >> 1) - (xyz->z);
-        return sqrt((double) (cx * cx + cy * cy + cz * cz));
-    }
-
-    void convertPosToXYZ(toDefineXYZ *xyz) {
-        xyz->x = tile_x_ * 256 + off_x_;
-        xyz->y = tile_y_ * 256 + off_y_;
-        xyz->z = vis_z_ * 128 + off_z_;
     }
 
     virtual bool animate(int elapsed);
@@ -207,11 +196,11 @@ public:
                double * inc_xyz);
 
     typedef enum {
-        mjt_Undefined = 0,
-        mjt_Ped = 1,
-        mjt_Weapon = 2,
-        mjt_Static = 4,
-        mjt_Vehicle = 8,
+        mt_Undefined = 0,
+        mt_Ped = 1,
+        mt_Weapon = 2,
+        mt_Static = 4,
+        mt_Vehicle = 8,
     } MajorTypeEnum;
 
     MajorTypeEnum majorType() { return major_type_; }
@@ -245,7 +234,7 @@ protected:
  */
 class SFXObject : public MapObject {
 public:
-    SFXObject(int m, int type, int t_show = 0);
+    SFXObject(int m, int type);
     virtual ~SFXObject() {}
 
     bool sfxLifeOver() { return sfx_life_over_; }
@@ -300,15 +289,8 @@ public:
 
         start_health_ = n;
     }
-    typedef struct {
-        DamageType dtype;
-        int dvalue;
-        // direction damage comes from, should be angle 256 degree based
-        int ddir;
-        ShootableMapObject * d_owner;
-    } DamageInflictType;
 
-    virtual bool handleDamage(ShootableMapObject::DamageInflictType * d) {
+    virtual bool handleDamage(MapObject::DamageInflictType * d) {
         if (health_ > 0) {
             health_ -= d->dvalue;
             return true;
@@ -339,18 +321,11 @@ public:
     void clearDestination() {
         dest_path_.clear();
     }
-    void resetDest_Speed() {
-        dest_path_.clear();
-        speed_ = 0;
-    }
 
     FreeWay hold_on_;
 
 protected:
     int speed_;
-    int dir_move_;
-    // on reaching this distance object should stop
-    int dist_to_pos_;
     std::list<PathNode> dest_path_;
 
     bool updatePlacement(int nOffX, int nOffY);
@@ -365,6 +340,7 @@ class Static : public ShootableMapObject {
 public:
     static Static *loadInstance(uint8 *data, int m);
 
+    virtual void draw(int x, int y) = 0;
     virtual bool animate(int elapsed, Mission *obj) { return MapObject::animate(elapsed); }
     typedef enum {
         sttdoor_Open = 0,
@@ -424,7 +400,7 @@ public:
 
     void draw(int x, int y);
     bool animate(int elapsed, Mission *obj);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    bool handleDamage(MapObject::DamageInflictType *d);
 
 protected:
     int anim_, burning_anim_, damaged_anim_;

@@ -3,7 +3,6 @@
  *  FreeSynd - a remake of the classic Bullfrog game "Syndicate".       *
  *                                                                      *
  *   Copyright (C) 2011  Benoit Blancard <benblan@users.sourceforge.net>*
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -29,7 +28,6 @@
 
 #include "weapon.h"
 #include "mod.h"
-#include "utils/portablefile.h"
 
 /*!
  * Represents a research on a specific field.
@@ -93,9 +91,9 @@ public:
     void improve(Weapon *pWeapon);
 
     //! Save instance to file
-    bool saveToFile(PortableFile &file);
+    bool saveToFile(std::ofstream &file);
     //! Load instance from file
-    bool loadFromFile(PortableFile &infile, EResType type, const FormatVersion& v);
+    bool loadFromFile(std::ifstream &infile, EResType type);
 protected:
     void init(std::string name, int min);
     void updateProjection();

@@ -5,7 +5,6 @@
  *   Copyright (C) 2005  Stuart Binge  <skbinge@gmail.com>              *
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -26,13 +25,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <string>
 #include <cstring>
 #include <cassert>
 
 #include "utils/singleton.h"
 #include "keys.h"
-#include "version.h"
 
 // TODO: Add a configuration scheme to allow setting these during runtime
 #define MENU_SCREEN_WIDTH       320
@@ -56,9 +53,6 @@ typedef unsigned short uint16;
 
 typedef signed int int32;
 typedef unsigned int uint32;
-
-typedef signed long long int64;
-typedef unsigned long long uint64;
 
 inline int ceil8(int v) {
     if (v <= 0)

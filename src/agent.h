@@ -7,7 +7,6 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2011  Bohdan Stelmakh <chamel@users.sourceforge.net> *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -32,7 +31,6 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include "utils/portablefile.h"
 
 class Mod;
 class WeaponInstance;
@@ -76,9 +74,9 @@ public:
     void removeAllWeapons();
 
     //! Save instance to file
-    bool saveToFile(PortableFile &file);
+    bool saveToFile(std::ofstream &file);
     //! Load instance from file
-    bool loadFromFile(PortableFile &infile, const FormatVersion& v);
+    bool loadFromFile(std::ifstream &infile);
 
 protected:
     /*! A counter to have unique IDs.*/

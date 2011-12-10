@@ -32,8 +32,13 @@
 #include "utils/file.h"
 #include "sdlmixermusic.h"
 
+#ifdef _WIN32
 #include <SDL.h>
 #include <SDL_mixer.h>
+#else
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
+#endif
 
 /*!
  * Class constructor.
@@ -137,7 +142,7 @@ bool SdlMixerMusic::loadMusic(uint8 * musicData, int size)
  */
 bool SdlMixerMusic::loadMusicFile(const char *fname)
 {
-	Mix_Music *newmusic = Mix_LoadMUS(File::dataFullPath(fname).c_str());
+	Mix_Music *newmusic = Mix_LoadMUS(File::fileFullPath(fname, false));
 
 	if (!newmusic) {
         Audio::error("SdlMixerMusic", "loadMusicFile", "Failed loading music from file");

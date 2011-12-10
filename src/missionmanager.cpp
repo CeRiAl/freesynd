@@ -56,7 +56,7 @@ Mission *MissionManager::loadMission(int n)
             break;
     }
     int size;
-    uint8 *data = File::loadOriginalFile(tmp, size);
+    uint8 *data = File::loadFile(tmp, size);
     if (data == NULL) {
         delete m;
         return NULL;
@@ -70,7 +70,7 @@ Mission *MissionManager::loadMission(int n)
     delete[] data;
 
     sprintf(tmp, "game%02d.dat", n);
-    data = File::loadOriginalFile(tmp, size);
+    data = File::loadFile(tmp, size);
     if (data == NULL) {
         delete m;
         return NULL;

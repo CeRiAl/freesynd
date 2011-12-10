@@ -1,5 +1,4 @@
 // Richard J. Wagner  v2.1  24 May 2004  wagnerr@umich.edu
-// Modified by Joey Parrish, June 2011 joey.parrish@gmail.com
 
 // Copyright (c) 2004 Richard J. Wagner
 // 
@@ -49,11 +48,7 @@ ConfigFile::ConfigFile()
 void ConfigFile::remove( const string& key )
 {
 	// Remove key and its value
-	myContents.erase( key );
-	if (myLineNumbers.find( key ) != myLineNumbers.end()) {
-		myLines[myLineNumbers[key]].erase();
-		myLineNumbers.erase( key );
-	}
+	myContents.erase( myContents.find( key ) );
 	return;
 }
 
@@ -79,15 +74,12 @@ void ConfigFile::trim( string& s )
 std::ostream& operator<<( std::ostream& os, const ConfigFile& cf )
 {
 	// Save a ConfigFile to os
-	for( size_t i = 0;
-	     i != cf.myLines.size();
-		 ++i )
+	for( ConfigFile::mapci p = cf.myContents.begin();
+	     p != cf.myContents.end();
+		 ++p )
 	{
-		os << cf.myLines[i] << std::endl;
-	}
-	if ( cf.mySentry != "" )
-	{
-		os << cf.mySentry << std::endl;
+		os << p->first << " " << cf.myDelimiter << " ";
+		os << p->second << std::endl;
 	}
 	return os;
 }
@@ -118,8 +110,6 @@ std::istream& operator>>( std::istream& is, ConfigFile& cf )
 		{
 			std::getline( is, line );
 		}
-		int line_number = cf.myLines.size();
-		cf.myLines.push_back(line);
 		
 		// Ignore comments
 		line = line.substr( 0, line.find(comm) );
@@ -138,52 +128,33 @@ std::istream& operator>>( std::istream& is, ConfigFile& cf )
 			// See if value continues on the next line
 			// Stop at blank line, next line with a key, end of stream,
 			// or end of file sentry
-			while( is )
+			bool terminate = false;
+			while( !terminate && is )
 			{
 				std::getline( is, nextline );
-				
-				if ( is.eof() )
-				{
-					// don't add an extra blank line to the list.
-					break;
-				}
+				terminate = true;
 				
 				string nlcopy = nextline;
 				ConfigFile::trim(nlcopy);
-				if( nlcopy == "" )
-				{
-					cf.myLines.push_back(nextline);
-					break;
-				}
+				if( nlcopy == "" ) continue;
 				
 				nextline = nextline.substr( 0, nextline.find(comm) );
 				if( nextline.find(delim) != string::npos )
-				{
-					cf.myLines.push_back(nextline);
-					break;
-				}
+					continue;
 				if( sentry != "" && nextline.find(sentry) != string::npos )
-				{
-					cf.myLines.push_back(nextline);
-					break;
-				}
+					continue;
 				
 				nlcopy = nextline;
 				ConfigFile::trim(nlcopy);
-				if( nlcopy != "" )
-				{
-					cf.myLines[line_number] += "\n";
-					line += "\n";
-				}
-				line += nlcopy;
-				cf.myLines[line_number] += nlcopy;
+				if( nlcopy != "" ) line += "\n";
+				line += nextline;
+				terminate = false;
 			}
 			
 			// Store key and value
 			ConfigFile::trim(key);
 			ConfigFile::trim(line);
 			cf.myContents[key] = line;  // overwrites if key is repeated
-			cf.myLineNumbers[key] = line_number;
 		}
 	}
 	

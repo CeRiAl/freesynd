@@ -31,7 +31,7 @@
 #include "utils/file.h"
 #include "utils/log.h"
 
-MusicManager::MusicManager(bool disabled):is_playing_(false), disabled_(disabled)
+MusicManager::MusicManager():is_playing_(false)
 {
     // -1 means music is not mute
     // other value stores music volume before mute
@@ -66,7 +66,7 @@ void MusicManager::loadMusic()
 	tracks_.back()->loadMusicFile("music/intro.mp3");
 #endif
 #else
-    data = File::loadOriginalFile("INTRO.XMI", size);
+    data = File::loadFile("INTRO.XMI", size);
     tracks = xmidi.convertXMidi(data, size);
     for (unsigned int i = 0; i < tracks.size(); ++i) {
         tracks_.push_back(new Music);
@@ -75,7 +75,7 @@ void MusicManager::loadMusic()
     delete[] data;
 #endif
 
-    data = File::loadOriginalFile("SYNGAME.XMI", size);
+    data = File::loadFile("SYNGAME.XMI", size);
     tracks = xmidi.convertXMidi(data, size);
     for (unsigned int i = 0; i < tracks.size(); ++i) {
 		if (i == 0) {
@@ -100,7 +100,6 @@ void MusicManager::loadMusic()
 
 void MusicManager::playTrack(MusicTrack track, int loops)
 {
-    if (disabled_) return;
     if (Audio::isInitialized()) {
         if (is_playing_) {
             tracks_.at(current_track_)->stopFadeOut();
@@ -113,8 +112,7 @@ void MusicManager::playTrack(MusicTrack track, int loops)
 
 void MusicManager::stopPlayback()
 {
-    if (disabled_) return;
-    if (Audio::isInitialized() && is_playing_) {
+    if (Audio::isInitialized()) {
         tracks_.at(current_track_)->stop();
         is_playing_ = false;
     }
