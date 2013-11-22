@@ -34,7 +34,6 @@
 #include "mod.h"
 
 int Agent::agentCnt = 1;
-const uint8 Agent::kMaxWeaponPerAgent = 8;
 
 /*!
  * Constructs a new agent.

@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -310,7 +311,135 @@ void PedInstance::setActionStateToDrawnAnim(void) {
 #endif
 }
 
+/*!
+ * Set the given state as the new state.
+ * Update corresponding animation.
+ * \param as new state
+ */
+void PedInstance::goToState(uint32 as) {
+    switchActionStateTo(as);
+    setActionStateToDrawnAnim();
+}
+
+/*!
+ * Leaves the given state.
+ * Update corresponding animation.
+ * \param as new state
+ */
+void PedInstance::leaveState(uint32 as) {
+    switchActionStateFrom(as);
+    setActionStateToDrawnAnim();
+}
+
+/*!
+ * Update the current frame.
+ * Returns true if an animation has ended.
+ * \param elapsed Time since the last frame
+ * \return True if animation has ended.
+ */
+bool PedInstance::updateAnimation(int elapsed) {
+    MapObject::animate(elapsed);
+
+    return handleDrawnAnim(elapsed);
+}
+
+/*!
+ * Animates the ped (ie executes all the ped's actions).
+ * If Ped has currently no action, execute behaviour
+ * to determine default actions. Then executes the actions.
+ * Ped can shoot while doing an action only if that action is not exclusive
+ * (like dropping a weapon or entering a car).
+ * Finally, update the animation. If an action is waiting for an animation
+ * and that animation is finished, unlocks the action.
+ * \param elapsed Time since the last frame
+ * \param mission Mission data
+ * \return True if something has changed (so update rendering)
+ */
+bool PedInstance::animate2(int elapsed, Mission *mission) {
+    if (currentAction_ == NULL) {
+        // Ped is doing nothing right now, so behave
+        pBehaviour_->execute(mission, this);
+    }
+
+    // Execute any active action
+    bool update = executeAction(elapsed, mission);
+
+    // cannot shoot if ped is doing something exlusive
+    if (currentAction_ && !currentAction_->isExclusive()) {
+        update |= executeShootAction();
+    }
+
+    if (updateAnimation(elapsed)) {
+        // An action was waiting for the animation to finish
+        if (currentAction_ && currentAction_->isWaitingForAnimation()) {
+            // so continue action
+            currentAction_->setRunning();
+        }
+    }
+
+    return update;
+}
+
+/*!
+ * Executes the maximum number of actions.
+ * \param elapsed Time since the last frame
+ * \param mission Mission data
+ * \return True if something has changed (to update rendering)
+ */
+bool PedInstance::executeAction(int elapsed, Mission *pMission) {
+    bool updated = false;
+    while(currentAction_ != NULL) {
+        // execute action
+        updated |= currentAction_->execute(elapsed, pMission, this);
+        if (currentAction_->isFinished()) {
+            // current action is finished : go to next one
+            fs_actions::Action *pNext = currentAction_->next();
+            if (currentAction_->canRemove()) {
+                // but before erase action
+                delete currentAction_;
+            }
+            currentAction_ = pNext;
+        } else {
+            // current action is still running, so stop iterate now
+            // we will continue next time
+            break;
+        }
+    }
+
+    return updated;
+}
+
+/*!
+ * Executes a shoot action.
+ */
+bool PedInstance::executeShootAction() {
+    return false;
+}
+
+/*!
+ * Return true if :
+ * - is not doing something that prevents him from shooting
+ * - the shoot action buffer is not full
+ * - has a weapon in hand
+ * - weapon is for shooting (ie not a scanner for example)
+ */
+bool PedInstance::canAddShootAction() {
+    if (currentAction_ != NULL && currentAction_->isExclusive()) {
+        return false;
+    }
+
+    if (nbShootInQueue_ >= 3) {
+        return false;
+    }
+    WeaponInstance *pWi = selectedWeapon();
+    return (pWi != NULL && pWi->canShoot() && pWi->ammoRemaining() > 0);
+}
+
 bool PedInstance::animate(int elapsed, Mission *mission) {
+    // Temporarily use new animation for our agent
+    if (isOurAgent()) {
+        return animate2(elapsed, mission);
+    }
     // TODO: weapon selection action, and use only deselectweapon
     // to disarm
 
@@ -556,9 +685,8 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                         {
                             VehicleInstance *v = (VehicleInstance *)aqt->target.t_smo;
                             if (v->isInsideVehicle(this)) {
-                                v->removeDriver(this);
+                                v->dropPassenger(this);
                                 aqt->state |= 4;
-                                leaveVehicle();
                             } else
                                 aqt->state |= 8;
                         }
@@ -699,7 +827,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                     }
                     if (aqt->state == 1) {
                         speed_ = aqt->multi_var.dist_var.speed != -1
-                            ? aqt->multi_var.dist_var.speed: getSpeed();
+                            ? aqt->multi_var.dist_var.speed: getDefaultSpeed();
                         if (aqt->condition == 0) {
                             bool set_new_dest = true;
                             dist_to_pos_ = aqt->multi_var.dist_var.dist;
@@ -795,7 +923,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                     }
                     if ((aqt->state & 15) == 3) {
                         speed_ = aqt->multi_var.dist_var.speed != -1
-                            ? aqt->multi_var.dist_var.speed: getSpeed();
+                            ? aqt->multi_var.dist_var.speed: getDefaultSpeed();
                         if (aqt->condition == 0 || aqt->condition == 2) {
                             updated = movementP(mission, elapsed);
                             if (speed_ == 0)
@@ -871,7 +999,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                     // TODO: review, reduce code(, in sight when no weapon?)
                     } else if (aqt->state == 1 || aqt->state == 17) {
                         speed_ = aqt->multi_var.dist_var.speed != -1
-                            ? aqt->multi_var.dist_var.speed: getSpeed();
+                            ? aqt->multi_var.dist_var.speed: getDefaultSpeed();
                         if (aqt->condition == 0) {
                             dist_to_pos_ = aqt->multi_var.dist_var.dist;
                             int dist_is = -1;
@@ -934,7 +1062,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                         }
                     } else if ((aqt->state & 30) == 2) {
                         speed_ = aqt->multi_var.dist_var.speed != -1
-                            ? aqt->multi_var.dist_var.speed: getSpeed();
+                            ? aqt->multi_var.dist_var.speed: getDefaultSpeed();
                         if (aqt->condition == 0) {
                             updated = movementP(mission, elapsed);
                             if (speed_ == 0) {
@@ -1840,6 +1968,11 @@ PedInstance::PedInstance(Ped *ped, int m) : ShootableMovableMapObject(m),
     base_mod_acc_ = 0.1;
     last_firing_target_.desc = 0;
     is_suiciding_ = false;
+
+    // Todo : adds a behaviour for the type of ped
+    pBehaviour_ = new fs_actions::NopeBehaviour();
+    currentAction_ = NULL;
+    nbShootInQueue_ = 0;
 }
 
 PedInstance::~PedInstance()
@@ -1853,6 +1986,10 @@ PedInstance::~PedInstance()
     perception_ = NULL;
     delete intelligence_;
     intelligence_ = NULL;
+
+    delete pBehaviour_;
+    pBehaviour_ = NULL;
+    destroyAllActions();
 }
 
 /*!
@@ -2396,6 +2533,8 @@ bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
     if (health_ <= 0) {
         health_ = 0;
         drop_actions_ = true;
+        clearDestination();
+        destroyAllActions();
         switchActionStateTo(PedInstance::pa_smDead);
         if ((desc_state_ & pd_smControlled) != 0 && owner_)
             ((PedInstance *)owner_)->rmvPersuaded(this);
@@ -2589,7 +2728,11 @@ void PedInstance::verifyHostilesFound(Mission *m) {
     }
 }
 
-int PedInstance::getSpeed()
+/*! 
+ * Movement speed calculated from base speed, mods, weight of inventory,
+ * ipa, etc.
+ */
+int PedInstance::getDefaultSpeed()
 {
     int speed_new = base_speed_;
 

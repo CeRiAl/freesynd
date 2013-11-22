@@ -751,7 +751,7 @@ bool GameplayMenu::handleMouseDown(int x, int y, int button, const int modKeys)
 void GameplayMenu::handleClickOnWeaponSelector(int x, int y, int button,
     const int modKeys)
 {
-    int w_num = ((y - (2 + 46 + 44 + 10 + 46 + 44 + 15)) / 32) * 4
+    uint8 w_num = ((y - (2 + 46 + 44 + 10 + 46 + 44 + 15)) / 32) * 4
             + x / 32;
     PedInstance *pLeader = selection_.leader();
     if (pLeader->isAlive()) {
@@ -762,15 +762,7 @@ void GameplayMenu::handleClickOnWeaponSelector(int x, int y, int button,
                 handleWeaponSelection(w_num, is_ctrl);
             } else {
                 // Button 3 : drop weapon from selected agent inventory
-                PedInstance::actionQueueGroupType as;
-                as.main_act = 0;
-                as.group_desc = PedInstance::gd_mExclusive;
-                as.origin_desc = fs_actions::kOrigUser;
-                pLeader->createActQPutDown(as, pLeader->weapon(w_num));
-                if (is_ctrl)
-                    pLeader->addActQToQueue(as);
-                else
-                    pLeader->setActQInQueue(as);
+                pLeader->addActionPutdown(w_num, is_ctrl);
             }
         }
     }
@@ -808,7 +800,7 @@ void GameplayMenu::updateIPALevelMeters(int elapsed)
 }
 
 void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys) {
-    MapTilePoint mapPt_base = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
+    MapTilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
                     world_y_ + y);
 
     bool ctrl = (modKeys & KMD_CTRL) != 0;
@@ -816,30 +808,36 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
         if (target_) {
             switch (target_->majorType()) {
             case MapObject::mjt_Weapon:
-                selection_.pickupWeapon(target_, ctrl);
+                selection_.pickupWeapon(dynamic_cast<WeaponInstance *>(target_), ctrl);
                 break;
             case MapObject::mjt_Ped:
-                selection_.followPed(target_, ctrl);
+                selection_.followPed(dynamic_cast<PedInstance *>(target_), ctrl);
                 break;
             case MapObject::mjt_Vehicle:
-                selection_.enterOrLeaveVehicle(target_, ctrl);
+                selection_.enterOrLeaveVehicle(dynamic_cast<Vehicle *>(target_), ctrl);
                 break;
             default:
                 break;
             }
-        } else if (mission_->getWalkable(mapPt_base)) {
-            selection_.moveTo(mapPt_base, ctrl);
+        } else if (mission_->getWalkable(mapPt)) {
+            selection_.moveTo(mapPt, ctrl);
         }
     } else if (button == kMouseRightButton) {
-        // TODO: use directly mapPt_base?
-        MapTilePoint mapPt(mapPt_base);
-        PathNode *pn = NULL;
+        PathNode pn;
+        bool doShoot = false;
         if (target_) {
             int tilez = target_->tileZ() * 128 + target_->offZ() + (target_->sizeZ() >> 1);
             int offz = tilez % 128;
             tilez /= 128;
-            pn = new PathNode(target_->tileX(), target_->tileY(), tilez,
-                target_->offX(), target_->offY(), offz);
+            //pn = new PathNode(target_->tileX(), target_->tileY(), tilez,
+            //    target_->offX(), target_->offY(), offz);
+            doShoot = true;
+            pn.setTileX(target_->tileX());
+            pn.setTileY(target_->tileY());
+            pn.setTileZ(tilez);
+            pn.setOffX(target_->offX());
+            pn.setOffY(target_->offY());
+            pn.setOffZ(offz);
         } else {
             int stx = mapPt.tx;
             int sty = mapPt.ty;
@@ -850,7 +848,14 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
             if (mission_->getShootableTile(stx, sty, stz,
                 sox, soy, oz))
             {
-                pn = new PathNode(stx, sty, stz, sox, soy, oz);
+                //pn = new PathNode(stx, sty, stz, sox, soy, oz);
+                doShoot = true;
+                pn.setTileX(stx);
+                pn.setTileY(sty);
+                pn.setTileZ(stz);
+                pn.setOffX(sox);
+                pn.setOffY(soy);
+                pn.setOffZ(oz);
 #if 0
                 printf("shooting at\n x = %i, y=%i, z=%i\n",
                         stx, sty, stz);
@@ -859,7 +864,11 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
 #endif
             }
         }
-        for (size_t i = 0; i < AgentManager::kMaxSlot; ++i) {
+
+        if (doShoot) {
+            selection_.shootAt(pn);
+        }
+        /*for (size_t i = 0; i < AgentManager::kMaxSlot; ++i) {
             if (selection_.isAgentSelected(i)) {
                 PedInstance * pa = mission_->getSquad()->member(i);
                 PedInstance::actionQueueGroupType as;
@@ -882,7 +891,7 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
             }
         }
         if (pn)
-            delete pn;
+            delete pn;*/
     }
 }
 

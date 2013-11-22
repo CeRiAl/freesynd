@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -42,6 +43,7 @@
 class PedInstance;
 class Mission;
 class VehicleInstance;
+class Vehicle;
 
 #define NUM_ANIMS 10
 
@@ -248,7 +250,53 @@ public:
     void switchActionStateFrom(uint32 as);
     void setActionStateToDrawnAnim(void);
     bool animate(int elapsed, Mission *mission);
+    //! Temporary version of animate()
+    bool animate2(int elapsed, Mission *mission);
     void drawSelectorAnim(int x, int y);
+    //! Update frame to render
+    bool updateAnimation(int elapsed);
+    //! Set state for ped (replace switchActionStateTo)
+    void goToState(uint32 as);
+    //! Quit state for ped (replace switchActionStateFrom)
+    void leaveState(uint32 as);
+
+    //*************************************
+    // Action management
+    //*************************************
+    //! Adds the given action to the list of actions
+    void addAction(fs_actions::Action *pAction, bool appendAction);
+    //! Removes all ped's actions
+    void destroyAllActions();
+    //! Execute the current action if any
+    bool executeAction(int elapsed, Mission *pMission);
+    //! Execute a shoot if any
+    bool executeShootAction();
+    
+    //! Adds action to walk to a given destination
+    void addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction);
+    //! Adds action to follow a ped
+    void addActionFollowPed(PedInstance *pPed);
+    //! Adds action to put down weapon on the ground
+    void addActionPutdown(uint8 weaponIndex, bool appendAction);
+    //! Adds action to pick up weapon from the ground
+    void addActionPickup(WeaponInstance *pWeapon, bool appendAction);
+    //! Adds action to enter a given vehicle
+    void addActionEnterVehicle(Vehicle *pVehicle, bool appendAction);
+    //! Adds action to drive vehicle to destination
+    void addActionDriveVehicle(fs_actions::CreatOrigin origin, 
+           VehicleInstance *pVehicle, PathNode &destination, bool appendAction);
+    void addActionShootAt(PathNode &pn);
+
+    //*************************************
+    // Movement management
+    //*************************************
+    //! Set the destination to reach at given speed (todo : replace setDestinationP())
+    bool setDestination(Mission *m, PathNode &node, int newSpeed = -1);
+
+    void setDestinationP(Mission *m, int x, int y, int z,
+        int ox = 128, int oy = 128);
+
+    bool movementP(Mission *m, int elapsed);
 
     //*************************************
     // Weapon management
@@ -258,6 +306,8 @@ public:
     void dropAllWeapons();
     void destroyAllWeapons();
     bool wePickupWeapon();
+    //! Return true if ped can shoot
+    bool canAddShootAction();
 
     bool inSightRange(MapObject *t);
     VehicleInstance *inVehicle();
@@ -270,11 +320,6 @@ public:
     AnimationDrawn drawnAnim(void);
     void setDrawnAnim(AnimationDrawn drawn_anim);
     bool handleDrawnAnim(int elapsed);
-
-    void setDestinationP(Mission *m, int x, int y, int z,
-        int ox = 128, int oy = 128);
-
-    bool movementP(Mission *m, int elapsed);
 
     typedef struct {
         int32 dir_orig;
@@ -787,11 +832,8 @@ public:
     bool checkActGCompleted(fs_actions::CreatOrigin origin);
     void pauseAllInActG(actionQueueGroupType &as, uint32 start_pos = 1);
 
-    /*! 
-     * Movement speed calculated from base speed, mods, weight of inventory,
-     * ipa, etc.
-     */
-    int getSpeed();
+    //! Returns ped's speed under normal conditions
+    int getDefaultSpeed();
     int getSpeedOwnerBoost();
 
     void getAccuracy(double &base_acc);
@@ -823,6 +865,13 @@ protected:
     bool drop_actions_;
     std::vector <actionQueueGroupType> actions_queue_;
     std::vector <actionQueueGroupType> default_actions_;
+
+    /*! Ped's behaviour.*/
+    fs_actions::Behaviour *pBehaviour_;
+    /*! Current action*/
+    fs_actions::Action *currentAction_;
+
+
     uint32 action_grp_id_;
     // (pedDescStateMasks)
     uint32 desc_state_;
@@ -869,6 +918,8 @@ protected:
     std::set <PedInstance *> persuaded_group_;
     //! Flag to mark suiciding agent
     bool is_suiciding_;
+    //! Convenient field to store current number of shoot actions in queue
+    uint8 nbShootInQueue_;
 
     bool walkable(int x, int y, int z) { return true; }
 

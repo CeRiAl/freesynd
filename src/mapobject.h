@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -117,6 +118,20 @@ public:
                 && other->off_x_ == off_x_
                 && other->off_y_ == off_y_
                 && other->off_z_ == off_z_;
+    }
+
+    /*!
+     * Return true is given object is closer to this object than the
+     * given distance.
+     * \param pObject The other object.
+     * \param distance
+     */
+    bool isCloseTo(MapObject *pObject, int distance) {
+        int cx = tile_x_ * 256 + off_x_ - (pObject->tile_x_ * 256 + pObject->off_x_);
+        int cy = tile_y_ * 256 + off_y_ - (pObject->tile_y_ * 256 + pObject->off_y_);
+        int cz = tile_z_ * 128 + off_z_ - (pObject->tile_z_ * 128 + pObject->off_z_);
+
+        return (cx * cx + cy * cy + cz * cz) < (distance * distance);
     }
 
     double distanceTo(MapObject *t) {
@@ -410,18 +425,22 @@ public:
     void setBaseSpeed(int bs) {
         base_speed_ = bs;
     }
-
+    /*!
+     * Clear path to destination and sets speed to 0.
+     */
     void clearDestination() {
-        dest_path_.clear();
-    }
-    void resetDest_Speed() {
         dest_path_.clear();
         speed_ = 0;
     }
 
+    //! Set the destination to reach at given speed
+    virtual bool setDestination(Mission *m, PathNode &node, int newSpeed = -1) = 0;
+
     //! checks whether final destination is same as pn
     bool checkFinalDest(PathNode& pn);
     bool isMoving() { return speed_ != 0 || !dest_path_.empty();}
+    //! Returns true if object currently has a destination point (ie it's arrived)
+    bool hasDestination() { return !dest_path_.empty(); }
     //! checks whether current position is same as pn
     bool checkCurrPos(PathNode &pn);
     //! checks whether current position is same as pn, tile only

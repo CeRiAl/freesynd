@@ -73,6 +73,8 @@ public:
 public:
     //! This constat indicates that there is no weapon selected.
     static const int kNoWeaponSelected;
+    /*! Defines the maximum number of weapons an agent can carry.*/
+    static const uint8 kMaxHoldedWeapons;
 
     WeaponHolder();
     virtual ~WeaponHolder() {}
@@ -86,7 +88,7 @@ public:
 
     void addWeapon(WeaponInstance *w) {
         assert(w);
-        assert(weapons_.size() < 8);
+        assert(weapons_.size() < kMaxHoldedWeapons);
         weapons_.push_back(w);
     }
 

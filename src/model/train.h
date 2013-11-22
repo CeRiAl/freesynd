@@ -6,8 +6,7 @@
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
- *   Copyright (C) 2011  Bohdan Stelmakh <chamel@users.sourceforge.net> *
- *   Copyright (C) 2011  Joey Parrish  <joey.parrish@gmail.com>         *
+ *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -24,51 +23,39 @@
  *  The full text of the license is also included in the file COPYING.  *
  *                                                                      *
  ************************************************************************/
-#ifndef AGENT_H
-#define AGENT_H
 
-#include "common.h"
-#include "weaponholder.h"
-#include "modowner.h"
+#ifndef MODEL_TRAIN_H_
+#define MODEL_TRAIN_H_
+
 #include <string>
-#include <vector>
-#include <fstream>
-#include "utils/portablefile.h"
+#include <list>
 
-class WeaponInstance;
+#include "vehicle.h"
 
 /*!
- * Stores information about agent health, weapons inventory and modifications.
+ * .
  */
-class Agent : public WeaponHolder, public ModOwner {
+class TrainElement : public Vehicle {
 public:
-    Agent(const char *agent_name, bool male);
-    ~Agent();
+    TrainElement();
+    ~TrainElement();
 
-    int getId() { return id_;}
-    const char *getName() { return name_.c_str(); }
-    bool isMale() { return male_; }
-    bool isActive() { return active_; }
-    void setActive(bool a) { active_ = a; }
-    bool isAlive() { return is_alive_; }
-    void set_dead() { is_alive_ = false; }
-
-    void removeAllWeapons();
-
-    //! Save instance to file
-    bool saveToFile(PortableFile &file);
-    //! Load instance from file
-    bool loadFromFile(PortableFile &infile, const FormatVersion& v);
-
-protected:
-    /*! A counter to have unique IDs.*/
-    static int agentCnt;
-    /*! A unique id for the instance of Agent.*/
-    int id_;
-    std::string name_;
-    bool male_;
-    bool active_;
-    bool is_alive_;
 };
 
-#endif
+/*!
+ * .
+ */
+class Train {
+public:
+    Train();
+    ~Train();
+
+    std::list<TrainElement *> & elements() { return elements_; }
+
+    //! Animates the train
+    bool animate(int elapsed);
+private:
+    std::list<TrainElement *> elements_;
+};
+
+#endif // MODEL_TRAIN_H_

@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -88,6 +89,9 @@ public:
 
     //! Adds the given ped to the list of passengers
     virtual void addPassenger(PedInstance *p);
+    //! Removes the passenger from the vehicle
+    virtual void dropPassenger(PedInstance *p);
+
     //! Returns true if given ped is in the vehicle
     bool isInsideVehicle(PedInstance *p) {
         return (passengers_.find(p) != passengers_.end());
@@ -117,6 +121,9 @@ public:
     bool animate(int elapsed);
     void draw(int x, int y);
 
+    //! Set the destination to reach at given speed (todo : replace setDestinationV())
+    bool setDestination(Mission *m, PathNode &node, int newSpeed = -1);
+
     void addDestinationV(int x, int y, int z, int ox = 128, int oy = 128,
             int new_speed = 160) {
         dest_path_.push_back(PathNode(x, y, z, ox, oy));
@@ -127,6 +134,8 @@ public:
 
     //! Adds the given ped to the list of passengers
     void addPassenger(PedInstance *p);
+    //! Removes the passenger from the vehicle
+    void dropPassenger(PedInstance *p);
 
     PedInstance *getDriver(void) {
         return vehicle_driver_;
@@ -136,7 +145,6 @@ public:
             vehicle_driver_ = vehicleDriver;
         passengers_.insert(vehicleDriver);
     }
-    void removeDriver(PedInstance *vehicleDriver);
     void forceSetDriver(PedInstance *vehicleDriver);
     bool hasDriver() { return (vehicle_driver_ != NULL); }
     bool isDriver(PedInstance *vehicleDriver) {

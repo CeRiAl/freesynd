@@ -34,6 +34,26 @@
 #define EXECUTION_SPEED_TIME
 #endif
 
+/*!
+ * Sets a destination point for the ped to reach at given speed.
+ * \param m
+ * \param node destination point
+ * \param newSpeed Speed of movement
+ * \return true if destination has been set correctly.
+ */
+bool PedInstance::setDestination(Mission *m, PathNode &node, int newSpeed) {
+    // if no speed was set, use ped's default speed
+    speed_ = newSpeed != -1 ? newSpeed : getDefaultSpeed();
+    setDestinationP(m, node.tileX(), node.tileY(), node.tileZ(), node.offX(), node.offY());
+    if (dest_path_.empty()) {
+        // destination was not set -> stop ped
+        speed_ = 0;
+        return false;
+    } else {
+        return true;
+    }
+}
+
 void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
                                     int ox, int oy)
 {
@@ -2323,11 +2343,13 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             // possible solution will be to use movedir like movement
             // and calculate distance at every step, but it is
             // a high cpu consuming
-            dest_path_.back().convertPosToXYZ(&xyz);
-            double dist_cur = distanceToPosXYZ(&xyz);
-            if (dist_cur < (double)dist_to_pos_) {
-                dest_path_.clear();
-                speed_ = 0;
+            if (!dest_path_.empty()) {
+                dest_path_.back().convertPosToXYZ(&xyz);
+                double dist_cur = distanceToPosXYZ(&xyz);
+                if (dist_cur < (double)dist_to_pos_) {
+                    dest_path_.clear();
+                    speed_ = 0;
+                }
             }
         }
 

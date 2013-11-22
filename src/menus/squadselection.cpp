@@ -21,7 +21,6 @@
  ************************************************************************/
 
 #include "menus/squadselection.h"
-#include "agentmanager.h"
 #include "ped.h"
 #include "vehicle.h"
 
@@ -200,18 +199,13 @@ void SquadSelection::select_weapon_from_leader(int weapon_idx, bool apply_to_all
  * \param addAction True to add the action at the end of the list of action,
  * false to set as the only action.
  */
-void SquadSelection::pickupWeapon(ShootableMapObject *pWeapon, bool addAction) {
+void SquadSelection::pickupWeapon(WeaponInstance *pWeapon, bool addAction) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
         // Agent has space in inventory
-        if (pAgent->numWeapons() < Agent::kMaxWeaponPerAgent) {
-            PedInstance::actionQueueGroupType as;
-            pAgent->createActQPickUp(as, pWeapon);
-            as.main_act = as.actions.size() - 1;
-            as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_actions::kOrigUser;
-            pAgent->addAction(as, addAction);
+        if (pAgent->numWeapons() < WeaponHolder::kMaxHoldedWeapons) {
+            pAgent->addActionPickup(pWeapon, addAction);
 
             break;
         }
@@ -224,17 +218,18 @@ void SquadSelection::pickupWeapon(ShootableMapObject *pWeapon, bool addAction) {
  * \param addAction True to add the action at the end of the list of action,
  * false to set as the only action.
  */
-void SquadSelection::followPed(ShootableMapObject *pPed, bool addAction) {
+void SquadSelection::followPed(PedInstance *pPed, bool addAction) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
         if (!pAgent->inVehicle()) { // Agent must not be in a vehicle
-            PedInstance::actionQueueGroupType as;
+            /*PedInstance::actionQueueGroupType as;
             pAgent->createActQFollowing(as, pPed, 0, 192);
             as.main_act = as.actions.size() - 1;
             as.group_desc = PedInstance::gd_mStandWalk;
             as.origin_desc = fs_actions::kOrigUser;
-            pAgent->addAction(as, addAction);
+            pAgent->addAction(as, addAction);*/
+            pAgent->addActionFollowPed(pPed);
         }
     }
 }
@@ -249,31 +244,33 @@ void SquadSelection::followPed(ShootableMapObject *pPed, bool addAction) {
  * \param addAction True to add the action at the end of the list of action,
  * false to set as the only action.
  */
-void SquadSelection::enterOrLeaveVehicle(ShootableMapObject *pVehicle, bool addAction) {
+void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
     // true means every one get in the vehicle
     bool getIn = leader()->inVehicle() == NULL;
 
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
-        PedInstance::actionQueueGroupType as;
-        bool action = false;
         
         if (getIn && !pAgent->inVehicle()) {
             // Agent is out and everybody must get in
-            pAgent->createActQGetInCar(as, pVehicle);
-            action = true;
-        } else if (!getIn && pAgent->inVehicle() == (VehicleInstance *)pVehicle) {
+            pAgent->addActionEnterVehicle(pVehicle, addAction);
+        } else if (!getIn && pAgent->inVehicle() == pVehicle) {
             // Agent is in the given car and everybody must get out
-            pAgent->createActQLeaveCar(as, pVehicle);
-            action = true;
-        }
-        
-        if (action) {
-            as.main_act = as.actions.size() - 1;
-            as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_actions::kOrigUser;
-            pAgent->addAction(as, addAction);
+            // first stops the vehicle if it's a car
+            if (pVehicle->speed() != 0 && pVehicle->isDrivable()) {
+                pVehicle->clearDestination();
+                // tells the driver to stop
+                VehicleInstance *pVi = dynamic_cast<VehicleInstance *>(pVehicle);
+                pVi->getDriver()->destroyAllActions();
+            }
+            // Ped can get off only if vehicle is stopped 
+            // (ie trains only stop in stations)
+            if (pVehicle->speed() == 0) {
+                // drop passenger is not implemented as an action as player
+                // cannot queue this action with other actions.
+                pVehicle->dropPassenger(pAgent);
+            }
         }
     }
 }
@@ -290,7 +287,6 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it, i++)
     {
         PedInstance *pAgent = *it;
-        PedInstance::actionQueueGroupType as;
         if (pAgent->inVehicle()) {
             if (pAgent->inVehicle()->isDrivable()) { 
                 // Agent is in drivable vehicle
@@ -308,15 +304,11 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
                     //soy = sty % 256;
                     sty = sty / 256;
                     PathNode tpn = PathNode(stx, sty, 0, 128, 128);
-                    pAgent->createActQUsingCar(as, &tpn, pVehicle);
-                    as.main_act = as.actions.size() - 1;
-                    as.group_desc = PedInstance::gd_mStandWalk;
-                    as.origin_desc = fs_actions::kOrigUser;
-                    pAgent->addAction(as, addAction);
+                    pAgent->addActionDriveVehicle(fs_actions::kOrigUser, pVehicle, tpn, addAction);
                 }
             }
         } else {
-            MapTilePoint tmpPt(mapPt);
+            PathNode tpn = PathNode(mapPt.tx, mapPt.ty, mapPt.tz, mapPt.ox, mapPt.oy, 0);
 
             if (size() > 1) {
                 //TODO: current group position is like
@@ -327,16 +319,21 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
 
                 //this should be romoved if non-tile
                 //position needed
-                tmpPt.ox = 63 + 128 * (i % 2);
-                tmpPt.oy = 63 + 128 * (i >> 1);
+                tpn.setOffX(63 + 128 * (i % 2));
+                tpn.setOffY(63 + 128 * (i >> 1));
             }
 
-            PathNode tpn = PathNode(tmpPt.tx, tmpPt.ty, tmpPt.tz, tmpPt.ox, tmpPt.oy, 0);
-            pAgent->createActQWalking(as, &tpn, NULL);
-            as.main_act = as.actions.size() - 1;
-            as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_actions::kOrigUser;
-            pAgent->addAction(as, addAction);
+            pAgent->addActionWalk(tpn, fs_actions::kOrigUser, addAction);
         }
     } // end of for
+}
+
+void SquadSelection::shootAt(PathNode &pn) {
+    for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
+        PedInstance *pAgent = *it;
+        
+        if (pAgent->canAddShootAction()) {
+            pAgent->addActionShootAt(pn);
+        }
+    }
 }

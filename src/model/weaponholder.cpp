@@ -31,10 +31,11 @@
 // Constant definition
 //*************************************
 const int WeaponHolder::kNoWeaponSelected = -1;
+const uint8 WeaponHolder::kMaxHoldedWeapons = 8;
 
 WeaponHolder::WeaponHolder() {
     // -1 means no weapon is selected
-    selected_weapon_ = -1;
+    selected_weapon_ = kNoWeaponSelected;
     updtPreferedWeapon();
 }
 

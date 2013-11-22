@@ -3,6 +3,7 @@
  *  FreeSynd - a remake of the classic Bullfrog game "Syndicate".       *
  *                                                                      *
  *   Copyright (C) 2012  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -23,6 +24,104 @@
 #include "ped.h"
 #include "core/gamecontroller.h"
 
+/*!
+ * Adds the given action to the list of actions.
+ * If appendAction is true, the action is added after all existing actions.
+ * Else existing actions are destroyed and new action becomes the only one.
+ * \param pAction The action to add
+ * \param appendAction If true action is append after all existing actions.
+ */
+void PedInstance::addAction(fs_actions::Action *pAction, bool appendAction) {
+    if (currentAction_ == NULL) {
+        currentAction_ = pAction;
+    } else if (appendAction) {
+        fs_actions::Action *pAct = currentAction_;
+        while(pAct->next()) {
+            pAct = pAct->next();
+        }
+        pAct->setNext(pAction);
+    } else {
+        destroyAllActions();
+        currentAction_ = pAction;
+    }
+}
+
+/*!
+ * Removes all actions.
+ * \param pAction
+ */
+void PedInstance::destroyAllActions() {
+    while (currentAction_ != NULL) {
+        fs_actions::Action *pNext = currentAction_->next();
+        delete currentAction_;
+        currentAction_ = pNext;
+    }
+}
+
+/*!
+ * Adds the action to walk.
+ * \param tpn Destination point
+ * \param origin Origin of action
+ * \param appendAction If true action is append after all existing actions.
+ */
+void PedInstance::addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction) {
+    fs_actions::WalkAction *action = new fs_actions::WalkAction(origin, tpn);
+    addAction(action, appendAction);
+}
+
+void PedInstance::addActionFollowPed(PedInstance *pPed) {
+    fs_actions::FollowAction *pAction = new fs_actions::FollowAction(pPed);
+    addAction(pAction, false);
+}
+
+/*!
+ * Adds the action to drop weapon.
+ * \param weaponIndex The index of the weapon to drop in the agent inventory.
+ * \param appendAction If true action is append after all existing actions.
+ */
+void PedInstance::addActionPutdown(uint8 weaponIndex, bool appendAction) {
+    fs_actions::PutdownWeaponAction *action = new fs_actions::PutdownWeaponAction(weaponIndex);
+    addAction(action, appendAction);
+}
+
+/*!
+ * Adds the action to pick up weapon.
+ * \param pWeapon the weapon to pick up.
+ * \param appendAction If true action is append after all existing actions.
+ */
+void PedInstance::addActionPickup(WeaponInstance *pWeapon, bool appendAction) {
+    // First go to weapon
+    fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigUser, pWeapon);
+    addAction(action, appendAction);
+    // Then pick it up
+    fs_actions::PickupWeaponAction *pPuAction = new fs_actions::PickupWeaponAction(pWeapon);
+    addAction(pPuAction, true);
+}
+
+/*!
+ * Sets or append action to enter the given vehicle.
+ * \param pVehicle
+ * \param appendAction If true action is append after all existing actions.
+ */
+void PedInstance::addActionEnterVehicle(Vehicle *pVehicle, bool appendAction) {
+    // First go to vehicle
+    fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigUser, (ShootableMapObject *) pVehicle);
+    addAction(action, appendAction);
+    // Then get in
+    fs_actions::EnterVehicleAction *enterAct = new fs_actions::EnterVehicleAction(pVehicle);
+    addAction(enterAct, true);
+}
+
+//! Adds action to drive vehicle to destination
+void PedInstance::addActionDriveVehicle(fs_actions::CreatOrigin origin, 
+        VehicleInstance *pVehicle, PathNode &destination, bool appendAction) {
+    fs_actions::DriveVehicleAction *pAction = new fs_actions::DriveVehicleAction(origin, pVehicle, destination);
+    addAction(pAction, appendAction);
+}
+
+void PedInstance::addActionShootAt(PathNode &pn) {
+    printf("addActionShootAt not implemented\n");
+}
 
 void PedInstance::createActQStanding(actionQueueGroupType &as) {
     as.state = 1;
