@@ -247,4 +247,33 @@ private:
     PedInstance *pTarget_;
 };
 
+class GuardBehaviourComponent : public BehaviourComponent {
+public:
+    GuardBehaviourComponent();
+
+    void execute(int elapsed, Mission *pMission, PedInstance *pPed);
+
+    void handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt);
+
+private:
+    PedInstance * findPlayerAgent(Mission *pMission, PedInstance *pPed);
+    void followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy);
+private:
+    static const int kEnemyScoutDistance;
+
+   /*!
+     * Status of police behaviour.
+     */
+    enum EnemyStatus {
+        //! Default status : ped execute default actions
+        kEnemyStatusDefault,
+        //! The owner has found a target : so he follows it and shoot when nearby
+        kEnemyStatusFollowAndShoot
+    };
+
+    EnemyStatus status_;
+    /*! The ped that the owner has targeted and potentally is shooting at.*/
+    PedInstance *pTarget_;
+};
+
 #endif // IA_BEHAVIOUR_H_

@@ -42,16 +42,15 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
         }
         pAct->setNext(pActionToAdd);
     } else {
-        // for scripted and default actions, just forget reference because
+        // for scripted actions, just forget reference because
         // those actions will be reused
         destroyAllActions(false);
         currentAction_ = pActionToAdd;
     }
 
-    if ((pActionToAdd->origin() == fs_actions::kOrigDefault ||
-            pActionToAdd->origin() == fs_actions::kOrigScript) &&
-            defaultAction_ == NULL) {
-        defaultAction_ = pActionToAdd;
+    if (pActionToAdd->origin() == fs_actions::kOrigScript &&
+            scriptedAction_ == NULL) {
+        scriptedAction_ = pActionToAdd;
     }
 }
 
@@ -63,9 +62,8 @@ void PedInstance::destroyAllActions(bool includeDefault) {
     while (currentAction_ != NULL) {
         fs_actions::MovementAction *pNext = currentAction_->next();
 
-        if (currentAction_->origin() != fs_actions::kOrigScript &&
-                currentAction_->origin() != fs_actions::kOrigDefault) {
-            // for scripted and default actions, just forget reference because
+        if (currentAction_->origin() != fs_actions::kOrigScript) {
+            // for scripted actions, just forget reference because
             // those actions are stored in the defaultActionLst field
             delete currentAction_;
         }
@@ -74,11 +72,11 @@ void PedInstance::destroyAllActions(bool includeDefault) {
     }
 
     if (includeDefault) {
-        while (defaultAction_ != NULL) {
-            fs_actions::MovementAction *pNext = defaultAction_->next();
-            delete defaultAction_;
+        while (scriptedAction_ != NULL) {
+            fs_actions::MovementAction *pNext = scriptedAction_->next();
+            delete scriptedAction_;
 
-            defaultAction_ = pNext;
+            scriptedAction_ = pNext;
         }
     }
 }
@@ -97,16 +95,16 @@ void PedInstance::destroyUseWeaponAction() {
  * Set the default action as the current one.
  */
 void PedInstance::restoreDefaultAction() {
-    if (defaultAction_) {
+    if (scriptedAction_) {
         // before restoring, reset all default actions
-        fs_actions::MovementAction *pAction = defaultAction_;
+        fs_actions::MovementAction *pAction = scriptedAction_;
         while (pAction != NULL) {
             pAction->reset();
             pAction = pAction->next();
         }
 
         destroyAllActions(false);
-        currentAction_ = defaultAction_;
+        currentAction_ = scriptedAction_;
     }
 }
 
@@ -155,8 +153,8 @@ void PedInstance::addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance
  * is the default action for this ped.
  */
 void PedInstance::followNewPed(PedInstance *pPed) {
-    if (defaultAction_ != NULL && defaultAction_->type() == fs_actions::Action::kActTypeFollow) {
-        fs_actions::FollowAction *pAction = static_cast<fs_actions::FollowAction *> (defaultAction_);
+    if (scriptedAction_ != NULL && scriptedAction_->type() == fs_actions::Action::kActTypeFollow) {
+        fs_actions::FollowAction *pAction = static_cast<fs_actions::FollowAction *> (scriptedAction_);
         pAction->setTarget(pPed);
     }
 }
@@ -816,7 +814,7 @@ void PedInstance::setActQInQueue(actionQueueGroupType &as,
     // invalid, they should be removed
     if ((as.group_desc & PedInstance::gd_mExclusive) != 0) {
         dropActQ();
-        setActionStateToDrawnAnim();
+        synchDrawnAnimWithActionState();
     } else {
         bool discarding = false;
         std::vector <actionQueueGroupType>::iterator it_s
@@ -836,7 +834,7 @@ void PedInstance::setActQInQueue(actionQueueGroupType &as,
         }
         if (it_s != actions_queue_.end())
             actions_queue_.erase(it_s, actions_queue_.end());
-        setActionStateToDrawnAnim();
+        synchDrawnAnimWithActionState();
     }
 
     // finally add the action group
@@ -927,7 +925,7 @@ void PedInstance::discardActG(uint32 id) {
     {
         if (it->group_id == id) {
             discardActG(it);
-            setActionStateToDrawnAnim();
+            synchDrawnAnimWithActionState();
             break;
         }
     }

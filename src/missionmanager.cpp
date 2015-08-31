@@ -851,7 +851,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
         // add a walking action so that ped can walk the map indefinitly
         if (peopleData.state == LevelData::kPeopleStateWalking) {
             pPed->addMovementAction(
-                new fs_actions::WalkToDirectionAction(fs_actions::kOrigDefault), 
+                new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript), 
                 true);
         }
     }

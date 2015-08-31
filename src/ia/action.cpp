@@ -551,8 +551,8 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-WaitAndWarnAction::WaitAndWarnAction(PedInstance *pPed) : 
-MovementAction(kActTypeUndefined, kOrigDefault, true), waitTimer_(2000) {
+WaitBeforeShootingAction::WaitBeforeShootingAction(PedInstance *pPed) : 
+MovementAction(kActTypeUndefined, kOrigScript, true), waitTimer_(2000) {
     pTarget_ = pPed;
 }
 
@@ -560,7 +560,7 @@ MovementAction(kActTypeUndefined, kOrigDefault, true), waitTimer_(2000) {
  * Select a weapon for the ped if he has no weapon out.
  * \param pPed The police man.
  */
-void WaitAndWarnAction::selectWeaponIfNecessary(PedInstance *pPed) {
+void WaitBeforeShootingAction::selectWeaponIfNecessary(PedInstance *pPed) {
     WeaponInstance *pWeapon = pPed->selectedWeapon();
     if (pWeapon == NULL) {
         // Select a loaded weapon for ped
@@ -571,7 +571,7 @@ void WaitAndWarnAction::selectWeaponIfNecessary(PedInstance *pPed) {
     }
 }
 
-void WaitAndWarnAction::doStart(Mission *pMission, PedInstance *pPed) {
+void WaitBeforeShootingAction::doStart(Mission *pMission, PedInstance *pPed) {
     if (pTarget_->isDead()) {
         setFailed();
     } else {
@@ -581,12 +581,12 @@ void WaitAndWarnAction::doStart(Mission *pMission, PedInstance *pPed) {
     }
 }
 
-bool WaitAndWarnAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
+bool WaitBeforeShootingAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
     // point toward target
     pPed->setDirectionTowardObject(*pTarget_);
 
     if (waitTimer_.update(elapsed)) {
-        if (pTarget_->isOurAgent()) {
+        if (pPed->type() == PedInstance::kPedTypeAgent && pTarget_->isOurAgent()) {
             // Warn only for player agents
             GameEvent evt;
             evt.stream = GameEvent::kMission;
@@ -601,7 +601,7 @@ bool WaitAndWarnAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
 }
 
 FireWeaponAction::FireWeaponAction(PedInstance *pPed) : 
-MovementAction(kActTypeUndefined, kOrigDefault) {
+MovementAction(kActTypeUndefined, kOrigScript) {
     pTarget_ = pPed;
 }
 

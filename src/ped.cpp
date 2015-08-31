@@ -329,7 +329,7 @@ bool PedInstance::switchActionStateFrom(uint32 as) {
     return prevState != state_;
 }
 
-void PedInstance::setActionStateToDrawnAnim(void) {
+void PedInstance::synchDrawnAnimWithActionState(void) {
     // TODO: complete
     if ((state_ & pa_smUnavailable) != 0) {
         setDrawnAnim(PedInstance::ad_NoAnimation);
@@ -362,7 +362,7 @@ void PedInstance::setActionStateToDrawnAnim(void) {
     }
 #ifdef _DEBUG
     if (state_ ==  pa_smNone)
-        printf("setActionStateToDrawnAnim : undefined state_ %d\n", state_);
+        printf("synchDrawnAnimWithActionState : undefined state_ %d\n", state_);
 #endif
 }
 
@@ -373,7 +373,7 @@ void PedInstance::setActionStateToDrawnAnim(void) {
  */
 void PedInstance::goToState(uint32 as) {
     if(switchActionStateTo(as)) {
-        setActionStateToDrawnAnim();
+        synchDrawnAnimWithActionState();
     }
 }
 
@@ -384,7 +384,7 @@ void PedInstance::goToState(uint32 as) {
  */
 void PedInstance::leaveState(uint32 as) {
     if (switchActionStateFrom(as)) {
-        setActionStateToDrawnAnim();
+        synchDrawnAnimWithActionState();
     }
 }
 
@@ -459,8 +459,7 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
                 // current action is finished : go to next one
                 fs_actions::MovementAction *pNext = currentAction_->next();
 
-                if (currentAction_->origin() != fs_actions::kOrigScript &&
-                        currentAction_->origin() != fs_actions::kOrigDefault) {
+                if (currentAction_->origin() != fs_actions::kOrigScript) {
                     delete currentAction_;
                 }
                 currentAction_ = pNext;
@@ -568,6 +567,7 @@ bool PedInstance::useNewAnimation() {
     return isOurAgent() 
         || type() == kPedTypeCivilian
         || type() == kPedTypePolice
+        || type() == kPedTypeGuard
         ;
 }
 
@@ -1989,7 +1989,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
     } else
         is_frame_drawn_ = true;
     if (handleDrawnAnim(elapsed))
-        setActionStateToDrawnAnim();
+        synchDrawnAnimWithActionState();
     return updated;
 }
 
@@ -2106,7 +2106,7 @@ PedInstance::PedInstance(Ped *ped, uint16 id, int m, bool isOur) :
 
     behaviour_.setOwner(this);
     currentAction_ = NULL;
-    defaultAction_ = NULL;
+    scriptedAction_ = NULL;
     pUseWeaponAction_ = NULL;
     panicImmuned_ = false;
     totalPersuasionPoints_ = 0;
@@ -3117,7 +3117,7 @@ void PedInstance::handlePersuadedBy(PedInstance *pAgent) {
     clearDestination();
     destroyAllActions(true);
     // set follow owner as new default
-    addActionFollowPed(fs_actions::kOrigDefault, pAgent);
+    addActionFollowPed(fs_actions::kOrigScript, pAgent);
     behaviour_.replaceAllcomponentsBy(new PersuadedBehaviourComponent());
 
     /////////////////// Check if still useful ////////////

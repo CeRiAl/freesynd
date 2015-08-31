@@ -40,6 +40,7 @@ const int PanicComponent::kDistanceToRun = 500;
 const double PersuadedBehaviourComponent::kMaxRangeForSearchingWeapon = 500.0;
 const int PoliceBehaviourComponent::kPoliceScoutDistance = 1500;
 const int PoliceBehaviourComponent::kPolicePendingTime = 1500;
+const int GuardBehaviourComponent::kEnemyScoutDistance = 1500;
 
 Behaviour::~Behaviour() {
     destroyComponents();
@@ -352,7 +353,7 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
         pPed->destroyUseWeaponAction();
         pPed->deselectWeapon();
         pPed->addMovementAction(
-                new fs_actions::WalkToDirectionAction(fs_actions::kOrigDefault), 
+                new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript), 
                 true);
     }
 }
@@ -402,9 +403,61 @@ void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstan
     pPed->leaveState(PedInstance::pa_smWalking);
     pPed->destroyAllActions(true);
     // Set new actions
-    fs_actions::WaitAndWarnAction *pWarnAction = new fs_actions::WaitAndWarnAction(pArmedGuy);
+    fs_actions::WaitBeforeShootingAction *pWarnAction = new fs_actions::WaitBeforeShootingAction(pArmedGuy);
     pPed->addMovementAction(pWarnAction, false);
-    fs_actions::FollowToShootAction* pFollowAction = new fs_actions::FollowToShootAction(fs_actions::kOrigDefault, pArmedGuy);
+    fs_actions::FollowToShootAction* pFollowAction = new fs_actions::FollowToShootAction(fs_actions::kOrigScript, pArmedGuy);
+    pPed->addMovementAction(pFollowAction, true);
+    fs_actions::FireWeaponAction *pFireAction = new fs_actions::FireWeaponAction(pArmedGuy);
+    pPed->addMovementAction(pFireAction, true);
+    pPed->addMovementAction(new fs_actions::ResetScriptedAction(), true);
+}
+
+GuardBehaviourComponent::GuardBehaviourComponent():
+        BehaviourComponent() {
+    status_ = kEnemyStatusDefault;
+}
+
+void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
+    if (status_ == kEnemyStatusDefault) {
+        // In this mode, ped is looking for an enemy
+        PedInstance *pArmedGuy = findPlayerAgent(pMission, pPed);
+        if (pArmedGuy != NULL) {
+            status_ = kEnemyStatusFollowAndShoot;
+            followAndShootTarget(pPed, pArmedGuy);
+        }
+    } else if (status_ == kEnemyStatusFollowAndShoot && pTarget_->isDead()) {
+        status_ = kEnemyStatusDefault;
+        pPed->destroyAllActions(true);
+        pPed->destroyUseWeaponAction();
+        pPed->deselectWeapon();
+    }
+}
+
+void GuardBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
+    
+}
+
+PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedInstance *pPed) {
+    for (size_t i = 0; i < pMission->getSquad()->size(); i++) {
+        PedInstance *pAgent = pMission->getSquad()->member(i);
+        if (pAgent && pAgent->isAlive() && pPed->isCloseTo(pAgent, kEnemyScoutDistance)) {
+            return pAgent;
+        }
+    }
+    return NULL;
+}
+
+void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy) {
+    pTarget_ = pArmedGuy;
+    // stop walking
+    pPed->clearDestination();
+    // force quiting walking now because entering standing state does not remove walking state
+    pPed->leaveState(PedInstance::pa_smWalking);
+    pPed->destroyAllActions(true);
+    // Set new actions
+    fs_actions::WaitBeforeShootingAction *pWarnAction = new fs_actions::WaitBeforeShootingAction(pArmedGuy);
+    pPed->addMovementAction(pWarnAction, false);
+    fs_actions::FollowToShootAction* pFollowAction = new fs_actions::FollowToShootAction(fs_actions::kOrigScript, pArmedGuy);
     pPed->addMovementAction(pFollowAction, true);
     fs_actions::FireWeaponAction *pFireAction = new fs_actions::FireWeaponAction(pArmedGuy);
     pPed->addMovementAction(pFireAction, true);

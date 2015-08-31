@@ -40,11 +40,9 @@ namespace fs_actions {
      * List the different process by which action can be created.
      */
     enum CreatOrigin {
-        //! Origin unknown
-        kOrigUnknow = 0,
         //! By script
         kOrigScript = 1,
-        //! From default action list
+        //! Obsolete : to remove
         kOrigDefault = 2,
         //! By another action group
         kOrigAction = 3,
@@ -405,12 +403,14 @@ namespace fs_actions {
     };
 
     /*!
-     * This action is specific to police.
-     * When executing this action, ped waits then warn player agent.
+     * This action is used by peds that shoot at other peds.
+     * It is used to insert a delay between 2 shoots.
+     * When the ped is a policeman and the target is the player agent, the policeman
+     * yields a warning.
      */
-    class WaitAndWarnAction : public MovementAction {
+    class WaitBeforeShootingAction : public MovementAction {
     public:
-        WaitAndWarnAction(PedInstance *pPed);
+        WaitBeforeShootingAction(PedInstance *pPed);
 
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
@@ -418,7 +418,7 @@ namespace fs_actions {
 
         void selectWeaponIfNecessary(PedInstance *pPed);
     protected:
-        /*! The ped watched by this police ped.*/
+        /*! The ped watched by this ped.*/
         PedInstance *pTarget_;
         /*! Duration of waiting.*/
         fs_utils::Timer waitTimer_;

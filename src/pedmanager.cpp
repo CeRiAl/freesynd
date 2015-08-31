@@ -300,6 +300,8 @@ void PedManager::initGuard(PedInstance *pPed) {
     pPed->setBaseSpeed(192);
     pPed->setTimeBeforeCheck(300);
     pPed->setBaseModAcc(0.45);
+
+    pPed->behaviour().addComponent(new GuardBehaviourComponent());
 }
 
 /*!

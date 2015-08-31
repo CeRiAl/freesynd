@@ -285,7 +285,7 @@ public:
 
     bool switchActionStateTo(uint32 as);
     bool switchActionStateFrom(uint32 as);
-    void setActionStateToDrawnAnim(void);
+    void synchDrawnAnimWithActionState(void);
     bool animate(int elapsed, Mission *mission);
     //! Temporary version of animate()
     bool animate2(int elapsed, Mission *mission);
@@ -928,11 +928,12 @@ protected:
     Behaviour behaviour_;
     /*! Current action*/
     fs_actions::MovementAction *currentAction_;
-    /*! Default and scripted actions are actions that can be restored.
-     * A ped can have either one default action or several scripted actions but
-     * not both.
+    /*! Scripted actions are used to define the behaviour of non player controlled peds.
+     * They either come from a mission file or certain situations where ped must behave in
+     * a predefined way.
+     * Scripted actions that are finished are not deleted because they can be repeated.
      */
-    fs_actions::MovementAction *defaultAction_;
+    fs_actions::MovementAction *scriptedAction_;
     /*! Current action of using a weapon.*/
     fs_actions::UseWeaponAction *pUseWeaponAction_;
 
