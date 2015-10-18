@@ -459,7 +459,7 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
                 // current action is finished : go to next one
                 fs_actions::MovementAction *pNext = currentAction_->next();
 
-                if (currentAction_->origin() != fs_actions::kOrigScript) {
+                if (!currentAction_->isRepeatable()) {
                     delete currentAction_;
                 }
                 currentAction_ = pNext;
@@ -527,7 +527,7 @@ bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
     }
 
     WeaponInstance *pWi = pWeapon != NULL ? pWeapon : selectedWeapon();
-    return (pWi != NULL && 
+    return (pWi != NULL &&
             (pWi->canShoot() || pWi->getWeaponType() == Weapon::MediKit) &&
             pWi->ammoRemaining() > 0);
 }
@@ -552,19 +552,19 @@ void PedInstance::updateShootingTarget(const PathNode &aimedPt) {
 
 /*!
  * Returns the mean time between two shoots.
- * When a ped has shot, it takes time to shoot again : time to reload 
+ * When a ped has shot, it takes time to shoot again : time to reload
  * the weapon + ped's reactivity time (influenced by IPA and Mods)
  * \param pWeapon The weapon used to shoot
  * \return Time to wait
  */
 int PedInstance::getTimeBetweenShoots(WeaponInstance *pWeapon) {
     // TODO : Add IPA and mods influence
-    return kDefaultShootReactionTime + 
+    return kDefaultShootReactionTime +
             pWeapon->getWeaponClass()->timeReload();
 }
 
 bool PedInstance::useNewAnimation() {
-    return isOurAgent() 
+    return isOurAgent()
         || type() == kPedTypeCivilian
         || type() == kPedTypePolice
         || type() == kPedTypeGuard
@@ -2095,7 +2095,7 @@ PedInstance::PedInstance(Ped *ped, uint16 id, int m, bool isOur) :
     state_ = PedInstance::pa_smNone;
     drop_actions_ = false;
     is_our_ = isOur;
-    
+
     adrenaline_  = new IPAStim(IPAStim::Adrenaline);
     perception_  = new IPAStim(IPAStim::Perception);
     intelligence_ = new IPAStim(IPAStim::Intelligence);
@@ -2116,7 +2116,7 @@ PedInstance::~PedInstance()
 {
     delete ped_;
     ped_ = NULL;
-    
+
     delete adrenaline_;
     adrenaline_ = NULL;
     delete perception_;
@@ -2124,7 +2124,7 @@ PedInstance::~PedInstance()
     delete intelligence_;
     intelligence_ = NULL;
 
-    destroyAllActions(true);
+    destroyAllActions2();
     destroyUseWeaponAction();
 }
 
@@ -2367,7 +2367,7 @@ WeaponInstance * PedInstance::dropWeapon(int n) {
 
 void PedInstance::dropWeapon(WeaponInstance *wi) {
     removeWeapon(wi);
-    
+
     wi->setMap(map_);
     wi->setIsIgnored();
     wi->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
@@ -2877,7 +2877,7 @@ void PedInstance::verifyHostilesFound(Mission *m) {
     }
 }
 
-/*! 
+/*!
  * Movement speed calculated from base speed, mods, weight of inventory,
  * ipa, etc.
  */
@@ -2955,7 +2955,7 @@ void PedInstance::adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, PathNo
     int cz = tileZ() * 128 + offZ();
     if (cz > (g_App.maps().map(map_)->maxZ() - 1) * 128)
         return;
-    
+
     int tx = aimedPt.tileX() * 256 + aimedPt.offX();
     int ty = aimedPt.tileY() * 256 + aimedPt.offY();
     int tz = aimedPt.tileZ() * 128 + aimedPt.offZ();
@@ -3128,7 +3128,7 @@ void PedInstance::handlePersuadedBy(PedInstance *pAgent) {
     //////////////////////////////////////////////////////
 }
 
-/*! 
+/*!
  * Adds given ped to the list of persuaded peds by this agent.
  * Increments the persuasion points of this ped depending on the type
  * of persuaded ped.

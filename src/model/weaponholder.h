@@ -95,7 +95,7 @@ public:
     //! Removes the given weapon from the inventory.
     void removeWeapon(WeaponInstance *w);
     //! Removes all weapons in the inventory
-    void WeaponHolder::removeAllWeapons();
+    void removeAllWeapons();
 
     //! Selects the weapon at given index in the inventory
     void selectWeapon(uint8 n);

@@ -29,6 +29,7 @@
 
 #include "common.h"
 #include "model/leveldata.h"
+#include "ia/actions.h"
 
 class Mission;
 class MissionBriefing;
@@ -77,19 +78,19 @@ private:
     //! Creates a weapon from the game data
     WeaponInstance * create_weapon_instance(const LevelData::Weapons &gamdata);
     //! Creates all vehicles
-    void createVehicles(const LevelData::LevelDataAll &level_data, 
+    void createVehicles(const LevelData::LevelDataAll &level_data,
                             DataIndex &di, Mission *pMission);
     //! Creates a vehicle from the game data
     VehicleInstance * createVehicleInstance(const LevelData::Cars &gamdata, uint16 id, uint16 map);
     //! Creates all peds
-    void createPeds(const LevelData::LevelDataAll &level_data, 
+    void createPeds(const LevelData::LevelDataAll &level_data,
                             DataIndex &di, Mission *pMission);
-    void createScriptedActionsForPed(Mission *pMission, 
-                                        DataIndex &di, 
-                                        const LevelData::LevelDataAll &level_data, 
+    void createScriptedActionsForPed(Mission *pMission,
+                                        DataIndex &di,
+                                        const LevelData::LevelDataAll &level_data,
                                         PedInstance *pPed);
     //! Creates objectives
-    void createObjectives(const LevelData::LevelDataAll &level_data, 
+    void createObjectives(const LevelData::LevelDataAll &level_data,
                             DataIndex &di, Mission *pMission);
 
     //! Export data for debug (will be moved in editor)

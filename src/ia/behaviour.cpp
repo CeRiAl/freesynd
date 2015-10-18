@@ -99,7 +99,7 @@ CommonAgentBehaviourComponent::CommonAgentBehaviourComponent(PedInstance *pPed):
 }
 
 /*!
- * 
+ *
  * \param elapsed Time elapsed since last frame
  * \param pMission Mission data
  * \param pPed The owner of the behaviour
@@ -193,7 +193,7 @@ void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
             pPed->deselectWeapon();
         }
     } else if (evtType == Behaviour::kBehvEvtWeaponDropped) {
-        // 
+        //
         status_ = kPersuadStatusLookForWeapon;
     }
 }
@@ -317,11 +317,11 @@ void  PanicComponent::runAway(PedInstance *pPed, PedInstance *pArmedPed, fs_acti
     toDefineXYZ otherLoc;
     pPed->convertPosToXYZ(&thisPedLoc);
     pArmedPed->convertPosToXYZ(&otherLoc);
-    
+
     pPed->setDirection(otherLoc.x - thisPedLoc.x,
         otherLoc.y - thisPedLoc.y);
     // Adds the action of running away
-    fs_actions::WalkToDirectionAction *pAction = 
+    fs_actions::WalkToDirectionAction *pAction =
         new fs_actions::WalkToDirectionAction(fs_actions::kOrigAction, 256);
     // walk for a certain distance
     pAction->setmaxDistanceToWalk(kDistanceToRun);
@@ -353,7 +353,7 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
         pPed->destroyUseWeaponAction();
         pPed->deselectWeapon();
         pPed->addMovementAction(
-                new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript), 
+                new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript),
                 true);
     }
 }
@@ -425,16 +425,16 @@ void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstanc
             status_ = kEnemyStatusFollowAndShoot;
             followAndShootTarget(pPed, pArmedGuy);
         }
-    } else if (status_ == kEnemyStatusFollowAndShoot && pTarget_->isDead()) {
+    }/* else if (status_ == kEnemyStatusFollowAndShoot && pTarget_->isDead()) {
         status_ = kEnemyStatusDefault;
         pPed->destroyAllActions(true);
         pPed->destroyUseWeaponAction();
         pPed->deselectWeapon();
-    }
+    }*/
 }
 
 void GuardBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
-    
+
 }
 
 PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedInstance *pPed) {
@@ -449,7 +449,7 @@ PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedIns
 
 void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy) {
     pTarget_ = pArmedGuy;
-    // stop walking
+    /*// stop walking
     pPed->clearDestination();
     // force quiting walking now because entering standing state does not remove walking state
     pPed->leaveState(PedInstance::pa_smWalking);
@@ -461,5 +461,6 @@ void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstanc
     pPed->addMovementAction(pFollowAction, true);
     fs_actions::FireWeaponAction *pFireAction = new fs_actions::FireWeaponAction(pArmedGuy);
     pPed->addMovementAction(pFireAction, true);
-    pPed->addMovementAction(new fs_actions::ResetScriptedAction(), true);
+    pPed->addMovementAction(new fs_actions::ResetScriptedAction(), true);*/
+    pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
 }

@@ -33,6 +33,10 @@
  * \param addToDefault If true adds the action to the list of default actions.
  */
 void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bool appendAction) {
+    if (pActionToAdd == NULL) {
+        return;
+    }
+
     if (currentAction_ == NULL) {
         currentAction_ = pActionToAdd;
     } else if (appendAction) {
@@ -47,10 +51,58 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
         destroyAllActions(false);
         currentAction_ = pActionToAdd;
     }
+}
 
-    if (pActionToAdd->origin() == fs_actions::kOrigScript &&
-            scriptedAction_ == NULL) {
-        scriptedAction_ = pActionToAdd;
+/*!
+ * Adds the given action to the list of actions which source is default.
+ * \param pToAdd fs_actions::MovementAction* Action to add
+ * \return void
+ *
+ */
+void PedInstance::addToDefaultActions(fs_actions::MovementAction *pToAdd) {
+    if (scriptedAction_ == NULL) {
+        scriptedAction_ = pToAdd;
+    } else {
+        fs_actions::MovementAction *pAction = scriptedAction_;
+        while(pAction->next() != NULL) {
+            pAction = pAction->next();
+        }
+
+        pAction->setNext(pToAdd);
+    }
+
+    // set all new actions repeatable because scripted action are generally repeated
+    fs_actions::MovementAction *pAction = pToAdd;
+    while (pAction != NULL) {
+        pAction->setRepeatable(true);
+        pAction->setSource(fs_actions::Action::kActionDefault);
+        pAction = pAction->next();
+    }
+}
+
+/*!
+ * Temporary method that deletes all actions.
+ * TODO : remove and use destroyAllActions()
+ * \return void
+ *
+ */
+void PedInstance::destroyAllActions2() {
+    while (currentAction_ != NULL) {
+        fs_actions::MovementAction *pNext = currentAction_->next();
+
+        if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
+            // for scripted actions, they will be destroyed in the next while
+            delete currentAction_;
+        }
+
+        currentAction_ = pNext;
+    }
+
+    while (scriptedAction_ != NULL) {
+        fs_actions::MovementAction *pNext = scriptedAction_->next();
+        delete scriptedAction_;
+
+        scriptedAction_ = pNext;
     }
 }
 
@@ -109,6 +161,34 @@ void PedInstance::restoreDefaultAction() {
 }
 
 /*!
+ * Change the current action to the list of actions identified by given source.
+ * \param source The new source of actions
+ */
+void PedInstance::changeSourceOfActions(fs_actions::Action::ActionSource source) {
+    if (isUsingWeapon()) {
+        // stop shooting in case of automatic shooting
+        pUseWeaponAction_->stop();
+    }
+
+    if (currentAction_ == NULL) {
+        //
+        currentAction_ = (source == fs_actions::Action::kActionDefault ? scriptedAction_ : NULL);
+    } else {
+        fs_actions::MovementAction *pAction = new fs_actions::SwitchSourceAction(source);
+        if (currentAction_->suspend(this)) {
+            // action has been suspended
+			// so we can change source now
+            pAction->setNext(currentAction_);
+            currentAction_ = pAction;
+        } else {
+			// action cannot be suspended
+			// so let the action finish before changing source
+            currentAction_->insertNext(pAction);
+        }
+    }
+}
+
+/*!
  * Adds the action to walk.
  * \param tpn Destination point
  * \param origin Origin of action
@@ -117,29 +197,6 @@ void PedInstance::restoreDefaultAction() {
 void PedInstance::addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction) {
     fs_actions::WalkAction *action = new fs_actions::WalkAction(origin, tpn);
     addMovementAction(action, appendAction);
-}
-
-/*!
- * Adds the action to walk along given direction.
- * \param direction Direction to walk
- * \param origin Origin of action
- * \param appendAction If true action is append after all existing actions.
- */
-void PedInstance::addActionWalkToLocUsingDirection(const PathNode &loc, 
-                                  fs_actions::CreatOrigin origin,
-                                  bool appendAction) {
-    fs_actions::WalkToDirectionAction *action = new fs_actions::WalkToDirectionAction(origin, loc);
-    addMovementAction(action, appendAction);
-}
-
-/*!
- * Adds a trigger.
- */
-void PedInstance::addActionTrigger(int32 range, const PathNode & loc) {
-    toDefineXYZ locW;
-    loc.convertPosToXYZ(&locW);
-    fs_actions::TriggerAction *action = new fs_actions::TriggerAction(range, locW);
-    addMovementAction(action, true);
 }
 
 void PedInstance::addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance *pPed) {
@@ -184,22 +241,22 @@ void PedInstance::addActionPickup(WeaponInstance *pWeapon, bool appendAction) {
 }
 
 /*!
- * Sets or append action to enter the given vehicle.
- * \param origin
+ * Creates two actions that tells the ped to go to the given car and then enter it.
  * \param pVehicle
- * \param appendAction If true action is append after all existing actions.
+ * \return The first action is returned.
  */
-void PedInstance::addActionEnterVehicle(fs_actions::CreatOrigin origin, Vehicle *pVehicle, bool appendAction) {
+fs_actions::MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVehicle) {
     // First go to vehicle
-    fs_actions::WalkAction *action = new fs_actions::WalkAction(origin, (ShootableMapObject *) pVehicle);
-    addMovementAction(action, appendAction);
+    fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigDefault, (ShootableMapObject *) pVehicle);
     // Then get in
-    fs_actions::EnterVehicleAction *enterAct = new fs_actions::EnterVehicleAction(origin, pVehicle);
-    addMovementAction(enterAct, true);
+    fs_actions::EnterVehicleAction *enterAct = new fs_actions::EnterVehicleAction(fs_actions::kOrigDefault, pVehicle);
+    action->setNext(enterAct);
+
+    return action;
 }
 
 //! Adds action to drive vehicle to destination
-void PedInstance::addActionDriveVehicle(fs_actions::CreatOrigin origin, 
+void PedInstance::addActionDriveVehicle(fs_actions::CreatOrigin origin,
         VehicleInstance *pVehicle, PathNode &destination, bool appendAction) {
     fs_actions::DriveVehicleAction *pAction = new fs_actions::DriveVehicleAction(origin, pVehicle, destination);
     addMovementAction(pAction, appendAction);
@@ -241,7 +298,7 @@ void PedInstance::insertHitAction(DamageInflictType &d) {
         //! if there was an action executing, suspends it
         if (currentAction_ != NULL) {
             fs_actions::MovementAction *pPrevAct = currentAction_;
-            pPrevAct->suspend(NULL, this);
+            pPrevAct->suspend(this);
             pHitAct->setNext(pPrevAct);
         }
 
@@ -254,7 +311,7 @@ void PedInstance::insertHitAction(DamageInflictType &d) {
  * Also adds a shooting action for persuaded if this is an agent.
  * \param aimedPt Where the ped must shoot
  * \return kShootActionNotAdded if no action (see canAddUseWeaponAction()),
- *         
+ *
  */
 uint8 PedInstance::addActionShootAt(const PathNode &aimedPt) {
     if (canAddUseWeaponAction()) {
@@ -370,7 +427,7 @@ void PedInstance::createActQHit(actionQueueGroupType &as, PathNode *tpn,
 }
 
 bool PedInstance::createActQFiring(actionQueueGroupType &as, PathNode *tpn,
-    ShootableMapObject *tsmo, bool forced_shot, uint32 make_shots, 
+    ShootableMapObject *tsmo, bool forced_shot, uint32 make_shots,
     WeaponSelectCriteria *pw_to_use, int32 value)
 {
     // TODO: review, if no weapon found or selected assume physical damage?

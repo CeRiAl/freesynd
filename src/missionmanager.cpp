@@ -45,17 +45,17 @@ public:
     {
         this->msg = Msg;
     }
- 
+
     virtual ~LoadMissionException() throw()
     {
- 
+
     }
- 
+
     virtual const char * what() const throw()
     {
         return this->msg.c_str();
     }
- 
+
 private:
     std::string msg;
 };
@@ -157,7 +157,7 @@ Mission *MissionManager::loadMission(int n)
 bool MissionManager::load_level_data(int n, LevelData::LevelDataAll &level_data) {
     char tmp[100];
     int size;
-    
+
     sprintf(tmp, GAME_PATTERN, n);
     uint8 *data = File::loadOriginalFile(tmp, size);
     if (data == NULL) {
@@ -260,7 +260,7 @@ void MissionManager::exportMissionData(LevelData::LevelDataAll &level_data, Miss
     }
 
 #endif
-    
+
 #if 0
     // for hacking statics data
     char nameSs[256];
@@ -321,7 +321,7 @@ Mission * MissionManager::create_mission(LevelData::LevelDataAll &level_data) {
 
     try {
         createVehicles(level_data, di, p_mission);
-    
+
         createPeds(level_data, di, p_mission);
 
         for (uint16 i = 0; i < 400; i++) {
@@ -333,9 +333,9 @@ Mission * MissionManager::create_mission(LevelData::LevelDataAll &level_data) {
                 p_mission->addStatic(s);
             }
         }
-    
+
         createWeapons(level_data, di, p_mission);
-    
+
         createObjectives(level_data, di, p_mission);
 
 #ifdef SHOW_SCENARIOS_DEBUG
@@ -602,11 +602,11 @@ void MissionManager::createPeds(const LevelData::LevelDataAll &level_data, DataI
     obj_ids[4] = "Policemen";
     obj_ids[5] = "Civilians";
 #endif
-    
+
     PedManager peds;
     for (uint16 i = 0; i < 256; i++) {
         const LevelData::People & pedref = level_data.people[i];
-        
+
         PedInstance *p =
             peds.loadInstance(pedref, i, pMission->mapId(), PedInstance::kPlayerGroupId);
         if (p) {
@@ -774,9 +774,6 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
     Vehicle *v = pPed->inVehicle();
     bool isInVehicle = v != NULL;
 
-    // This flag is used to add default actions if ped has no scenario
-    bool hasScenario = false;
-
 #ifdef _DEBUG
     if (offset_nxt) {
         LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", ("Scenarios for ped : %d", pPed->id()))
@@ -784,35 +781,36 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
 #endif
 
     while (offset_nxt) {
-        
+
         LevelData::Scenarios sc = level_data.scenarios[offset_nxt / 8];
-        hasScenario = true;
         LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", ("At offset %d, type : %d", offset_nxt, sc.type))
 
         offset_nxt = READ_LE_UINT16(sc.next);
         if (offset_nxt == offset_start) {
             throw LoadMissionException("Bad scenario offset");
         }
-        
+
         if (sc.tilex != 0 && sc.tiley != 0) {
             // This scenario defines something that uses a location
             PathNode pn(sc.tilex >> 1, sc.tiley >> 1, sc.tilez,
                 (sc.tilex & 0x01) << 7, (sc.tiley & 0x01) << 7);
             if (sc.type == LevelData::kScenarioTypeTrigger) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Trigger at (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
-                pPed->addActionTrigger(6 * 256, pn);
+                toDefineXYZ locW;
+                pn.convertPosToXYZ(&locW);
+                pPed->addToDefaultActions(new fs_actions::TriggerAction(6 * 256, locW));
             }
             if (v) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive car to (%d, %d, %d) (%d, %d)", pn.tileX(), pn.tileY(), pn.tileZ(), pn.offX(), pn.offY()))
                 VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
-                pPed->addActionDriveVehicle(fs_actions::kOrigScript, pCar, pn, true);
+                pPed->addToDefaultActions(new fs_actions::DriveVehicleAction(fs_actions::kOrigScript, pCar, pn));
             } else {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Walk toward location (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
-                pPed->addActionWalkToLocUsingDirection(pn, fs_actions::kOrigScript, true);
+                pPed->addToDefaultActions(new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript, pn));
             }
             if (isInVehicle && offset_nxt == 0) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Repeat driving scenario"))
-                pPed->addMovementAction(new fs_actions::ResetScriptedAction(), true);
+                pPed->addToDefaultActions(new fs_actions::ResetScriptedAction());
             }
         } else if (sc.type == LevelData::kScenarioTypeUseVehicle) {
             if (!isInVehicle) {
@@ -824,21 +822,25 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                 bindx /= 42;
                 if (di.vindx[bindx] != 0xFFFF) {
                     v = pMission->vehicle(di.vindx[bindx]);
-                    pPed->addActionEnterVehicle(fs_actions::kOrigScript, v, true);
+                    // go to car and enter inside
+                    fs_actions::MovementAction *pAction =
+                        pPed->createActionEnterVehicle(v);
+                    pPed->addToDefaultActions(pAction);
                 }
             } else {
                 PathNode pn(v->tileX(), v->tileY(), v->tileZ(),
                     v->offX(), v->offY());
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive to (%d, %d, %d) (%d, %d)", pn.tileX(), pn.tileY(), pn.tileZ(), pn.offX(), pn.offY()))
                 VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
-                pPed->addActionDriveVehicle(fs_actions::kOrigScript, pCar, pn, true);
+                pPed->addToDefaultActions(
+                        new fs_actions::DriveVehicleAction(fs_actions::kOrigScript, pCar, pn));
             }
         } else if (sc.type == LevelData::kScenarioTypeEscape) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Escape"))
-            pPed->addMovementAction(new fs_actions::EscapeAction(), true);
+            pPed->addToDefaultActions(new fs_actions::EscapeAction());
         } else if (sc.type == LevelData::kScenarioTypeReset) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Reset actions"))
-            pPed->addMovementAction(new fs_actions::ResetScriptedAction(), true);
+            pPed->addToDefaultActions(new fs_actions::ResetScriptedAction());
         } else if (sc.type == 10) {
             printf("Scenario type 10\n");
         } else {
@@ -846,15 +848,19 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
         }
     } // end while
 
-    if (!hasScenario) {
+    fs_actions::MovementAction *pScriptAction = pPed->defaultAction();
+    if (pScriptAction == NULL) {
         // When ped has no scenario, check its state : if ped is walking then
-        // add a walking action so that ped can walk the map indefinitly
+        // add a walking action so that ped can walk the map indefinitely
         if (peopleData.state == LevelData::kPeopleStateWalking) {
-            pPed->addMovementAction(
-                new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript), 
-                true);
+            pScriptAction = new fs_actions::WalkToDirectionAction(fs_actions::kOrigScript);
+            pPed->addToDefaultActions(pScriptAction);
         }
     }
+
+    // set any default action as the current action
+    // don't matter if there is no default action, we check if null
+    pPed->addMovementAction(pScriptAction, false);
 }
 
 void MissionManager::createObjectives(const LevelData::LevelDataAll &level_data,

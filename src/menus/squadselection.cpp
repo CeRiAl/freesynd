@@ -235,7 +235,7 @@ void SquadSelection::followPed(PedInstance *pPed, bool addAction) {
 
 /*!
  * Selected agents enter or leave the given vehicle. First check where the
- * leader is : 
+ * leader is :
  * - if he is in a vehicle (can be different from the given one),
  *   every selected agent that is not in a vehicle, gets in the vehicle.
  * - else every selected gets out of the given vehicle.
@@ -250,10 +250,13 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
-        
+
         if (getIn && !pAgent->inVehicle()) {
             // Agent is out and everybody must get in
-            pAgent->addActionEnterVehicle(fs_actions::kOrigUser, pVehicle, addAction);
+            fs_actions::MovementAction *pAction =
+                pAgent->createActionEnterVehicle(pVehicle);
+            pAgent->addMovementAction(pAction, addAction);
+            //pAgent->addActionEnterVehicle(fs_actions::kOrigUser, pVehicle, addAction);
         } else if (!getIn && pAgent->inVehicle() == pVehicle) {
             // Agent is in the given car and everybody must get out
             // first stops the vehicle if it's a car
@@ -263,7 +266,7 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
                 VehicleInstance *pVi = dynamic_cast<VehicleInstance *>(pVehicle);
                 pVi->getDriver()->destroyAllActions(false);
             }
-            // Ped can get off only if vehicle is stopped 
+            // Ped can get off only if vehicle is stopped
             // (ie trains only stop in stations)
             if (pVehicle->speed() == 0) {
                 // drop passenger is not implemented as an action as player
@@ -287,7 +290,7 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
     {
         PedInstance *pAgent = *it;
         if (pAgent->inVehicle()) {
-            if (pAgent->inVehicle()->isDrivable()) { 
+            if (pAgent->inVehicle()->isDrivable()) {
                 // Agent is in drivable vehicle
                 VehicleInstance *pVehicle = pAgent->inVehicle();
                 if (pVehicle->isDriver(pAgent))

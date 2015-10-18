@@ -23,6 +23,8 @@
 #ifndef GAMEVENT_H
 #define GAMEVENT_H
 
+#include <stddef.h>
+
 /*!
  * An event is dispatched by the Game controller towards listener that
  * will handle it. There are several stream on which events are posted:

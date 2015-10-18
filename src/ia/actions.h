@@ -56,7 +56,7 @@ namespace fs_actions {
      * The Action class is an abstract class representing an action that a ped can do
      * like walking, driving a car, pick up someting or shoot.
      * Every action has following attributes :
-     *   - status (from not started to finished), 
+     *   - status (from not started to finished),
      *   - origin : can be created from game file or after a player action. When
      *      an action is finished it is removed from the list except for scripted actions
      *      which are replayed.
@@ -64,7 +64,17 @@ namespace fs_actions {
      */
     class Action {
     public:
-        /*! 
+        /*!
+         * The source of an action is whether the action is scripted
+         * or not.
+         * Will replace Origin.
+         */
+        enum ActionSource {
+            kActionNotScripted,
+            kActionDefault,
+            kActionAlt
+        };
+        /*!
          * What type of action.
          * Only usefull types are defined.
          * Other actions have type kActTypeUndefined.
@@ -76,6 +86,8 @@ namespace fs_actions {
             kActTypeHit,
             //! Action of resetting scripted action
             kActTypeReset,
+            //! Special action for switching source of actions
+            kActTypeSwitch,
             //! Action of shooting
             kActTypeShoot,
             //! The walk action
@@ -111,6 +123,10 @@ namespace fs_actions {
 
         //! Returns origin of the action
         CreatOrigin origin() { return origin_; }
+		//! Returns the source of the action
+        ActionSource source() { return source_; }
+		//! Sets the source of the action
+        void setSource(ActionSource aSource) { source_ = aSource; }
         //! Returns the type of action
         ActionType type() { return type_; }
         //! Returns true if action is running
@@ -131,11 +147,12 @@ namespace fs_actions {
 
         //! Reset the action
         virtual void reset();
-        
+
     protected:
         /*! The type of action.*/
         ActionType type_;
         CreatOrigin origin_;
+        ActionSource source_;
         /*! This is the status of the action.*/
         ActionStatus status_;
     };
@@ -161,8 +178,8 @@ namespace fs_actions {
 
         //! Entry point to execute the action
         bool execute(int elapsed, Mission *pMission, PedInstance *pPed);
-        //! Suspend action (normally because ped was hit by a weapon)
-        virtual void suspend(Mission *pMission, PedInstance *pPed);
+        //! Return true if action has been suspended
+        virtual bool suspend(PedInstance *pPed);
         //! Resume action
         virtual void resume(Mission *pMission, PedInstance *pPed);
         //! Returns true if action is currently suspended
@@ -173,10 +190,16 @@ namespace fs_actions {
         //! Returns true if the action can be executed while ped is in a vehicle
         bool canExecInVehicle() { return canExecInVehicle_; }
 
+        //! Returns true if the action should not be destroyed to be executed again
+        bool isRepeatable() { return isRepeatable_; }
+        void setRepeatable(bool doRepeat) { isRepeatable_ = doRepeat; }
+
         //! Return the next action in the list
         MovementAction *next() { return pNext_; }
         //! Set the next action
         void setNext(MovementAction *pAction) { pNext_ = pAction; }
+
+        void insertNext(MovementAction *pAction);
     protected:
         //! Subclasses must implement this method to do somthing at the begining of the action
         virtual void doStart(Mission *pMission, PedInstance *pPed) {}
@@ -193,6 +216,9 @@ namespace fs_actions {
         MovementAction *pNext_;
         /*! This is the status of the action before it was suspended.*/
         ActionStatus savedStatus_;
+        /*! This flag talls whether the action can be destroyed after completion or kept
+        to be executed again.*/
+        bool isRepeatable_;
     };
 
     /*!
@@ -219,7 +245,7 @@ namespace fs_actions {
      * This action is used to move a ped towards a direction.
      * Direction is either the one he's already pointing to or using a target location.
      * When direction is given by ped's direction, it is possible to specify a distance
-     * so that movement stops when ped travels that distance. 
+     * so that movement stops when ped travels that distance.
      * When direction is given by a location, movement stops when
      * ped reaches that location.
      */
@@ -276,7 +302,7 @@ namespace fs_actions {
 
     /*!
      * This action does nothing but its presence makes all scripted to start again.
-     * 
+     *
      */
     class ResetScriptedAction : public MovementAction {
     public:
@@ -284,6 +310,22 @@ namespace fs_actions {
             MovementAction(kActTypeReset, kOrigScript, false, true) {}
     protected:
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
+    };
+
+    /*!
+     * This action does nothing but its presence makes a switch to another set of actions.
+     *
+     */
+    class SwitchSourceAction : public MovementAction {
+    public:
+        SwitchSourceAction(Action::ActionSource source):
+            MovementAction(kActTypeSwitch, kOrigScript, false, true) {
+                nextSource_ = source;
+            }
+    protected:
+        bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
+    private:
+        Action::ActionSource nextSource_;
     };
 
     /*!
@@ -461,7 +503,7 @@ namespace fs_actions {
      */
     class FallDeadHitAction : public HitAction {
     public:
-        //! 
+        //!
         FallDeadHitAction(ShootableMapObject::DamageInflictType &d);
     protected:
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -473,7 +515,7 @@ namespace fs_actions {
      */
     class RecoilHitAction : public HitAction {
     public:
-        //! 
+        //!
         RecoilHitAction(ShootableMapObject::DamageInflictType &d);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
@@ -485,7 +527,7 @@ namespace fs_actions {
      */
     class LaserHitAction : public HitAction {
     public:
-        //! 
+        //!
         LaserHitAction(ShootableMapObject::DamageInflictType &d);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
@@ -498,7 +540,7 @@ namespace fs_actions {
      */
     class WalkBurnHitAction : public HitAction {
     public:
-        //! 
+        //!
         WalkBurnHitAction(ShootableMapObject::DamageInflictType &d);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
@@ -526,7 +568,7 @@ namespace fs_actions {
      */
     class PersuadedHitAction : public HitAction {
     public:
-        //! 
+        //!
         PersuadedHitAction(ShootableMapObject::DamageInflictType &d);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);

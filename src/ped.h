@@ -120,7 +120,7 @@ public:
     int lastVaporizeFrame(int dir);
     void drawSinkFrame(int x, int y, int frame);
     int lastSinkFrame();
-    
+
     void drawStandBurnFrame(int x, int y, int frame);
     void drawWalkBurnFrame(int x, int y, int frame);
     void drawDieBurnFrame(int x, int y, int frame);
@@ -302,10 +302,16 @@ public:
     //*************************************
     //! Adds the given action to the list of actions
     void addMovementAction(fs_actions::MovementAction *pAction, bool appendAction);
+    //! Adds the given action to the list of default scripted actions
+    void addToDefaultActions(fs_actions::MovementAction *pToAdd);
     //! Returns the ped's current movement action
     fs_actions::MovementAction * currentAction() { return currentAction_; }
+    //! Returns the ped's first default action (can be null)
+    fs_actions::MovementAction * defaultAction() { return scriptedAction_; }
     //! Removes all ped's actions
     void destroyAllActions(bool includeDefault);
+    //! Removes all ped's actions : current + scripted
+    void destroyAllActions2();
     //! Removes ped's action of using weapon
     void destroyUseWeaponAction();
     //! Execute the current action if any
@@ -314,15 +320,12 @@ public:
     bool executeUseWeaponAction(int elapsed, Mission *pMission);
     //! Set the default action as the current one
     void restoreDefaultAction();
-    
+    //! Switch to the given source of action
+    void changeSourceOfActions(fs_actions::Action::ActionSource source);
+
     //! Adds action to walk to a given destination
     void addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction);
-    //! Adds action to walk along a given direction
-    void addActionWalkToLocUsingDirection(const PathNode &loc,
-                                  fs_actions::CreatOrigin origin,
-                                  bool appendAction);
-    //! Adds a trigger to the actions
-    void addActionTrigger(int32 range, const PathNode &loc);
+
     //! Adds action to follow a ped
     void addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance *pPed);
     //! Change the ped to follow (used for persuaded)
@@ -331,11 +334,10 @@ public:
     void addActionPutdown(uint8 weaponIndex, bool appendAction);
     //! Adds action to pick up weapon from the ground
     void addActionPickup(WeaponInstance *pWeapon, bool appendAction);
-    //! Adds action to enter a given vehicle
-    void addActionEnterVehicle(fs_actions::CreatOrigin origin,
-                                Vehicle *pVehicle, bool appendAction);
+    //! Creates actions to walk and enter a given vehicle
+    fs_actions::MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
     //! Adds action to drive vehicle to destination
-    void addActionDriveVehicle(fs_actions::CreatOrigin origin, 
+    void addActionDriveVehicle(fs_actions::CreatOrigin origin,
            VehicleInstance *pVehicle, PathNode &destination, bool appendAction);
     //! Return true if ped can use a weapon
     bool canAddUseWeaponAction(WeaponInstance *pWeapon = NULL);
@@ -869,7 +871,7 @@ public:
         WeaponSelectCriteria *pw_to_use = NULL, int dist = -1);
 
     void createActQCheckOwner(actionQueueGroupType &as);
-    
+
     void discardActG(uint32 id);
     void discardActG(std::vector <actionQueueGroupType>::iterator it_a);
 
@@ -890,7 +892,7 @@ public:
     bool isArmed() { return (desc_state_ & pd_smArmed) != 0; }
     bool isExcluded() { return (state_ & pa_smCheckExcluded) != 0; }
     targetDescType * lastFiringTarget() { return &last_firing_target_; }
-    
+
     IPAStim *adrenaline_;
     IPAStim *perception_;
     IPAStim *intelligence_;
