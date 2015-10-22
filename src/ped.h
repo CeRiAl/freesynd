@@ -304,22 +304,26 @@ public:
     void addMovementAction(fs_actions::MovementAction *pAction, bool appendAction);
     //! Adds the given action to the list of default scripted actions
     void addToDefaultActions(fs_actions::MovementAction *pToAdd);
+    //! Adds the given action to the list of alternative scripted actions
+    void addToAltActions(fs_actions::MovementAction *pToAdd);
     //! Returns the ped's current movement action
     fs_actions::MovementAction * currentAction() { return currentAction_; }
     //! Returns the ped's first default action (can be null)
-    fs_actions::MovementAction * defaultAction() { return scriptedAction_; }
+    fs_actions::MovementAction * defaultAction() { return defaultAction_; }
+    //! Returns the ped's first alternative action (can be null)
+    fs_actions::MovementAction * altAction() { return altAction_; }
     //! Removes all ped's actions
     void destroyAllActions(bool includeDefault);
     //! Removes all ped's actions : current + scripted
-    void destroyAllActions2();
+    void destroyAllActions2(bool includeScripted = true);
     //! Removes ped's action of using weapon
     void destroyUseWeaponAction();
     //! Execute the current action if any
     bool executeAction(int elapsed, Mission *pMission);
     //! Execute a weapon action if any
     bool executeUseWeaponAction(int elapsed, Mission *pMission);
-    //! Set the default action as the current one
-    void restoreDefaultAction();
+    //! Restart the actions of given source and set as current action
+    void resetActions(fs_actions::Action::ActionSource source);
     //! Switch to the given source of action
     void changeSourceOfActions(fs_actions::Action::ActionSource source);
 
@@ -930,12 +934,14 @@ protected:
     Behaviour behaviour_;
     /*! Current action*/
     fs_actions::MovementAction *currentAction_;
-    /*! Scripted actions are used to define the behaviour of non player controlled peds.
-     * They either come from a mission file or certain situations where ped must behave in
-     * a predefined way.
-     * Scripted actions that are finished are not deleted because they can be repeated.
+    /*!
+     * Default and Alternative actions define the behaviour of non player controlled peds.
+     * Default actions come from a mission file and alternative actions are used by ped
+     * to react in certain situations (like fight).
+     * Those actions are not deleted when finished.
      */
-    fs_actions::MovementAction *scriptedAction_;
+    fs_actions::MovementAction *defaultAction_;
+    fs_actions::MovementAction *altAction_;
     /*! Current action of using a weapon.*/
     fs_actions::UseWeaponAction *pUseWeaponAction_;
 

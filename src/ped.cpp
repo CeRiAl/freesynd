@@ -453,23 +453,33 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
         if (currentAction_->isFinished()) {
             if (health_ == 0) {
                 // Ped may have died during execution of a HitAction.
-                destroyAllActions(true);
+                destroyAllActions2(true);
                 destroyUseWeaponAction();
             } else {
                 // current action is finished : go to next one
                 fs_actions::MovementAction *pNext = currentAction_->next();
 
-                if (!currentAction_->isRepeatable()) {
+                if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
+                    currentAction_->removeAndJoinChain();
                     delete currentAction_;
                 }
-                currentAction_ = pNext;
+
                 // If next action was suspended, resume it
-                if (currentAction_ != NULL && currentAction_->isSuspended()) {
-                    currentAction_->resume(pMission, this);
+                if (pNext != NULL && pNext->isSuspended()) {
+                    pNext->resume(pMission, this);
                 }
+
+                currentAction_ = pNext;
             }
         } else if (currentAction_->type() == fs_actions::Action::kActTypeReset) {
-            restoreDefaultAction();
+            fs_actions::ResetScriptedAction *pReset = static_cast<fs_actions::ResetScriptedAction *>(currentAction_);
+            fs_actions::Action::ActionSource source = pReset->sourceToReset();
+
+            if (pReset->source() == fs_actions::Action::kActionNotScripted) {
+                pReset->removeAndJoinChain();
+                delete pReset;
+            }
+            resetActions(source);
             break;
         } else {
             // current action is still running, so stop iterate now
@@ -495,7 +505,7 @@ bool PedInstance::executeUseWeaponAction(int elapsed, Mission *pMission) {
                 if (isPersuaded()) {
                     addActionPutdown(0, false);
                     // add a reset action to automatically restore follow action after picking up weapon
-                    addMovementAction(new fs_actions::ResetScriptedAction(), true);
+                    addMovementAction(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault), true);
                 } else {
                     // others will use another weapon
                     selectNextWeapon();
@@ -2106,7 +2116,8 @@ PedInstance::PedInstance(Ped *ped, uint16 id, int m, bool isOur) :
 
     behaviour_.setOwner(this);
     currentAction_ = NULL;
-    scriptedAction_ = NULL;
+    defaultAction_ = NULL;
+    altAction_ = NULL;
     pUseWeaponAction_ = NULL;
     panicImmuned_ = false;
     totalPersuasionPoints_ = 0;
@@ -2697,7 +2708,7 @@ bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
         health_ = 0;
         drop_actions_ = true;
         clearDestination();
-        destroyAllActions(true);
+        destroyAllActions2(true);
         switchActionStateTo(PedInstance::pa_smDead);
         if (isPersuaded())
             owner_->rmvPersuaded(this);

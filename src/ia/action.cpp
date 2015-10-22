@@ -73,10 +73,10 @@ void Action::reset() {
 MovementAction::MovementAction(ActionType type, CreatOrigin origin, bool isExclusive, bool canExecVehicle) :
 Action(type, origin) {
     pNext_ = NULL;
+    pPrevious_ = NULL;
     isExclusive_ = isExclusive;
     canExecInVehicle_ = canExecVehicle;
     targetState_ = PedInstance::pa_smNone;
-    isRepeatable_ = false;
 }
 
 /*!
@@ -143,18 +143,64 @@ void MovementAction::resume(Mission *pMission, PedInstance *pPed) {
     pPed->goToState(targetState_);
 }
 
-/*! \brief
- *
+/*!
+ * Insert the action between this action and his current next
  * \param pAction MovementAction*
  * \return void
  *
  */
 void MovementAction::insertNext(MovementAction *pAction) {
     if (pNext_ != NULL) {
-        pAction->setNext(pNext_);
+        pAction->link(pNext_);
     }
 
-    pNext_ = pAction;
+    this->link(pAction);
+}
+
+/*!
+ * Insert the action between this action and his current previous.
+ * \param pAction MovementAction*
+ * \return void
+ *
+ */
+void MovementAction::insertPrevious(MovementAction *pAction) {
+    if (pAction != NULL) {
+        if (pPrevious_ != NULL) {
+            pPrevious_->link(pAction);
+        }
+
+        pAction->link(this);
+    }
+}
+
+void MovementAction::unlinkNext() {
+    if (pNext_ != NULL) {
+        pNext_->setPrevious(NULL);
+        pNext_ = NULL;
+    }
+}
+
+/*!
+ * Remove this action from the chain of actions.
+ * Link the previous to the next.
+ * \return void
+ *
+ */
+void MovementAction::removeAndJoinChain() {
+    MovementAction *pPrev = previous();
+    MovementAction *pNext = next();
+
+    // remove link to next
+    unlinkNext();
+    // remove link to previous
+    if (pPrev != NULL) {
+        pPrev->unlinkNext();
+        // link previous and next
+        pPrev->link(pNext);
+    }
+
+    pPrevious_ = NULL;
+    pNext_ = NULL;
 }
 
 WalkAction::WalkAction(CreatOrigin origin, PathNode pn, int speed) :
@@ -403,7 +449,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
  * \param pTarget The ped to follow.
  */
 FollowToShootAction::FollowToShootAction(fs_actions::CreatOrigin origin, PedInstance *pTarget) :
-MovementAction(kActTypeFollow, origin) {
+MovementAction(kActTypeFollowToShoot, origin) {
     pTarget_ = pTarget;
     targetState_ = PedInstance::pa_smWalking;
     followDistance_ = 0;
@@ -577,7 +623,7 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
 }
 
 WaitBeforeShootingAction::WaitBeforeShootingAction(PedInstance *pPed) :
-MovementAction(kActTypeUndefined, kOrigScript, true), waitTimer_(2000) {
+MovementAction(kActTypeWaitShoot, kOrigScript, true), waitTimer_(2000) {
     pTarget_ = pPed;
 }
 
@@ -626,7 +672,7 @@ bool WaitBeforeShootingAction::doExecute(int elapsed, Mission *pMission, PedInst
 }
 
 FireWeaponAction::FireWeaponAction(PedInstance *pPed) :
-MovementAction(kActTypeUndefined, kOrigScript) {
+MovementAction(kActTypeFire, kOrigScript) {
     pTarget_ = pPed;
 }
 

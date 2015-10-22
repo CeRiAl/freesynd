@@ -92,6 +92,11 @@ namespace fs_actions {
             kActTypeShoot,
             //! The walk action
             kActTypeWalk,
+            //! Wait to shoot action
+            kActTypeWaitShoot,
+            //! Action of following a ped to shoot at it
+            kActTypeFollowToShoot,
+            kActTypeFire,
             kActTypeUndefined
         };
 
@@ -190,16 +195,26 @@ namespace fs_actions {
         //! Returns true if the action can be executed while ped is in a vehicle
         bool canExecInVehicle() { return canExecInVehicle_; }
 
-        //! Returns true if the action should not be destroyed to be executed again
-        bool isRepeatable() { return isRepeatable_; }
-        void setRepeatable(bool doRepeat) { isRepeatable_ = doRepeat; }
-
         //! Return the next action in the list
         MovementAction *next() { return pNext_; }
-        //! Set the next action
-        void setNext(MovementAction *pAction) { pNext_ = pAction; }
+        //! Return the previous action in the list
+        MovementAction *previous() { return pPrevious_; }
+        //! Set the previous action
+        void setPrevious(MovementAction *pAction) { pPrevious_ = pAction; }
+        //! Set given action as the next of this action
+        void link(MovementAction *pNext) {
+            pNext_ = pNext;
+            if (pNext != NULL) {
+                pNext->setPrevious(this);
+            }
+        }
+
+        void unlinkNext();
 
         void insertNext(MovementAction *pAction);
+        void insertPrevious(MovementAction *pAction);
+
+        void removeAndJoinChain();
     protected:
         //! Subclasses must implement this method to do somthing at the begining of the action
         virtual void doStart(Mission *pMission, PedInstance *pPed) {}
@@ -212,13 +227,12 @@ namespace fs_actions {
         bool canExecInVehicle_;
         /*! Store the state the ped will have when executing the action.*/
         uint32 targetState_;
+        /*! Previous action in the chain.*/
+        MovementAction *pPrevious_;
         /*! Next action in the chain.*/
         MovementAction *pNext_;
         /*! This is the status of the action before it was suspended.*/
         ActionStatus savedStatus_;
-        /*! This flag talls whether the action can be destroyed after completion or kept
-        to be executed again.*/
-        bool isRepeatable_;
     };
 
     /*!
@@ -301,31 +315,21 @@ namespace fs_actions {
     };
 
     /*!
-     * This action does nothing but its presence makes all scripted to start again.
-     *
+     * This action does nothing but its presence makes all scripted to start again
+     * and potentially change source of actions.
      */
     class ResetScriptedAction : public MovementAction {
     public:
-        ResetScriptedAction():
-            MovementAction(kActTypeReset, kOrigScript, false, true) {}
-    protected:
-        bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
-    };
-
-    /*!
-     * This action does nothing but its presence makes a switch to another set of actions.
-     *
-     */
-    class SwitchSourceAction : public MovementAction {
-    public:
-        SwitchSourceAction(Action::ActionSource source):
-            MovementAction(kActTypeSwitch, kOrigScript, false, true) {
-                nextSource_ = source;
+        ResetScriptedAction(ActionSource source):
+            MovementAction(kActTypeReset, kOrigScript, false, true) {
+                sourceToReset_ = source;
             }
+
+        ActionSource sourceToReset() { return sourceToReset_; }
     protected:
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
     private:
-        Action::ActionSource nextSource_;
+        ActionSource sourceToReset_;
     };
 
     /*!
@@ -454,11 +458,13 @@ namespace fs_actions {
     public:
         WaitBeforeShootingAction(PedInstance *pPed);
 
+        void setTarget(PedInstance *pPed) { pTarget_ = pPed; }
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 
         void selectWeaponIfNecessary(PedInstance *pPed);
+
     protected:
         /*! The ped watched by this ped.*/
         PedInstance *pTarget_;
@@ -473,6 +479,7 @@ namespace fs_actions {
     public:
         FireWeaponAction(PedInstance *pPed);
 
+        void setTarget(PedInstance *pPed) { pTarget_ = pPed; }
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -493,6 +500,9 @@ namespace fs_actions {
     public:
         //! Constructor of the class
         HitAction(CreatOrigin origin, ShootableMapObject::DamageInflictType &d);
+
+        //! HitAction cannot be suspended
+        bool suspend(PedInstance *pPed) { return false; }
     protected:
         //! Stores the damage received
         ShootableMapObject::DamageInflictType damage_;

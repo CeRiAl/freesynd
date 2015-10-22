@@ -44,11 +44,13 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
         while(pAct->next()) {
             pAct = pAct->next();
         }
-        pAct->setNext(pActionToAdd);
+        pAct->link(pActionToAdd);
     } else {
-        // for scripted actions, just forget reference because
-        // those actions will be reused
-        destroyAllActions(false);
+        // suspend current action
+        // if action is not suspendable, I don't know what happen!
+        currentAction_->suspend(this);
+        // only destroy not scripted actions
+        destroyAllActions2(false);
         currentAction_ = pActionToAdd;
     }
 }
@@ -60,22 +62,49 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
  *
  */
 void PedInstance::addToDefaultActions(fs_actions::MovementAction *pToAdd) {
-    if (scriptedAction_ == NULL) {
-        scriptedAction_ = pToAdd;
+    if (defaultAction_ == NULL) {
+        defaultAction_ = pToAdd;
     } else {
-        fs_actions::MovementAction *pAction = scriptedAction_;
+        fs_actions::MovementAction *pAction = defaultAction_;
+        // get last action of the list
         while(pAction->next() != NULL) {
             pAction = pAction->next();
         }
 
-        pAction->setNext(pToAdd);
+        pAction->link(pToAdd);
     }
 
     // set all new actions repeatable because scripted action are generally repeated
     fs_actions::MovementAction *pAction = pToAdd;
     while (pAction != NULL) {
-        pAction->setRepeatable(true);
         pAction->setSource(fs_actions::Action::kActionDefault);
+        pAction = pAction->next();
+    }
+}
+
+/*!
+ * Adds the given action to the list of actions which source is Alt.
+ * \param pToAdd fs_actions::MovementAction* Action to add
+ * \return void
+ *
+ */
+void PedInstance::addToAltActions(fs_actions::MovementAction *pToAdd) {
+    if (altAction_ == NULL) {
+        altAction_ = pToAdd;
+    } else {
+        fs_actions::MovementAction *pAction = altAction_;
+        // get last action of the list
+        while(pAction->next() != NULL) {
+            pAction = pAction->next();
+        }
+
+        pAction->link(pToAdd);
+    }
+
+    // set all new actions repeatable because scripted action are generally repeated
+    fs_actions::MovementAction *pAction = pToAdd;
+    while (pAction != NULL) {
+        pAction->setSource(fs_actions::Action::kActionAlt);
         pAction = pAction->next();
     }
 }
@@ -86,23 +115,35 @@ void PedInstance::addToDefaultActions(fs_actions::MovementAction *pToAdd) {
  * \return void
  *
  */
-void PedInstance::destroyAllActions2() {
+void PedInstance::destroyAllActions2(bool includeScripted) {
     while (currentAction_ != NULL) {
         fs_actions::MovementAction *pNext = currentAction_->next();
 
         if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
             // for scripted actions, they will be destroyed in the next while
+            currentAction_->removeAndJoinChain();
             delete currentAction_;
         }
 
         currentAction_ = pNext;
     }
 
-    while (scriptedAction_ != NULL) {
-        fs_actions::MovementAction *pNext = scriptedAction_->next();
-        delete scriptedAction_;
+    if (includeScripted) {
+        while (defaultAction_ != NULL) {
+            fs_actions::MovementAction *pNext = defaultAction_->next();
+            defaultAction_->unlinkNext();
+            delete defaultAction_;
 
-        scriptedAction_ = pNext;
+            defaultAction_ = pNext;
+        }
+
+        while (altAction_ != NULL) {
+            fs_actions::MovementAction *pNext = altAction_->next();
+            altAction_->unlinkNext();
+            delete altAction_;
+
+            altAction_ = pNext;
+        }
     }
 }
 
@@ -124,11 +165,11 @@ void PedInstance::destroyAllActions(bool includeDefault) {
     }
 
     if (includeDefault) {
-        while (scriptedAction_ != NULL) {
-            fs_actions::MovementAction *pNext = scriptedAction_->next();
-            delete scriptedAction_;
+        while (defaultAction_ != NULL) {
+            fs_actions::MovementAction *pNext = defaultAction_->next();
+            delete defaultAction_;
 
-            scriptedAction_ = pNext;
+            defaultAction_ = pNext;
         }
     }
 }
@@ -144,19 +185,22 @@ void PedInstance::destroyUseWeaponAction() {
 }
 
 /*!
- * Set the default action as the current one.
+ * Restart the actions of given source and set as current action.
+ * \param source
  */
-void PedInstance::restoreDefaultAction() {
-    if (scriptedAction_) {
-        // before restoring, reset all default actions
-        fs_actions::MovementAction *pAction = scriptedAction_;
-        while (pAction != NULL) {
-            pAction->reset();
-            pAction = pAction->next();
+void PedInstance::resetActions(fs_actions::Action::ActionSource source) {
+    fs_actions::MovementAction *pAction = (source == fs_actions::Action::kActionDefault) ?
+                                            defaultAction_ : altAction_;
+
+    if (pAction) {
+        // reset all scripted actions
+        fs_actions::MovementAction *pActionToReset = pAction;
+        while (pActionToReset != NULL) {
+            pActionToReset->reset();
+            pActionToReset = pActionToReset->next();
         }
 
-        destroyAllActions(false);
-        currentAction_ = scriptedAction_;
+        currentAction_ = pAction;
     }
 }
 
@@ -172,13 +216,13 @@ void PedInstance::changeSourceOfActions(fs_actions::Action::ActionSource source)
 
     if (currentAction_ == NULL) {
         //
-        currentAction_ = (source == fs_actions::Action::kActionDefault ? scriptedAction_ : NULL);
+        currentAction_ = (source == fs_actions::Action::kActionDefault ? defaultAction_ : altAction_);
     } else {
-        fs_actions::MovementAction *pAction = new fs_actions::SwitchSourceAction(source);
+        fs_actions::MovementAction *pAction = new fs_actions::ResetScriptedAction(source);
         if (currentAction_->suspend(this)) {
             // action has been suspended
-			// so we can change source now
-            pAction->setNext(currentAction_);
+			// so we can change source immediately
+            currentAction_->insertPrevious(pAction);
             currentAction_ = pAction;
         } else {
 			// action cannot be suspended
@@ -210,8 +254,8 @@ void PedInstance::addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance
  * is the default action for this ped.
  */
 void PedInstance::followNewPed(PedInstance *pPed) {
-    if (scriptedAction_ != NULL && scriptedAction_->type() == fs_actions::Action::kActTypeFollow) {
-        fs_actions::FollowAction *pAction = static_cast<fs_actions::FollowAction *> (scriptedAction_);
+    if (defaultAction_ != NULL && defaultAction_->type() == fs_actions::Action::kActTypeFollow) {
+        fs_actions::FollowAction *pAction = static_cast<fs_actions::FollowAction *> (defaultAction_);
         pAction->setTarget(pPed);
     }
 }
@@ -250,7 +294,7 @@ fs_actions::MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVeh
     fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigDefault, (ShootableMapObject *) pVehicle);
     // Then get in
     fs_actions::EnterVehicleAction *enterAct = new fs_actions::EnterVehicleAction(fs_actions::kOrigDefault, pVehicle);
-    action->setNext(enterAct);
+    action->link(enterAct);
 
     return action;
 }
@@ -297,11 +341,10 @@ void PedInstance::insertHitAction(DamageInflictType &d) {
     if (pHitAct != NULL) {
         //! if there was an action executing, suspends it
         if (currentAction_ != NULL) {
-            fs_actions::MovementAction *pPrevAct = currentAction_;
-            pPrevAct->suspend(this);
-            pHitAct->setNext(pPrevAct);
+            currentAction_->suspend(this);
+            currentAction_->insertPrevious(pHitAct);
         }
-
+        // hit becomes new current action
         currentAction_ = pHitAct;
     }
 }

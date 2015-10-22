@@ -810,7 +810,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             }
             if (isInVehicle && offset_nxt == 0) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Repeat driving scenario"))
-                pPed->addToDefaultActions(new fs_actions::ResetScriptedAction());
+                pPed->addToDefaultActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault));
             }
         } else if (sc.type == LevelData::kScenarioTypeUseVehicle) {
             if (!isInVehicle) {
@@ -840,7 +840,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             pPed->addToDefaultActions(new fs_actions::EscapeAction());
         } else if (sc.type == LevelData::kScenarioTypeReset) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Reset actions"))
-            pPed->addToDefaultActions(new fs_actions::ResetScriptedAction());
+            pPed->addToDefaultActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault));
         } else if (sc.type == 10) {
             printf("Scenario type 10\n");
         } else {
