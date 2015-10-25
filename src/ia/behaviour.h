@@ -36,7 +36,7 @@ class WeaponInstance;
 
 /*!
  * A Behaviour drives the ped's reactions.
- * It is composed of a set of components, each one 
+ * It is composed of a set of components, each one
  * responsible for an aspect of the reaction.
  * Behaviour reacts to events and modify the ped's
  * actions.
@@ -60,7 +60,9 @@ public:
         //! The ped has picked up a weapon
         kBehvEvtWeaponPickedUp,
         //! The ped has dropped a weapon
-        kBehvEvtWeaponDropped
+        kBehvEvtWeaponDropped,
+        //! An action has ended
+        kBehvEvtActionEnded
     };
 
     virtual ~Behaviour();
@@ -201,7 +203,7 @@ private:
     //! Makes the ped runs in the opposite direction from the armed ped
     void  runAway(PedInstance *pPed, PedInstance *pArmedPed, fs_actions::MovementAction *pAction);
 private:
-    /*! This timer is used to delay checking by the ped in order to 
+    /*! This timer is used to delay checking by the ped in order to
      * not consume too much CPU.*/
     fs_utils::Timer scoutTimer_;
     /*! True when ped is currently in panic.*/
@@ -233,16 +235,16 @@ private:
         kPoliceStatusAlert,
         //! Move closer from target to shoot at him
         kPoliceStatusFollowAndShoot,
-        //! When target drops his weapon, stop follow him
-        kPoliceStatusPendingEndFollow
+        //! When target drops his weapon, wait some time
+        kPoliceStatusPendingEndFollow,
+        //! after waiting, check if police should go on patrol again
+        kPoliceStatusCheckForDefault
     };
 
     PoliceStatus status_;
-    /*! This timer is used to delay checking by the ped in order to 
+    /*! This timer is used to delay checking by the ped in order to
      * not consume too much CPU.*/
     fs_utils::Timer scoutTimer_;
-    /*! Police wait for some time before really stopping following.*/
-    fs_utils::Timer endFollowTimer_;
     /*! The ped that the police officer is watching and eventually shooting at.*/
     PedInstance *pTarget_;
 };

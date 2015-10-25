@@ -390,7 +390,6 @@ void PedInstance::leaveState(uint32 as) {
 
 /*!
  * Update the current frame.
- * Returns true if an animation has ended.
  * \param elapsed Time since the last frame
  * \return True if animation has ended.
  */
@@ -456,12 +455,19 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
                 destroyAllActions2(true);
                 destroyUseWeaponAction();
             } else {
+                bool warnBehaviour = currentAction_->warnBehaviour();
+                fs_actions::Action::ActionType actionType = currentAction_->type();
                 // current action is finished : go to next one
                 fs_actions::MovementAction *pNext = currentAction_->next();
 
                 if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
                     currentAction_->removeAndJoinChain();
                     delete currentAction_;
+                    currentAction_ = NULL;
+                }
+
+                if (warnBehaviour) {
+                    behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtActionEnded, &actionType);
                 }
 
                 // If next action was suspended, resume it
@@ -480,6 +486,13 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
                 delete pReset;
             }
             resetActions(source);
+            break;
+        } else if (currentAction_->type() == fs_actions::Action::kActTypeReplaceCurrent) {
+            fs_actions::ReplaceCurrentAction *pReplace = static_cast<fs_actions::ReplaceCurrentAction *>(currentAction_);
+            fs_actions::MovementAction *pTarget = pReplace->targetAction();
+            // delete actions
+            destroyAllActions2(false);
+            currentAction_ = pTarget;
             break;
         } else {
             // current action is still running, so stop iterate now
@@ -546,7 +559,10 @@ bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
  * Terminate the current action of using weapon.
  */
 void PedInstance::stopUsingWeapon() {
-    pUseWeaponAction_->stop();
+    if (isUsingWeapon()) {
+        // stop shooting in case of automatic shooting
+        pUseWeaponAction_->stop();
+    }
 }
 
 /*!

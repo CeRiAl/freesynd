@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "utils/log.h"
 #include "pedmanager.h"
 #include "core/gamecontroller.h"
 
@@ -145,8 +146,8 @@ void PedManager::initAnimation(Ped *pedanim, unsigned short baseAnim)
  */
 PedInstance *PedManager::loadInstance(const LevelData::People & gamdata, uint16 ped_idx, int map, uint32 playerGroupId)
 {
-    if(gamdata.type == 0x0 || 
-        gamdata.location == LevelData::kPeopleLocNotVisible || 
+    if(gamdata.type == 0x0 ||
+        gamdata.location == LevelData::kPeopleLocNotVisible ||
         gamdata.location == LevelData::kPeopleLocAboveWalkSurf)
         return NULL;
 
@@ -239,17 +240,19 @@ PedInstance *PedManager::loadInstance(const LevelData::People & gamdata, uint16 
 
 /*!
  * Initialize the ped instance as one of our agent.
- * \param p_agent The agent reference
+ * \param pAgent The agent reference
  * \param obj_group_id Id of the agent's group.
  * \param pPed The ped to initialize
  */
-void PedManager::initOurAgent(Agent *p_agent, unsigned int obj_group_id, PedInstance *pPed) {
-    while (p_agent->numWeapons()) {
-        WeaponInstance *wi = p_agent->removeWeaponAtIndex(0);
+void PedManager::initOurAgent(Agent *pAgent, unsigned int obj_group_id, PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initOurAgent", ("Create player agent with id %d", pAgent->getId()))
+
+    while (pAgent->numWeapons()) {
+        WeaponInstance *wi = pAgent->removeWeaponAtIndex(0);
         pPed->addWeapon(wi);
         wi->setOwner(pPed);
     }
-    *((ModOwner *)pPed) = *((ModOwner *)p_agent);
+    *((ModOwner *)pPed) = *((ModOwner *)pAgent);
 
     pPed->setObjGroupID(obj_group_id);
     pPed->setObjGroupDef(PedInstance::og_dmAgent);
@@ -273,6 +276,8 @@ void PedManager::initOurAgent(Agent *p_agent, unsigned int obj_group_id, PedInst
  * \param pPed The ped to initialize
  */
 void PedManager::initEnemyAgent(PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initEnemyAgent", ("Create enemy agent with id %d", pPed->id()))
+
     pPed->setObjGroupID(2);
     pPed->addEnemyGroupDef(1);
     pPed->setBaseSpeed(256);
@@ -295,6 +300,8 @@ void PedManager::initEnemyAgent(PedInstance *pPed) {
  * \param pPed The ped to initialize
  */
 void PedManager::initGuard(PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initGuard", ("Create guard with id %d", pPed->id()))
+
     pPed->setObjGroupID(3);
     pPed->addEnemyGroupDef(1);
     pPed->setBaseSpeed(192);
@@ -311,6 +318,8 @@ void PedManager::initGuard(PedInstance *pPed) {
  * \param pPed The ped to initialize
  */
 void PedManager::initPolice(PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initPolice", ("Create police with id %d", pPed->id()))
+
     pPed->setObjGroupID(4);
     pPed->setHostileDesc(PedInstance::pd_smArmed);
     pPed->setBaseSpeed(160);
@@ -318,7 +327,7 @@ void PedManager::initPolice(PedInstance *pPed) {
     pPed->setBaseModAcc(0.4);
 
     pPed->behaviour().addComponent(new PoliceBehaviourComponent());
-} 
+}
 
 /*!
  * Initialize the ped instance as a civilian.
@@ -327,6 +336,8 @@ void PedManager::initPolice(PedInstance *pPed) {
  * \param pPed The ped to initialize
  */
 void PedManager::initCivilian(PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initCivilian", ("Create civilian with id %d", pPed->id()))
+
     pPed->setObjGroupID(5);
     pPed->addEnemyGroupDef(6);
     pPed->setHostileDesc(PedInstance::pd_smArmed);
@@ -334,8 +345,8 @@ void PedManager::initCivilian(PedInstance *pPed) {
     pPed->setTimeBeforeCheck(600);
     pPed->setBaseModAcc(0.2);
 
-    pPed->behaviour().addComponent(new PanicComponent());
-} 
+    //pPed->behaviour().addComponent(new PanicComponent());
+}
 
 /*!
  * Initialize the ped instance as a criminal.
@@ -344,6 +355,8 @@ void PedManager::initCivilian(PedInstance *pPed) {
  * \param pPed The ped to initialize
  */
 void PedManager::initCriminal(PedInstance *pPed) {
+    LOG(Log::k_FLG_GAME, "PedManager","initCriminal", ("Create criminal with id %d", pPed->id()))
+
     pPed->setObjGroupID(6);
     pPed->setBaseSpeed(128);
     pPed->setTimeBeforeCheck(500);

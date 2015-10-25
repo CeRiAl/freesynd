@@ -23,14 +23,15 @@
 
 #include "ped.h"
 #include "core/gamecontroller.h"
+#include "utils/log.h"
 
 /*!
- * Adds the given action to the list of actions.
+ * Add the given action to the list of actions.
  * If appendAction is true, the action is added after all existing actions.
  * Else existing actions are destroyed and new action becomes the only one.
+ * When current action is replaced, it is first suspended.
  * \param pActionToAdd The action to add
  * \param appendAction If true action is append after all existing actions.
- * \param addToDefault If true adds the action to the list of default actions.
  */
 void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bool appendAction) {
     if (pActionToAdd == NULL) {
@@ -40,18 +41,25 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
     if (currentAction_ == NULL) {
         currentAction_ = pActionToAdd;
     } else if (appendAction) {
+        // append new action at the end of action chain
         fs_actions::MovementAction *pAct = currentAction_;
         while(pAct->next()) {
             pAct = pAct->next();
         }
         pAct->link(pActionToAdd);
     } else {
-        // suspend current action
-        // if action is not suspendable, I don't know what happen!
-        currentAction_->suspend(this);
-        // only destroy not scripted actions
-        destroyAllActions2(false);
-        currentAction_ = pActionToAdd;
+        // replace current action with new one
+        // first : suspend current action
+        if (currentAction_->suspend(this)) {
+            // action has been suspended so destroy chain and set new current
+            destroyAllActions2(false);
+            currentAction_ = pActionToAdd;
+        } else {
+            // action cannot be suspended so delay new action using ReplaceCurrentAction
+            fs_actions::ReplaceCurrentAction *pReplace = new fs_actions::ReplaceCurrentAction(pActionToAdd);
+            currentAction_->insertNext(pReplace);
+        }
+
     }
 }
 
@@ -209,14 +217,9 @@ void PedInstance::resetActions(fs_actions::Action::ActionSource source) {
  * \param source The new source of actions
  */
 void PedInstance::changeSourceOfActions(fs_actions::Action::ActionSource source) {
-    if (isUsingWeapon()) {
-        // stop shooting in case of automatic shooting
-        pUseWeaponAction_->stop();
-    }
-
     if (currentAction_ == NULL) {
-        //
-        currentAction_ = (source == fs_actions::Action::kActionDefault ? defaultAction_ : altAction_);
+        // no action currently defined so immediately assign new chain
+        resetActions(source);
     } else {
         fs_actions::MovementAction *pAction = new fs_actions::ResetScriptedAction(source);
         if (currentAction_->suspend(this)) {

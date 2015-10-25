@@ -94,9 +94,11 @@ namespace fs_actions {
             kActTypeWalk,
             //! Wait to shoot action
             kActTypeWaitShoot,
+            kActTypeWait,
             //! Action of following a ped to shoot at it
             kActTypeFollowToShoot,
             kActTypeFire,
+            kActTypeReplaceCurrent,
             kActTypeUndefined
         };
 
@@ -195,6 +197,11 @@ namespace fs_actions {
         //! Returns true if the action can be executed while ped is in a vehicle
         bool canExecInVehicle() { return canExecInVehicle_; }
 
+        //! Returns true if Behaviour must be warned when action is finished
+        bool warnBehaviour() { return warnBehaviour_; }
+        //! Set if Behaviour must be warned when action is finished
+        void setWarnBehaviour(bool warn) { warnBehaviour_ = warn; }
+
         //! Return the next action in the list
         MovementAction *next() { return pNext_; }
         //! Return the previous action in the list
@@ -233,6 +240,8 @@ namespace fs_actions {
         MovementAction *pNext_;
         /*! This is the status of the action before it was suspended.*/
         ActionStatus savedStatus_;
+        /*! This flag is used to alert the behaviour on the action lifecycle.*/
+        bool warnBehaviour_;
     };
 
     /*!
@@ -330,6 +339,26 @@ namespace fs_actions {
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
     private:
         ActionSource sourceToReset_;
+    };
+
+    /*!
+     * This action is special: it used when we want to terminate the current chain of action
+     * in order to do something different but the current action is not suspendable.
+     * So we insert this action just after the current action and when it will be executed,
+     * the current chain will be dropped and the target action will take place.
+     */
+    class ReplaceCurrentAction : public MovementAction {
+    public:
+        ReplaceCurrentAction(MovementAction *newAction):
+            MovementAction(kActTypeReplaceCurrent, kOrigScript, false, true) {
+                pTargetAction_ = newAction;
+            }
+
+        MovementAction *targetAction() { return pTargetAction_; }
+    protected:
+        bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed) { return true; }
+    private:
+        MovementAction *pTargetAction_;
     };
 
     /*!
@@ -449,6 +478,22 @@ namespace fs_actions {
     };
 
     /*!
+     * This action is used to make a ped wait.
+     */
+    class WaitAction : public MovementAction {
+    public:
+        WaitAction(uint32 duration);
+
+    protected:
+        void doStart(Mission *pMission, PedInstance *pPed);
+        bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
+
+    protected:
+        /*! Duration of waiting.*/
+        fs_utils::Timer waitTimer_;
+    };
+
+    /*!
      * This action is used by peds that shoot at other peds.
      * It is used to insert a delay between 2 shoots.
      * When the ped is a policeman and the target is the player agent, the policeman
@@ -480,6 +525,8 @@ namespace fs_actions {
         FireWeaponAction(PedInstance *pPed);
 
         void setTarget(PedInstance *pPed) { pTarget_ = pPed; }
+        //! Action cannot be suspended
+        bool suspend(PedInstance *pPed) { return false; }
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);

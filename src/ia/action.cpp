@@ -77,6 +77,7 @@ Action(type, origin) {
     isExclusive_ = isExclusive;
     canExecInVehicle_ = canExecVehicle;
     targetState_ = PedInstance::pa_smNone;
+    warnBehaviour_ = false;
 }
 
 /*!
@@ -620,6 +621,22 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
         setSucceeded();
     }
     return true;
+}
+
+WaitAction::WaitAction(uint32 duration) :
+MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(duration) {}
+
+void WaitAction::doStart(Mission *pMission, PedInstance *pPed) {
+    waitTimer_.reset();
+}
+
+bool WaitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
+    if (waitTimer_.update(elapsed)) {
+        setSucceeded();
+        return true;
+    }
+
+    return false;
 }
 
 WaitBeforeShootingAction::WaitBeforeShootingAction(PedInstance *pPed) :

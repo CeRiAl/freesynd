@@ -52,7 +52,7 @@ const int GameplayMenu::kMiniMapScreenY = 46 + 44 + 10 + 46 + 44 + 15 + 2 * 32 +
 GameplayMenu::GameplayMenu(MenuManager *m) :
 Menu(m, fs_game_menus::kMenuIdGameplay, fs_game_menus::kMenuIdDebrief, "", "mscrenup.dat"),
 tick_count_(0), last_animate_tick_(0), last_motion_tick_(0),
-last_motion_x_(320), last_motion_y_(240), mission_hint_ticks_(0), 
+last_motion_x_(320), last_motion_y_(240), mission_hint_ticks_(0),
 mission_hint_(0), mission_(NULL), world_x_(0),
 world_y_(0), selection_(),
 target_(NULL),
@@ -150,7 +150,7 @@ bool GameplayMenu::scrollOnX() {
             change = true;
         }
     }
-    
+
     return change;
 }
 
@@ -290,7 +290,7 @@ void GameplayMenu::handleShow() {
     // init menu internal state
     isButtonSelectAllPressed_ = false;
     initWorldCoords();
-    
+
     // set graphic palette
     menu_manager_->setPaletteForMission(g_Session.getSelectedBlock().mis_id);
     g_Screen.clear(0);
@@ -405,7 +405,7 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
     drawWeaponSelectors();
     mm_renderer_.render(kMiniMapScreenX, kMiniMapScreenY);
 
-#ifdef _DEBUG    
+#ifdef _DEBUG
     // drawing of different sprites
 //    g_App.gameSprites().sprite(9 * 40 + 1)->draw(0, 0, 0, false, true);
 #if 0
@@ -629,7 +629,7 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
     }
 
     if (target_) {
-        if (target_->nature() == MapObject::kNaturePed || 
+        if (target_->nature() == MapObject::kNaturePed ||
             target_->nature() == MapObject::kNatureVehicle) {
             if (inrange)
                 g_System.useTargetRedCursor();
@@ -776,7 +776,7 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
                     world_y_ + y);
 #ifdef _DEBUG
     if ((modKeys & KMD_ALT) != 0) {
-        printf("Tile x:%d, y:%d, z:%d, ox:%d, oy:%d\n", 
+        printf("Tile x:%d, y:%d, z:%d, ox:%d, oy:%d\n",
             mapPt.tx, mapPt.ty, mapPt.tz, mapPt.ox, mapPt.oy);
 
         if (target_) {
@@ -836,7 +836,7 @@ void GameplayMenu::handleClickOnMinimap(int x, int y) {
 
 /*!
  * Set the point on the map the player is aiming at.
- * It depends on whether the player has clicked on a shootable target 
+ * It depends on whether the player has clicked on a shootable target
  * or a point on the ground.
  * \param x mouse X coord on screen
  * \param y mouse Y coord on screen
@@ -848,7 +848,7 @@ bool GameplayMenu::getAimedAt(int x, int y, PathNode &locToSet) {
 
     if (target_) {
         //  Player has aimed an object
-        // z is set to half the size of the object 
+        // z is set to half the size of the object
         int tilez = target_->tileZ() * 128 + target_->offZ() + (target_->sizeZ() >> 1);
         int offz = tilez % 128;
         tilez /= 128;
@@ -892,10 +892,8 @@ void GameplayMenu::stopShootingEvent()
     isPlayerShooting_ = false;
     for (SquadSelection::Iterator it = selection_.begin(); it != selection_.end(); ++it) {
         PedInstance *pAgent = *it;
-        
-        if (pAgent->isUsingWeapon()) {
-            pAgent->stopUsingWeapon();
-        }
+
+        pAgent->stopUsingWeapon();
     }
 }
 
@@ -907,7 +905,7 @@ void GameplayMenu::handleMouseUp(int x, int y, int button, const int modKeys)
     if (button == kMouseRightButton && isPlayerShooting_) {
         stopShootingEvent();
     }
-    
+
 }
 
 bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
@@ -927,7 +925,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
             int txt_posx = g_Screen.gameScreenWidth() / 2 - txt_width / 2;
             int txt_height = font_used->textHeight(false);
             int txt_posy = g_Screen.gameScreenHeight() / 2 - txt_height / 2;
-            
+
             g_Screen.drawRect(txt_posx - 10, txt_posy - 5,
                 txt_width + 20, txt_height + 10);
             gameFont()->drawText(txt_posx, txt_posy, str_paused.c_str(), 11);
@@ -948,7 +946,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
     // to menu
     if (key.unicode == K_SPACE) {
         if (mission_->completed() || mission_->failed()) {
-            // Do not display default leaving animation because 
+            // Do not display default leaving animation because
             // a success/failed animation will be played
             leaveAnim_ = "";
             if (mission_->completed()) {
@@ -956,7 +954,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
                 menu_manager_->gotoMenu(fs_game_menus::kMenuIdFliSuccess);
             }
             else if (mission_->failed()) {
-                
+
                 menu_manager_->gotoMenu(fs_game_menus::kMenuIdFliFailedMission);
             }
 
@@ -1348,7 +1346,7 @@ void GameplayMenu::selectAgent(size_t agentNo, bool addToGroup) {
         centerMinimapOnLeader();
         updtAgentsMarker();
         g_App.gameSounds().play(snd::SPEECH_SELECTED);
-        
+
         // redraw agent selectors
         addDirtyRect((agentNo % 2) * 65, (agentNo / 2) * 90 , 64, 46);
     }
