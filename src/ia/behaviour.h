@@ -201,13 +201,26 @@ private:
     //! Checks whether there is an armed ped next to the ped : returns that ped
     PedInstance * findNearbyArmedPed(Mission *pMission, PedInstance *pPed);
     //! Makes the ped runs in the opposite direction from the armed ped
-    void  runAway(PedInstance *pPed, PedInstance *pArmedPed, fs_actions::MovementAction *pAction);
+    void  runAway(PedInstance *pPed);
 private:
+    /*!
+     * Status of police behaviour.
+     */
+    enum PanicStatus {
+        //! Default status : not panicking
+        kPanicStatusAlert,
+        //! Ped is in panic
+        kPanicStatusInPanic
+    };
+
+    PanicStatus status_;
     /*! This timer is used to delay checking by the ped in order to
      * not consume too much CPU.*/
     fs_utils::Timer scoutTimer_;
-    /*! True when ped is currently in panic.*/
-    bool panicking_;
+    /*! Use to detect if ped is getting from panic to not panic.*/
+    bool backFromPanic_;
+    /*! The ped that frightened this civilian.*/
+    PedInstance *pArmedPed_;
 };
 
 class PoliceBehaviourComponent : public BehaviourComponent {
@@ -270,7 +283,11 @@ private:
         //! Default status : ped execute default actions
         kEnemyStatusDefault,
         //! The owner has found a target : so he follows it and shoot when nearby
-        kEnemyStatusFollowAndShoot
+        kEnemyStatusFollowAndShoot,
+        //! When target is dead, wait some time
+        kEnemyStatusPendingEndFollow,
+        //! after waiting, check if ped go back to default
+        kEnemyStatusCheckForDefault
     };
 
     EnemyStatus status_;

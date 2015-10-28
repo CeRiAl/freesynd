@@ -230,59 +230,60 @@ WeaponInstance * PersuadedBehaviourComponent::findWeaponWithAmmo(Mission *pMissi
 
 PanicComponent::PanicComponent():
         BehaviourComponent(), scoutTimer_(500) {
-    panicking_ = false;
+    backFromPanic_ = false;
+    status_ = kPanicStatusAlert;
     // this component will be activated by event to
     // lower CPU consumption
     setEnabled(false);
 }
 
-void PanicComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (pPed->isPanicImmuned()) {
+void PanicComponent::execute(int elapsed, Mission *pMission, PedInstance *pCivil) {
+    if (pCivil->isPanicImmuned()) {
         return;
     }
 
-    // True means ped must check if someone's armed around him
-    bool checkArmedPed = false;
-    fs_actions::MovementAction *pAction = pPed->currentAction();
-
-    if (pAction == NULL) {
-        // No action means that ped has finished running
-        // but we are still in panic mode, so check if there are armed people nearby
-        checkArmedPed = true;
-    } else if (!panicking_) {
-        // ped is walking calmly -> check if he should panic
-        if (scoutTimer_.update(elapsed)) {
-            checkArmedPed = true;
-        }
-    }
-
-    if (checkArmedPed) {
-        PedInstance *pArmedPed = findNearbyArmedPed(pMission, pPed);
-        if (pArmedPed) {
-            runAway(pPed, pArmedPed, pAction);
-        } else if (pAction == NULL) {
-            // ped has finished panicking and there no reason to panick
-            // so continue walking normaly
-            pPed->resetActions(fs_actions::Action::kActionDefault);
-            panicking_ = false;
+    if (status_ == kPanicStatusAlert && scoutTimer_.update(elapsed)) {
+        pArmedPed_ = findNearbyArmedPed(pMission, pCivil);
+        if (pArmedPed_) {
+            runAway(pCivil);
+            status_ = kPanicStatusInPanic;
+        } else if (backFromPanic_) {
+            backFromPanic_ = false;
+            pCivil->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            status_ = kPanicStatusAlert;
         }
     }
 }
 
-void PanicComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
+void PanicComponent::handleBehaviourEvent(PedInstance *pCivil, Behaviour::BehaviourEvent evtType, void *pCtxt) {
+    if (pCivil->isPanicImmuned()) {
+        return;
+    }
+
     switch(evtType) {
     case Behaviour::kBehvEvtWeaponOut:
-        if (!pPed->isPanicImmuned()) {
+        if (!isEnabled()) {
             setEnabled(true);
+            status_ = kPanicStatusAlert;
         }
         break;
     case Behaviour::kBehvEvtWeaponCleared:
         if (g_Session.getMission()->numArmedPeds() == 0) {
             setEnabled(false);
-            if (panicking_) {
-                pPed->resetActions(fs_actions::Action::kActionDefault);
-                panicking_ = false;
+            if (!pCivil->isCurrentActionFromSource(fs_actions::Action::kActionDefault)) {
+                pCivil->changeSourceOfActions(fs_actions::Action::kActionDefault);
+                status_ = kPanicStatusAlert;
             }
+        }
+        break;
+    case Behaviour::kBehvEvtActionEnded:
+        if (!pCivil->isCloseTo(pArmedPed_, kScoutDistance)) {
+            // Ped is far from armed guy,
+            pArmedPed_ = NULL;
+            // so next time check if there another enemy around
+            status_ = kPanicStatusAlert;
+            scoutTimer_.setToMax();
+            backFromPanic_ = true;
         }
         break;
     }
@@ -306,28 +307,29 @@ PedInstance * PanicComponent::findNearbyArmedPed(Mission *pMission, PedInstance 
 
 /*!
  * Makes the ped runs in the opposite way of the armed ped.
- * Saves the default action so it can be restored when the ped
- * don't panic anymore.
  * \param pPed The panicking ped
- * \param pArmedPed The armed ped that caused the panic
- * \param pWalkAction The action the ped was doing before panicking
  */
-void  PanicComponent::runAway(PedInstance *pPed, PedInstance *pArmedPed, fs_actions::MovementAction *pWalkAction) {
+void  PanicComponent::runAway(PedInstance *pPed) {
     // setting opposite direction for movement
     toDefineXYZ thisPedLoc;
     toDefineXYZ otherLoc;
     pPed->convertPosToXYZ(&thisPedLoc);
-    pArmedPed->convertPosToXYZ(&otherLoc);
+    pArmedPed_->convertPosToXYZ(&otherLoc);
 
     pPed->setDirection(otherLoc.x - thisPedLoc.x,
         otherLoc.y - thisPedLoc.y);
-    // Adds the action of running away
-    fs_actions::WalkToDirectionAction *pAction =
-        new fs_actions::WalkToDirectionAction(fs_actions::kOrigAction, 256);
-    // walk for a certain distance
-    pAction->setmaxDistanceToWalk(kDistanceToRun);
-    pPed->addMovementAction(pAction, false);
-    panicking_ = true;
+    if (pPed->altAction() == NULL) {
+        // Adds the action of running away
+        fs_actions::WalkToDirectionAction *pAction =
+            new fs_actions::WalkToDirectionAction(fs_actions::kOrigAction, 256);
+        // walk for a certain distance
+        pAction->setmaxDistanceToWalk(kDistanceToRun);
+        pAction->setWarnBehaviour(true);
+        pPed->addToAltActions(pAction);
+        pPed->addToAltActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionAlt));
+    }
+
+    pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
 }
 
 PoliceBehaviourComponent::PoliceBehaviourComponent():
@@ -348,8 +350,7 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
         if (findArmedPedNotPolice(pMission, pPed) != NULL) {
             status_ = kPoliceStatusAlert;
             scoutTimer_.setToMax(); // don't waste time waiting
-        } else if (pPed->currentAction() == NULL ||
-                   pPed->currentAction()->source() != fs_actions::Action::kActionDefault) {
+        } else if (!pPed->isCurrentActionFromSource(fs_actions::Action::kActionDefault)) {
             // there is no one around so go back to patrol if it's not already the case
             pPed->deselectWeapon();
             pPed->changeSourceOfActions(fs_actions::Action::kActionDefault);
@@ -379,7 +380,7 @@ void PoliceBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour
                 pPed->stopUsingWeapon();
                 // just wait a few time before engaging another target or simply
                 // continue with default behavior
-                fs_actions::WaitAction *pWait = new fs_actions::WaitAction(kPolicePendingTime);
+                fs_actions::WaitAction *pWait = new fs_actions::WaitAction(fs_actions::WaitAction::kWaitWeapon, kPolicePendingTime);
                 pWait->setWarnBehaviour(true);
                 pPed->addMovementAction(pWait, false);
             }
@@ -464,20 +465,34 @@ void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstanc
             followAndShootTarget(pPed, pArmedGuy);
         }
     } else if (status_ == kEnemyStatusFollowAndShoot && pTarget_->isDead()) {
-        // when the target has died, the guard puts away his weapon
-        // but we cannot deselect a weapon while shooting (it causes an assert error),
-        // so wait until the action is over
-        if (!pPed->isUsingWeapon()) {
-            status_ = kEnemyStatusDefault;
+        status_ = kEnemyStatusPendingEndFollow;
+        pTarget_ = NULL;
+        pPed->stopUsingWeapon();
+        // just wait a few time before engaging another target or simply
+        // continue with default behavior
+        fs_actions::WaitAction *pWait = new fs_actions::WaitAction(fs_actions::WaitAction::kWaitWeapon);
+        pWait->setWarnBehaviour(true);
+        pPed->addMovementAction(pWait, false);
+    } else if (status_ == kEnemyStatusCheckForDefault) {
+        // check if there is a nearby enemy
+        PedInstance *pArmedGuy = findPlayerAgent(pMission, pPed);
+        if (pArmedGuy != NULL) {
+            status_ = kEnemyStatusFollowAndShoot;
+            followAndShootTarget(pPed, pArmedGuy);
+        } else {
             pPed->deselectWeapon();
-            // back to default
             pPed->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            status_ = kEnemyStatusDefault;
         }
     }
 }
 
 void GuardBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
-
+    if (evtType == Behaviour::kBehvEvtActionEnded) {
+        // We are at the end of waiting period so check if we need to engage right now
+        // of if we can go back to default
+        status_ = kEnemyStatusCheckForDefault;
+    }
 }
 
 PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedInstance *pPed) {

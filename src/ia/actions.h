@@ -482,13 +482,23 @@ namespace fs_actions {
      */
     class WaitAction : public MovementAction {
     public:
-        WaitAction(uint32 duration);
+
+        enum WaitEnum {
+            kWaitTime,
+            kWaitWeapon
+        };
+
+        //! Wait for time
+        WaitAction(WaitEnum waitFor, uint32 duration);
+        //! Wait for weapon action
+        WaitAction(WaitEnum waitFor);
 
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 
     protected:
+        WaitEnum waitType_;
         /*! Duration of waiting.*/
         fs_utils::Timer waitTimer_;
     };

@@ -310,6 +310,11 @@ public:
     fs_actions::MovementAction * currentAction() { return currentAction_; }
     //! Returns the ped's first default action (can be null)
     fs_actions::MovementAction * defaultAction() { return defaultAction_; }
+    //! Returns true if ped's current action is from given source
+    bool isCurrentActionFromSource(fs_actions::Action::ActionSource source) {
+        return currentAction_ != NULL &&
+                currentAction_->source() == source;
+    }
     //! Returns the ped's first alternative action (can be null)
     fs_actions::MovementAction * altAction() { return altAction_; }
     //! Removes all ped's actions

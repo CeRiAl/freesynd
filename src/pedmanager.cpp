@@ -345,7 +345,7 @@ void PedManager::initCivilian(PedInstance *pPed) {
     pPed->setTimeBeforeCheck(600);
     pPed->setBaseModAcc(0.2);
 
-    //pPed->behaviour().addComponent(new PanicComponent());
+    pPed->behaviour().addComponent(new PanicComponent());
 }
 
 /*!

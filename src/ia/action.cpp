@@ -124,8 +124,10 @@ bool MovementAction::execute(int elapsed, Mission *pMission, PedInstance *pPed) 
 
 /*! \brief
  * Suspend the action if possible. Subclasses must call this method.
+ * By default actions are suspendable but they are not suspended if they
+ * are not started.
  * \param pPed PedInstance*
- * \return bool True if action has been suspended.
+ * \return bool True if action has been suspended or if it was not started.
  *
  */
 bool MovementAction::suspend(PedInstance *pPed) {
@@ -133,10 +135,9 @@ bool MovementAction::suspend(PedInstance *pPed) {
         pPed->leaveState(targetState_);
         savedStatus_ = status_;
         status_ = kActStatusSuspended;
-        return true;
     }
 
-    return false;
+    return true;
 }
 
 void MovementAction::resume(Mission *pMission, PedInstance *pPed) {
@@ -623,19 +624,32 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-WaitAction::WaitAction(uint32 duration) :
-MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(duration) {}
+WaitAction::WaitAction(WaitEnum waitFor, uint32 duration) :
+MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(duration) {
+    waitType_ = waitFor;
+}
+
+WaitAction::WaitAction(WaitEnum waitFor) :
+MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(0) {
+    waitType_ = waitFor;
+}
 
 void WaitAction::doStart(Mission *pMission, PedInstance *pPed) {
     waitTimer_.reset();
 }
 
 bool WaitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (waitTimer_.update(elapsed)) {
-        setSucceeded();
-        return true;
+    if (waitType_ == kWaitTime) {
+        if (waitTimer_.update(elapsed)) {
+            setSucceeded();
+            return true;
+        }
+    } else if (waitType_ == kWaitWeapon) {
+        if (!pPed->isUsingWeapon()) {
+            setSucceeded();
+            return true;
+        }
     }
-
     return false;
 }
 
