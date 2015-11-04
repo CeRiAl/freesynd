@@ -210,7 +210,8 @@ void SquadSelection::pickupWeapon(WeaponInstance *pWeapon, bool addAction) {
         PedInstance *pAgent = *it;
         // Agent has space in inventory
         if (pAgent->numWeapons() < WeaponHolder::kMaxHoldedWeapons) {
-            pAgent->addActionPickup(pWeapon, addAction);
+            fs_actions::MovementAction * pActions = pAgent->createActionPickup(pWeapon);
+            pAgent->addMovementAction(pActions, addAction);
 
             break;
         }

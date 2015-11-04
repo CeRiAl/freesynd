@@ -99,6 +99,10 @@ namespace fs_actions {
             kActTypeFollowToShoot,
             kActTypeFire,
             kActTypeReplaceCurrent,
+            //! Action to pick weapon up
+            kActTypePickUp,
+            //! Drop weapon
+            kActTypeDrop,
             kActTypeUndefined
         };
 
@@ -254,6 +258,10 @@ namespace fs_actions {
         //! Walk to given object
         WalkAction(CreatOrigin origin, ShootableMapObject *smo, int speed = -1);
 
+        //! Set the destination as the location of the given object
+        void setDestination(ShootableMapObject *smo);
+        //! Suspend action
+        bool suspend(PedInstance *pPed);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -279,7 +287,9 @@ namespace fs_actions {
         //! Walk following ped's direction
         WalkToDirectionAction(CreatOrigin origin, int speed = -1);
 
-        void setmaxDistanceToWalk(int distance) { maxDistanceToWalk_ = distance; }
+        void setMaxDistanceToWalk(int distance) { maxDistanceToWalk_ = distance; }
+        //! Suspend action
+        bool suspend(PedInstance *pPed);
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -371,6 +381,7 @@ namespace fs_actions {
         //! Walt to given point
         FollowAction(fs_actions::CreatOrigin origin, PedInstance *pTarget);
         void setTarget(PedInstance *pTarget) { pTarget_ = pTarget; }
+
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -437,6 +448,7 @@ namespace fs_actions {
     public:
         PickupWeaponAction(WeaponInstance *pWeapon);
 
+        void setWeapon(WeaponInstance *pWeapon) { pWeapon_ = pWeapon; }
     protected:
         void doStart(Mission *pMission, PedInstance *pPed);
         bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);

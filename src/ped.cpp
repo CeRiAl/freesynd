@@ -516,9 +516,13 @@ bool PedInstance::executeUseWeaponAction(int elapsed, Mission *pMission) {
             if (selectedWeapon() && selectedWeapon()->ammoRemaining() == 0) {
                 // when weapon is empty persuaded will drop weapon
                 if (isPersuaded()) {
-                    addActionPutdown(0, false);
-                    // add a reset action to automatically restore follow action after picking up weapon
-                    addMovementAction(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault), true);
+                    // we should be able to suspend as by default it should be a follow action
+                    currentAction_->suspend(this);
+                    fs_actions::PutdownWeaponAction *pDrop = new fs_actions::PutdownWeaponAction(0);
+                    pDrop->setWarnBehaviour(true);
+                    //
+                    pDrop->link(currentAction_);
+                    currentAction_ = pDrop;
                 } else {
                     // others will use another weapon
                     selectNextWeapon();
@@ -3141,11 +3145,19 @@ void PedInstance::handlePersuadedBy(PedInstance *pAgent) {
     owner_ = pAgent;
     setPanicImmuned();
 
-    clearDestination();
-    destroyAllActions(true);
-    // set follow owner as new default
-    addActionFollowPed(fs_actions::kOrigScript, pAgent);
-    behaviour_.replaceAllcomponentsBy(new PersuadedBehaviourComponent());
+    PersuadedBehaviourComponent *pComp = new PersuadedBehaviourComponent();
+    behaviour_.replaceAllcomponentsBy(pComp);
+
+    if (currentAction_ != NULL && !currentAction_->suspend(this)) {
+        // Usually, current action should be PersuadedHitAction
+        // so it cannot be suspended
+        // so delay init of behaviour until the action is finished
+        pComp->setWaitInitialization();
+        currentAction_->setWarnBehaviour(true);
+        // we insert a dummy action to be sure that after the current action
+        // is finished we won't have another unsuspendable action
+        currentAction_->insertNext(new fs_actions::WaitAction(fs_actions::WaitAction::kWaitTime, 5000));
+    }
 
     /////////////////// Check if still useful ////////////
     pAgent->cpyEnemyDefs(enemy_group_defs_);

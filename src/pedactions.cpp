@@ -274,17 +274,18 @@ void PedInstance::addActionPutdown(uint8 weaponIndex, bool appendAction) {
 }
 
 /*!
- * Adds the action to pick up weapon.
+ * Create 2 actions : one to go to the given weapon's location and one
+ * to pick up weapon.
  * \param pWeapon the weapon to pick up.
- * \param appendAction If true action is append after all existing actions.
  */
-void PedInstance::addActionPickup(WeaponInstance *pWeapon, bool appendAction) {
+fs_actions::MovementAction * PedInstance::createActionPickup(WeaponInstance *pWeapon) {
     // First go to weapon
-    fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigUser, pWeapon);
-    addMovementAction(action, appendAction);
+    fs_actions::WalkAction *pWalk = new fs_actions::WalkAction(fs_actions::kOrigUser, pWeapon);
     // Then pick it up
-    fs_actions::PickupWeaponAction *pPuAction = new fs_actions::PickupWeaponAction(pWeapon);
-    addMovementAction(pPuAction, true);
+    fs_actions::PickupWeaponAction *pPick = new fs_actions::PickupWeaponAction(pWeapon);
+    pWalk->link(pPick);
+
+    return pWalk;
 }
 
 /*!

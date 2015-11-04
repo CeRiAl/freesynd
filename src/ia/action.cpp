@@ -215,6 +215,11 @@ WalkAction::WalkAction(CreatOrigin origin, PathNode pn, int speed) :
 WalkAction::WalkAction(CreatOrigin origin, ShootableMapObject *smo, int speed) :
 MovementAction(kActTypeWalk, origin) {
     newSpeed_ = speed;
+    targetState_ = PedInstance::pa_smWalking;
+    setDestination(smo);
+}
+
+void WalkAction::setDestination(ShootableMapObject *smo) {
     // Set destination point
     dest_.setTileX(smo->tileX());
     dest_.setTileY(smo->tileY());
@@ -222,7 +227,11 @@ MovementAction(kActTypeWalk, origin) {
     dest_.setOffX(smo->offX());
     dest_.setOffY(smo->offY());
     dest_.setOffZ(smo->offZ());
-    targetState_ = PedInstance::pa_smWalking;
+}
+
+bool WalkAction::suspend(PedInstance *pPed) {
+    pPed->setSpeed(0);
+    return MovementAction::suspend(pPed);
 }
 
 void WalkAction::doStart(Mission *pMission, PedInstance *pPed) {
@@ -267,6 +276,11 @@ MovementAction(kActTypeWalk, origin) {
     dest_.z = -1;
     targetState_ = PedInstance::pa_smWalking;
     newSpeed_ = speed;
+}
+
+bool WalkToDirectionAction::suspend(PedInstance *pPed) {
+    pPed->setSpeed(0);
+    return MovementAction::suspend(pPed);
 }
 
 void WalkToDirectionAction::doStart(Mission *pMission, PedInstance *pPed) {
@@ -421,6 +435,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
         setFailed();
     } else {
         if (pPed->speed() != 0) {
+            //IS_FLAG_SET(pPed->stateMasks(), PedInstance::pa_smWalking)
             if (pPed->isCloseTo(pTarget_, kFollowDistance)) {
                 // We reached the target so stop moving temporarily
                 pPed->clearDestination();
@@ -510,7 +525,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
     return updated;
 }
 
-PutdownWeaponAction::PutdownWeaponAction(uint8 weaponIdx) : MovementAction(kActTypeUndefined, kOrigUser, true) {
+PutdownWeaponAction::PutdownWeaponAction(uint8 weaponIdx) : MovementAction(kActTypeDrop, kOrigUser, true) {
     weaponIdx_ = weaponIdx;
     targetState_ = PedInstance::pa_smPutDown;
 }
@@ -534,9 +549,6 @@ bool PutdownWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponCleared, pPed);
         }
 
-        if (pPed->isPersuaded()) {
-            pPed->behaviour().handleBehaviourEvent(Behaviour::kBehvEvtWeaponDropped);
-        }
         setSucceeded();
     }
 
@@ -544,7 +556,7 @@ bool PutdownWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance 
 }
 
 PickupWeaponAction::PickupWeaponAction(WeaponInstance *pWeapon) :
-    MovementAction(kActTypeUndefined, fs_actions::kOrigUser, true) {
+    MovementAction(kActTypePickUp, fs_actions::kOrigUser, true) {
     pWeapon_ = pWeapon;
     targetState_ = PedInstance::pa_smPickUp;
 }
@@ -568,12 +580,6 @@ bool PickupWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *
         pWeapon_->deactivate();
         pPed->addWeapon(pWeapon_);
 
-        if (pPed->isPersuaded()) {
-            pPed->behaviour().handleBehaviourEvent(Behaviour::kBehvEvtWeaponPickedUp);
-            if (pPed->owner()->isArmed()) {
-                pPed->selectWeapon(0);
-            }
-        }
         setSucceeded();
     }
     return true;

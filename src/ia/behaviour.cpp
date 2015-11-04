@@ -156,31 +156,48 @@ void PersuaderBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
 
 PersuadedBehaviourComponent::PersuadedBehaviourComponent():
         BehaviourComponent(), checkWeaponTimer_(1000) {
-    status_ = kPersuadStatusFollow;
+    status_ = kPersuadStatusInitializing;
 }
 
 void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (status_ == kPersuadStatusLookForWeapon) {
+    if (status_ == kPersuadStatusInitializing) {
+        pPed->destroyAllActions2(true);
+        // set follow owner as new default action
+        fs_actions::FollowAction *pAction = new fs_actions::FollowAction(fs_actions::kOrigScript, pPed->owner());
+        pPed->addToDefaultActions(pAction);
+        pPed->addMovementAction(pAction, false);
+        status_ = kPersuadStatusFollow;
+    } else if (status_ == kPersuadStatusLookForWeapon) {
         if (checkWeaponTimer_.update(elapsed)) {
             WeaponInstance *pWeapon = findWeaponWithAmmo(pMission, pPed);
             if (pWeapon) {
+                // a weapon is found
+                // initiate alternative actions : go to weapon and take it
                 status_ = kPersuadStatusTakeWeapon;
-                pPed->addActionPickup(pWeapon, false);
-                // add a reset action to automatically restore follow action after picking up weapon
-                pPed->addMovementAction(
-                        new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault), true);
+                if (pPed->altAction() == NULL) {
+                    fs_actions::MovementAction * pActions = pPed->createActionPickup(pWeapon);
+                    // set a warning after picking up weapon so we know we can select it
+                    pActions->next()->setWarnBehaviour(true);
+                    // add a reset action to automatically go back to follow owner after picking up weapon
+                    pActions->next()->link(
+                        new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault));
+                    pPed->addToAltActions(pActions);
+                } else {
+                    // just update weapon
+                    updateAltActionsWith(pWeapon, pPed);
+                }
+                // execute alternative actions
+                pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
             }
         }
     }
 }
 
 void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
-    if (evtType == Behaviour::kBehvEvtWeaponPickedUp) {
-        // weapon found so back to normal
-        status_ = kPersuadStatusFollow;
-    } else if (evtType == Behaviour::kBehvEvtWeaponOut) {
+    if (evtType == Behaviour::kBehvEvtWeaponOut) {
         PedInstance *pPedSource = static_cast<PedInstance *> (pCtxt);
         if (pPedSource == pPed->owner()) {
+            // the ped who is armed is our owner so select weapon or look for one
             if (pPed->numWeapons() > 0) {
                 pPed->selectWeapon(0);
             } else {
@@ -190,12 +207,29 @@ void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
         }
     } else if (evtType == Behaviour::kBehvEvtWeaponCleared) {
         PedInstance *pPedSource = static_cast<PedInstance *> (pCtxt);
-        if (pPedSource == pPed->owner() && pPed->selectedWeapon()) {
-            pPed->deselectWeapon();
+        if (pPedSource == pPed->owner()) {
+            // the ped who cleared his weapon is our owner so deselect weapon or
+            // stop searching for one
+            if (pPed->deselectWeapon() == NULL && status_ == kPersuadStatusLookForWeapon) {
+                status_ = kPersuadStatusFollow;
+            }
         }
-    } else if (evtType == Behaviour::kBehvEvtWeaponDropped) {
-        //
-        status_ = kPersuadStatusLookForWeapon;
+    } else if (evtType == Behaviour::kBehvEvtActionEnded) {
+        if (status_ == kPersuadStatusWaitInit) {
+            status_ = kPersuadStatusInitializing;
+        } else {
+            fs_actions::Action::ActionType *pType = static_cast<fs_actions::Action::ActionType *> (pCtxt);
+            if (*pType == fs_actions::Action::kActTypePickUp) {
+                if (pPed->owner()->isArmed()) {
+                    pPed->selectWeapon(0);
+                }
+                // weapon found so back to normal
+                status_ = kPersuadStatusFollow;
+            } else if (*pType == fs_actions::Action::kActTypeDrop) {
+                // weapon dropped so look for another
+                status_ = kPersuadStatusLookForWeapon;
+            }
+        }
     }
 }
 
@@ -226,6 +260,20 @@ WeaponInstance * PersuadedBehaviourComponent::findWeaponWithAmmo(Mission *pMissi
         }
     }
     return pWeaponFound;
+}
+
+void PersuadedBehaviourComponent::updateAltActionsWith(WeaponInstance *pWeapon, PedInstance *pPed) {
+    fs_actions::MovementAction *pAction = pPed->altAction();
+    while (pAction != NULL) {
+        if (pAction->type() == fs_actions::Action::kActTypeWalk) {
+            fs_actions::WalkAction *pWalk = static_cast<fs_actions::WalkAction *> (pAction);
+            pWalk->setDestination(pWeapon);
+        } else if (pAction->type() == fs_actions::Action::kActTypePickUp) {
+            fs_actions::PickupWeaponAction *pWalk = static_cast<fs_actions::PickupWeaponAction *> (pAction);
+            pWalk->setWeapon(pWeapon);
+        }
+        pAction = pAction->next();
+    }
 }
 
 PanicComponent::PanicComponent():
@@ -323,7 +371,7 @@ void  PanicComponent::runAway(PedInstance *pPed) {
         fs_actions::WalkToDirectionAction *pAction =
             new fs_actions::WalkToDirectionAction(fs_actions::kOrigAction, 256);
         // walk for a certain distance
-        pAction->setmaxDistanceToWalk(kDistanceToRun);
+        pAction->setMaxDistanceToWalk(kDistanceToRun);
         pAction->setWarnBehaviour(true);
         pPed->addToAltActions(pAction);
         pPed->addToAltActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionAlt));

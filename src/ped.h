@@ -342,7 +342,7 @@ public:
     //! Adds action to put down weapon on the ground
     void addActionPutdown(uint8 weaponIndex, bool appendAction);
     //! Adds action to pick up weapon from the ground
-    void addActionPickup(WeaponInstance *pWeapon, bool appendAction);
+    fs_actions::MovementAction * createActionPickup(WeaponInstance *pWeapon);
     //! Creates actions to walk and enter a given vehicle
     fs_actions::MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
     //! Adds action to drive vehicle to destination
