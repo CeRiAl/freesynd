@@ -210,7 +210,7 @@ void SquadSelection::pickupWeapon(WeaponInstance *pWeapon, bool addAction) {
         PedInstance *pAgent = *it;
         // Agent has space in inventory
         if (pAgent->numWeapons() < WeaponHolder::kMaxHoldedWeapons) {
-            fs_actions::MovementAction * pActions = pAgent->createActionPickup(pWeapon);
+            MovementAction * pActions = pAgent->createActionPickup(pWeapon);
             pAgent->addMovementAction(pActions, addAction);
 
             break;
@@ -229,7 +229,7 @@ void SquadSelection::followPed(PedInstance *pPed, bool addAction) {
     {
         PedInstance *pAgent = *it;
         if (!pAgent->inVehicle()) { // Agent must not be in a vehicle
-            pAgent->addActionFollowPed(fs_actions::kOrigUser, pPed);
+            pAgent->addActionFollowPed(pPed);
         }
     }
 }
@@ -254,10 +254,10 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
 
         if (getIn && !pAgent->inVehicle()) {
             // Agent is out and everybody must get in
-            fs_actions::MovementAction *pAction =
+            MovementAction *pAction =
                 pAgent->createActionEnterVehicle(pVehicle);
             pAgent->addMovementAction(pAction, addAction);
-            //pAgent->addActionEnterVehicle(fs_actions::kOrigUser, pVehicle, addAction);
+            //pAgent->addActionEnterVehicle(kOrigUser, pVehicle, addAction);
         } else if (!getIn && pAgent->inVehicle() == pVehicle) {
             // Agent is in the given car and everybody must get out
             // first stops the vehicle if it's a car
@@ -265,7 +265,7 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
                 pVehicle->clearDestination();
                 // tells the driver to stop
                 VehicleInstance *pVi = dynamic_cast<VehicleInstance *>(pVehicle);
-                pVi->getDriver()->destroyAllActions(false);
+                pVi->getDriver()->destroyAllActions();
             }
             // Ped can get off only if vehicle is stopped
             // (ie trains only stop in stations)
@@ -307,7 +307,7 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
                     //soy = sty % 256;
                     sty = sty / 256;
                     PathNode tpn = PathNode(stx, sty, 0, 128, 128);
-                    pAgent->addActionDriveVehicle(fs_actions::kOrigUser, pVehicle, tpn, addAction);
+                    pAgent->addActionDriveVehicle(pVehicle, tpn, addAction);
                 }
             }
         } else {
@@ -326,7 +326,7 @@ void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
                 tpn.setOffY(63 + 128 * (i >> 1));
             }
 
-            pAgent->addActionWalk(tpn, fs_actions::kOrigUser, addAction);
+            pAgent->addActionWalk(tpn, addAction);
         }
     } // end of for
 }

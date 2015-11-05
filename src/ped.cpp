@@ -452,15 +452,15 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
         if (currentAction_->isFinished()) {
             if (health_ == 0) {
                 // Ped may have died during execution of a HitAction.
-                destroyAllActions2(true);
+                destroyAllActions(true);
                 destroyUseWeaponAction();
             } else {
                 bool warnBehaviour = currentAction_->warnBehaviour();
-                fs_actions::Action::ActionType actionType = currentAction_->type();
+                Action::ActionType actionType = currentAction_->type();
                 // current action is finished : go to next one
-                fs_actions::MovementAction *pNext = currentAction_->next();
+                MovementAction *pNext = currentAction_->next();
 
-                if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
+                if (currentAction_->source() == Action::kActionNotScripted) {
                     currentAction_->removeAndJoinChain();
                     delete currentAction_;
                     currentAction_ = NULL;
@@ -477,21 +477,21 @@ bool PedInstance::executeAction(int elapsed, Mission *pMission) {
 
                 currentAction_ = pNext;
             }
-        } else if (currentAction_->type() == fs_actions::Action::kActTypeReset) {
-            fs_actions::ResetScriptedAction *pReset = static_cast<fs_actions::ResetScriptedAction *>(currentAction_);
-            fs_actions::Action::ActionSource source = pReset->sourceToReset();
+        } else if (currentAction_->type() == Action::kActTypeReset) {
+            ResetScriptedAction *pReset = static_cast<ResetScriptedAction *>(currentAction_);
+            Action::ActionSource source = pReset->sourceToReset();
 
-            if (pReset->source() == fs_actions::Action::kActionNotScripted) {
+            if (pReset->source() == Action::kActionNotScripted) {
                 pReset->removeAndJoinChain();
                 delete pReset;
             }
             resetActions(source);
             break;
-        } else if (currentAction_->type() == fs_actions::Action::kActTypeReplaceCurrent) {
-            fs_actions::ReplaceCurrentAction *pReplace = static_cast<fs_actions::ReplaceCurrentAction *>(currentAction_);
-            fs_actions::MovementAction *pTarget = pReplace->targetAction();
+        } else if (currentAction_->type() == Action::kActTypeReplaceCurrent) {
+            ReplaceCurrentAction *pReplace = static_cast<ReplaceCurrentAction *>(currentAction_);
+            MovementAction *pTarget = pReplace->targetAction();
             // delete actions
-            destroyAllActions2(false);
+            destroyAllActions(false);
             currentAction_ = pTarget;
             break;
         } else {
@@ -518,7 +518,7 @@ bool PedInstance::executeUseWeaponAction(int elapsed, Mission *pMission) {
                 if (isPersuaded()) {
                     // we should be able to suspend as by default it should be a follow action
                     currentAction_->suspend(this);
-                    fs_actions::PutdownWeaponAction *pDrop = new fs_actions::PutdownWeaponAction(0);
+                    PutdownWeaponAction *pDrop = new PutdownWeaponAction(0);
                     pDrop->setWarnBehaviour(true);
                     //
                     pDrop->link(currentAction_);
@@ -574,8 +574,8 @@ void PedInstance::stopUsingWeapon() {
  * \param aimedPt New target position
  */
 void PedInstance::updateShootingTarget(const PathNode &aimedPt) {
-    if (pUseWeaponAction_->type() == fs_actions::Action::kActTypeShoot) {
-        fs_actions::ShootAction *pShoot = dynamic_cast<fs_actions::ShootAction *>(pUseWeaponAction_);
+    if (pUseWeaponAction_->type() == Action::kActTypeShoot) {
+        ShootAction *pShoot = dynamic_cast<ShootAction *>(pUseWeaponAction_);
         pShoot->setAimedAt(aimedPt);
     }
 }
@@ -621,7 +621,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                 actions_queue_.begin() + indx;
             if ((it->state & 128) == 0 && (it->state & 12) != 0
                 // do not remove scripted actions
-                && (it->origin_desc != fs_actions::kOrigScript))
+                && (it->origin_desc != fs_action::kOrigScript))
             {
                 actions_queue_.erase(it);
             }
@@ -2155,7 +2155,7 @@ PedInstance::~PedInstance()
     delete intelligence_;
     intelligence_ = NULL;
 
-    destroyAllActions2();
+    destroyAllActions();
     destroyUseWeaponAction();
 }
 
@@ -2646,7 +2646,7 @@ void PedInstance::handleHit(DamageInflictType &d) {
         }
 
         // Only add a hit if ped is not currently being hit
-        if (currentAction_ == NULL || currentAction_->type() != fs_actions::Action::kActTypeHit) {
+        if (currentAction_ == NULL || currentAction_->type() != Action::kActTypeHit) {
             insertHitAction(d);
         }
 
@@ -2728,7 +2728,7 @@ bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
         health_ = 0;
         drop_actions_ = true;
         clearDestination();
-        destroyAllActions2(true);
+        destroyAllActions(true);
         switchActionStateTo(PedInstance::pa_smDead);
         if (isPersuaded())
             owner_->rmvPersuaded(this);
@@ -3119,8 +3119,8 @@ uint16 PedInstance::getRequiredPointsToPersuade(PedType type) {
  * \param pOtherPed Ped to persuade.
  */
 bool PedInstance::canPersuade(PedInstance *pOtherPed) {
-    fs_actions::Action *pAction = pOtherPed->currentAction();
-    if (pAction != NULL && pAction->type() == fs_actions::Action::kActTypeHit) {
+    Action *pAction = pOtherPed->currentAction();
+    if (pAction != NULL && pAction->type() == Action::kActTypeHit) {
         // cannot persuade a ped if he's currently being hit
         return false;
     }
@@ -3156,7 +3156,7 @@ void PedInstance::handlePersuadedBy(PedInstance *pAgent) {
         currentAction_->setWarnBehaviour(true);
         // we insert a dummy action to be sure that after the current action
         // is finished we won't have another unsuspendable action
-        currentAction_->insertNext(new fs_actions::WaitAction(fs_actions::WaitAction::kWaitTime, 5000));
+        currentAction_->insertNext(new WaitAction(WaitAction::kWaitTime, 5000));
     }
 
     /////////////////// Check if still useful ////////////

@@ -1050,7 +1050,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
             ped->createActQWalking(as, NULL, NULL, 160, 1024);
             as.main_act = as.actions.size() - 1;
             as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_actions::kOrigUser;
+            as.origin_desc = fs_action::kOrigUser;
             if (modKeys & KMD_CTRL)
                 ped->addActQToQueue(as);
             else

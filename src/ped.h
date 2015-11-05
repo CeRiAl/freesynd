@@ -301,26 +301,24 @@ public:
     // Action management
     //*************************************
     //! Adds the given action to the list of actions
-    void addMovementAction(fs_actions::MovementAction *pAction, bool appendAction);
+    void addMovementAction(MovementAction *pAction, bool appendAction);
     //! Adds the given action to the list of default scripted actions
-    void addToDefaultActions(fs_actions::MovementAction *pToAdd);
+    void addToDefaultActions(MovementAction *pToAdd);
     //! Adds the given action to the list of alternative scripted actions
-    void addToAltActions(fs_actions::MovementAction *pToAdd);
+    void addToAltActions(MovementAction *pToAdd);
     //! Returns the ped's current movement action
-    fs_actions::MovementAction * currentAction() { return currentAction_; }
+    MovementAction * currentAction() { return currentAction_; }
     //! Returns the ped's first default action (can be null)
-    fs_actions::MovementAction * defaultAction() { return defaultAction_; }
+    MovementAction * defaultAction() { return defaultAction_; }
     //! Returns true if ped's current action is from given source
-    bool isCurrentActionFromSource(fs_actions::Action::ActionSource source) {
+    bool isCurrentActionFromSource(Action::ActionSource source) {
         return currentAction_ != NULL &&
                 currentAction_->source() == source;
     }
     //! Returns the ped's first alternative action (can be null)
-    fs_actions::MovementAction * altAction() { return altAction_; }
-    //! Removes all ped's actions
-    void destroyAllActions(bool includeDefault);
+    MovementAction * altAction() { return altAction_; }
     //! Removes all ped's actions : current + scripted
-    void destroyAllActions2(bool includeScripted = true);
+    void destroyAllActions(bool includeScripted = true);
     //! Removes ped's action of using weapon
     void destroyUseWeaponAction();
     //! Execute the current action if any
@@ -328,25 +326,25 @@ public:
     //! Execute a weapon action if any
     bool executeUseWeaponAction(int elapsed, Mission *pMission);
     //! Restart the actions of given source and set as current action
-    void resetActions(fs_actions::Action::ActionSource source);
+    void resetActions(Action::ActionSource source);
     //! Switch to the given source of action
-    void changeSourceOfActions(fs_actions::Action::ActionSource source);
+    void changeSourceOfActions(Action::ActionSource source);
 
     //! Adds action to walk to a given destination
-    void addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction);
+    void addActionWalk(const PathNode &tpn, bool appendAction);
 
     //! Adds action to follow a ped
-    void addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance *pPed);
+    void addActionFollowPed(PedInstance *pPed);
     //! Change the ped to follow (used for persuaded)
     void followNewPed(PedInstance *pPed);
     //! Adds action to put down weapon on the ground
     void addActionPutdown(uint8 weaponIndex, bool appendAction);
     //! Adds action to pick up weapon from the ground
-    fs_actions::MovementAction * createActionPickup(WeaponInstance *pWeapon);
+    MovementAction * createActionPickup(WeaponInstance *pWeapon);
     //! Creates actions to walk and enter a given vehicle
-    fs_actions::MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
+    MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
     //! Adds action to drive vehicle to destination
-    void addActionDriveVehicle(fs_actions::CreatOrigin origin,
+    void addActionDriveVehicle(
            VehicleInstance *pVehicle, PathNode &destination, bool appendAction);
     //! Return true if ped can use a weapon
     bool canAddUseWeaponAction(WeaponInstance *pWeapon = NULL);
@@ -808,7 +806,7 @@ public:
         uint16 state;
         uint32 group_id;
         //! Which process created this action group
-        fs_actions::CreatOrigin origin_desc;
+        fs_action::CreatOrigin origin_desc;
     } actionQueueGroupType;
 
     // act_find (PedInstance::AiAction)
@@ -887,7 +885,7 @@ public:
     void updtActGFiringShots(uint32 id, uint32 make_shots);
     void updtActGFiring(uint32 id, PathNode *tpn,
         ShootableMapObject *tsmo = NULL);
-    bool checkActGCompleted(fs_actions::CreatOrigin origin);
+    bool checkActGCompleted(fs_action::CreatOrigin origin);
     void pauseAllInActG(actionQueueGroupType &as, uint32 start_pos = 1);
 
     //! Returns ped's speed under normal conditions
@@ -938,17 +936,17 @@ protected:
     /*! Ped's behaviour.*/
     Behaviour behaviour_;
     /*! Current action*/
-    fs_actions::MovementAction *currentAction_;
+    MovementAction *currentAction_;
     /*!
      * Default and Alternative actions define the behaviour of non player controlled peds.
      * Default actions come from a mission file and alternative actions are used by ped
      * to react in certain situations (like fight).
      * Those actions are not deleted when finished.
      */
-    fs_actions::MovementAction *defaultAction_;
-    fs_actions::MovementAction *altAction_;
+    MovementAction *defaultAction_;
+    MovementAction *altAction_;
     /*! Current action of using a weapon.*/
-    fs_actions::UseWeaponAction *pUseWeaponAction_;
+    UseWeaponAction *pUseWeaponAction_;
 
 
     uint32 action_grp_id_;

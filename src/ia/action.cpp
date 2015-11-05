@@ -34,8 +34,6 @@
 #include "agentmanager.h"
 #include "core/squad.h"
 
-using namespace fs_actions;
-
 //*************************************
 // Constant definition
 //*************************************
@@ -50,8 +48,7 @@ const uint8 ShootAction::kShootActionSingleShoot = 2;
  * \param type What type of action.
  * \param origin Who has created this action.
  */
-Action::Action(ActionType type, CreatOrigin origin) {
-    origin_ = origin;
+Action::Action(ActionType type) {
     status_ = kActStatusNotStarted;
     type_ = type;
     source_ = kActionNotScripted;
@@ -70,8 +67,8 @@ void Action::reset() {
  * \param isExclusive Does action allow shooting
  * \param canExecVehicle Is action is allowed while ped is in vehicle
  */
-MovementAction::MovementAction(ActionType type, CreatOrigin origin, bool isExclusive, bool canExecVehicle) :
-Action(type, origin) {
+MovementAction::MovementAction(ActionType type, bool isExclusive, bool canExecVehicle) :
+Action(type) {
     pNext_ = NULL;
     pPrevious_ = NULL;
     isExclusive_ = isExclusive;
@@ -205,15 +202,15 @@ void MovementAction::removeAndJoinChain() {
     pNext_ = NULL;
 }
 
-WalkAction::WalkAction(CreatOrigin origin, PathNode pn, int speed) :
-    MovementAction(kActTypeWalk, origin) {
+WalkAction::WalkAction(PathNode pn, int speed) :
+    MovementAction(kActTypeWalk) {
     newSpeed_ = speed;
     dest_ = pn;
     targetState_ = PedInstance::pa_smWalking;
 }
 
-WalkAction::WalkAction(CreatOrigin origin, ShootableMapObject *smo, int speed) :
-MovementAction(kActTypeWalk, origin) {
+WalkAction::WalkAction(ShootableMapObject *smo, int speed) :
+MovementAction(kActTypeWalk) {
     newSpeed_ = speed;
     targetState_ = PedInstance::pa_smWalking;
     setDestination(smo);
@@ -260,16 +257,16 @@ bool WalkAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
     return updated;
 }
 
-WalkToDirectionAction::WalkToDirectionAction(CreatOrigin origin, const PathNode &dest) :
-MovementAction(kActTypeWalk, origin) {
+WalkToDirectionAction::WalkToDirectionAction(const PathNode &dest) :
+MovementAction(kActTypeWalk) {
     maxDistanceToWalk_ = 0;
     dest.convertPosToXYZ(&dest_);
     targetState_ = PedInstance::pa_smWalking;
     newSpeed_ = -1;
 }
 
-WalkToDirectionAction::WalkToDirectionAction(CreatOrigin origin, int speed) :
-MovementAction(kActTypeWalk, origin) {
+WalkToDirectionAction::WalkToDirectionAction(int speed) :
+MovementAction(kActTypeWalk) {
     maxDistanceToWalk_ = 0;
     dest_.x = -1;
     dest_.y = -1;
@@ -355,7 +352,7 @@ bool WalkToDirectionAction::doExecute(int elapsed, Mission *pMission, PedInstanc
  * \param loc Center of the trigger zone
  */
 TriggerAction::TriggerAction(int32 range, const toDefineXYZ &loc) :
-        MovementAction(kActTypeUndefined, kOrigScript, false, true) {
+        MovementAction(kActTypeUndefined, false, true) {
     range_ = range;
     centerLoc_ = loc;
 }
@@ -393,8 +390,8 @@ bool EscapeAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
  * Class constructor.
  * \param pTarget The ped to follow.
  */
-FollowAction::FollowAction(fs_actions::CreatOrigin origin, PedInstance *pTarget) :
-MovementAction(kActTypeFollow, origin) {
+FollowAction::FollowAction(PedInstance *pTarget) :
+MovementAction(kActTypeFollow) {
     pTarget_ = pTarget;
     targetState_ = PedInstance::pa_smWalking;
 }
@@ -465,8 +462,8 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
  * Class constructor.
  * \param pTarget The ped to follow.
  */
-FollowToShootAction::FollowToShootAction(fs_actions::CreatOrigin origin, PedInstance *pTarget) :
-MovementAction(kActTypeFollowToShoot, origin) {
+FollowToShootAction::FollowToShootAction(PedInstance *pTarget) :
+MovementAction(kActTypeFollowToShoot) {
     pTarget_ = pTarget;
     targetState_ = PedInstance::pa_smWalking;
     followDistance_ = 0;
@@ -525,7 +522,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
     return updated;
 }
 
-PutdownWeaponAction::PutdownWeaponAction(uint8 weaponIdx) : MovementAction(kActTypeDrop, kOrigUser, true) {
+PutdownWeaponAction::PutdownWeaponAction(uint8 weaponIdx) : MovementAction(kActTypeDrop, true) {
     weaponIdx_ = weaponIdx;
     targetState_ = PedInstance::pa_smPutDown;
 }
@@ -556,7 +553,7 @@ bool PutdownWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance 
 }
 
 PickupWeaponAction::PickupWeaponAction(WeaponInstance *pWeapon) :
-    MovementAction(kActTypePickUp, fs_actions::kOrigUser, true) {
+    MovementAction(kActTypePickUp, true) {
     pWeapon_ = pWeapon;
     targetState_ = PedInstance::pa_smPickUp;
 }
@@ -585,8 +582,8 @@ bool PickupWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-EnterVehicleAction::EnterVehicleAction(CreatOrigin origin, Vehicle *pVehicle) :
-        MovementAction(kActTypeUndefined, origin, true) {
+EnterVehicleAction::EnterVehicleAction(Vehicle *pVehicle) :
+        MovementAction(kActTypeUndefined, true) {
     pVehicle_ = pVehicle;
 }
 
@@ -607,8 +604,8 @@ bool EnterVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-DriveVehicleAction::DriveVehicleAction(CreatOrigin origin, VehicleInstance *pVehicle, PathNode &dest) :
-    MovementAction(kActTypeUndefined, origin, false, true) {
+DriveVehicleAction::DriveVehicleAction(VehicleInstance *pVehicle, PathNode &dest) :
+    MovementAction(kActTypeUndefined, false, true) {
     pVehicle_ = pVehicle;
     dest_ = dest;
 }
@@ -631,12 +628,12 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
 }
 
 WaitAction::WaitAction(WaitEnum waitFor, uint32 duration) :
-MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(duration) {
+MovementAction(kActTypeWait, true), waitTimer_(duration) {
     waitType_ = waitFor;
 }
 
 WaitAction::WaitAction(WaitEnum waitFor) :
-MovementAction(kActTypeWait, kOrigScript, true), waitTimer_(0) {
+MovementAction(kActTypeWait, true), waitTimer_(0) {
     waitType_ = waitFor;
 }
 
@@ -660,7 +657,7 @@ bool WaitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
 }
 
 WaitBeforeShootingAction::WaitBeforeShootingAction(PedInstance *pPed) :
-MovementAction(kActTypeWaitShoot, kOrigScript, true), waitTimer_(2000) {
+MovementAction(kActTypeWaitShoot, true), waitTimer_(2000) {
     pTarget_ = pPed;
 }
 
@@ -709,7 +706,7 @@ bool WaitBeforeShootingAction::doExecute(int elapsed, Mission *pMission, PedInst
 }
 
 FireWeaponAction::FireWeaponAction(PedInstance *pPed) :
-MovementAction(kActTypeFire, kOrigScript) {
+MovementAction(kActTypeFire) {
     pTarget_ = pPed;
 }
 
@@ -743,8 +740,8 @@ bool FireWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *pP
     return true;
 }
 
-HitAction::HitAction(CreatOrigin origin, ShootableMapObject::DamageInflictType &d) :
-MovementAction(kActTypeHit, origin) {
+HitAction::HitAction(ShootableMapObject::DamageInflictType &d) :
+MovementAction(kActTypeHit) {
     damage_.aimedLoc = d.aimedLoc;
     damage_.dtype = d.dtype;
     damage_.dvalue = d.dvalue;
@@ -754,7 +751,7 @@ MovementAction(kActTypeHit, origin) {
 }
 
 FallDeadHitAction::FallDeadHitAction(ShootableMapObject::DamageInflictType &d) :
-HitAction(kOrigAction, d) {
+HitAction(d) {
     targetState_ = PedInstance::pa_smNone;
 }
 
@@ -773,7 +770,7 @@ bool FallDeadHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
 }
 
 RecoilHitAction::RecoilHitAction(ShootableMapObject::DamageInflictType &d) :
-HitAction(kOrigAction, d) {
+HitAction(d) {
     targetState_ = PedInstance::pa_smHit;
 }
 
@@ -807,7 +804,7 @@ bool RecoilHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPe
 }
 
 LaserHitAction::LaserHitAction(ShootableMapObject::DamageInflictType &d) :
-HitAction(kOrigAction, d) {
+HitAction(d) {
     targetState_ = PedInstance::pa_smHitByLaser;
 }
 
@@ -841,7 +838,7 @@ bool LaserHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed
 }
 
 WalkBurnHitAction::WalkBurnHitAction(ShootableMapObject::DamageInflictType &d) :
-HitAction(kOrigAction, d),burnTimer_(kTimeToWalkBurning) {
+HitAction(d),burnTimer_(kTimeToWalkBurning) {
     targetState_ = PedInstance::pa_smWalkingBurning;
 }
 
@@ -880,7 +877,7 @@ bool WalkBurnHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
 }
 
 PersuadedHitAction::PersuadedHitAction(ShootableMapObject::DamageInflictType &d) :
-HitAction(kOrigAction, d) {
+HitAction(d) {
     targetState_ = PedInstance::pa_smHitByPersuadotron;
 }
 
@@ -909,8 +906,8 @@ bool PersuadedHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-ShootAction::ShootAction(CreatOrigin origin, PathNode &aimedAt, WeaponInstance *pWeapon) :
-    UseWeaponAction(origin, kActTypeShoot, pWeapon) {
+ShootAction::ShootAction(PathNode &aimedAt, WeaponInstance *pWeapon) :
+    UseWeaponAction(kActTypeShoot, pWeapon) {
         aimedAt_ = aimedAt;
 }
 
@@ -1028,8 +1025,8 @@ void ShootAction::fillDamageDesc(Mission *pMission,
     }
 }
 
-AutomaticShootAction::AutomaticShootAction(CreatOrigin origin, PathNode &aimedAt, WeaponInstance *pWeapon) :
-        ShootAction(origin, aimedAt, pWeapon),
+AutomaticShootAction::AutomaticShootAction(PathNode &aimedAt, WeaponInstance *pWeapon) :
+        ShootAction(aimedAt, pWeapon),
         fireRateTimer_(pWeapon->getWeaponClass()->fireRate())
 {
 }

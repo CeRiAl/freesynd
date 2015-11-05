@@ -33,7 +33,7 @@
  * \param pActionToAdd The action to add
  * \param appendAction If true action is append after all existing actions.
  */
-void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bool appendAction) {
+void PedInstance::addMovementAction(MovementAction *pActionToAdd, bool appendAction) {
     if (pActionToAdd == NULL) {
         return;
     }
@@ -42,7 +42,7 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
         currentAction_ = pActionToAdd;
     } else if (appendAction) {
         // append new action at the end of action chain
-        fs_actions::MovementAction *pAct = currentAction_;
+        MovementAction *pAct = currentAction_;
         while(pAct->next()) {
             pAct = pAct->next();
         }
@@ -52,11 +52,11 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
         // first : suspend current action
         if (currentAction_->suspend(this)) {
             // action has been suspended so destroy chain and set new current
-            destroyAllActions2(false);
+            destroyAllActions(false);
             currentAction_ = pActionToAdd;
         } else {
             // action cannot be suspended so delay new action using ReplaceCurrentAction
-            fs_actions::ReplaceCurrentAction *pReplace = new fs_actions::ReplaceCurrentAction(pActionToAdd);
+            ReplaceCurrentAction *pReplace = new ReplaceCurrentAction(pActionToAdd);
             currentAction_->insertNext(pReplace);
         }
 
@@ -65,15 +65,15 @@ void PedInstance::addMovementAction(fs_actions::MovementAction *pActionToAdd, bo
 
 /*!
  * Adds the given action to the list of actions which source is default.
- * \param pToAdd fs_actions::MovementAction* Action to add
+ * \param pToAdd MovementAction* Action to add
  * \return void
  *
  */
-void PedInstance::addToDefaultActions(fs_actions::MovementAction *pToAdd) {
+void PedInstance::addToDefaultActions(MovementAction *pToAdd) {
     if (defaultAction_ == NULL) {
         defaultAction_ = pToAdd;
     } else {
-        fs_actions::MovementAction *pAction = defaultAction_;
+        MovementAction *pAction = defaultAction_;
         // get last action of the list
         while(pAction->next() != NULL) {
             pAction = pAction->next();
@@ -83,24 +83,24 @@ void PedInstance::addToDefaultActions(fs_actions::MovementAction *pToAdd) {
     }
 
     // set all new actions repeatable because scripted action are generally repeated
-    fs_actions::MovementAction *pAction = pToAdd;
+    MovementAction *pAction = pToAdd;
     while (pAction != NULL) {
-        pAction->setSource(fs_actions::Action::kActionDefault);
+        pAction->setSource(Action::kActionDefault);
         pAction = pAction->next();
     }
 }
 
 /*!
  * Adds the given action to the list of actions which source is Alt.
- * \param pToAdd fs_actions::MovementAction* Action to add
+ * \param pToAdd MovementAction* Action to add
  * \return void
  *
  */
-void PedInstance::addToAltActions(fs_actions::MovementAction *pToAdd) {
+void PedInstance::addToAltActions(MovementAction *pToAdd) {
     if (altAction_ == NULL) {
         altAction_ = pToAdd;
     } else {
-        fs_actions::MovementAction *pAction = altAction_;
+        MovementAction *pAction = altAction_;
         // get last action of the list
         while(pAction->next() != NULL) {
             pAction = pAction->next();
@@ -110,24 +110,24 @@ void PedInstance::addToAltActions(fs_actions::MovementAction *pToAdd) {
     }
 
     // set all new actions repeatable because scripted action are generally repeated
-    fs_actions::MovementAction *pAction = pToAdd;
+    MovementAction *pAction = pToAdd;
     while (pAction != NULL) {
-        pAction->setSource(fs_actions::Action::kActionAlt);
+        pAction->setSource(Action::kActionAlt);
         pAction = pAction->next();
     }
 }
 
 /*!
- * Temporary method that deletes all actions.
- * TODO : remove and use destroyAllActions()
+ * Destroy current action and following that are not default or alternative actions.
+ * \param includeScripted Also destroy default and alt actions.
  * \return void
  *
  */
-void PedInstance::destroyAllActions2(bool includeScripted) {
+void PedInstance::destroyAllActions(bool includeScripted) {
     while (currentAction_ != NULL) {
-        fs_actions::MovementAction *pNext = currentAction_->next();
+        MovementAction *pNext = currentAction_->next();
 
-        if (currentAction_->source() == fs_actions::Action::kActionNotScripted) {
+        if (currentAction_->source() == Action::kActionNotScripted) {
             // for scripted actions, they will be destroyed in the next while
             currentAction_->removeAndJoinChain();
             delete currentAction_;
@@ -138,7 +138,7 @@ void PedInstance::destroyAllActions2(bool includeScripted) {
 
     if (includeScripted) {
         while (defaultAction_ != NULL) {
-            fs_actions::MovementAction *pNext = defaultAction_->next();
+            MovementAction *pNext = defaultAction_->next();
             defaultAction_->unlinkNext();
             delete defaultAction_;
 
@@ -146,38 +146,11 @@ void PedInstance::destroyAllActions2(bool includeScripted) {
         }
 
         while (altAction_ != NULL) {
-            fs_actions::MovementAction *pNext = altAction_->next();
+            MovementAction *pNext = altAction_->next();
             altAction_->unlinkNext();
             delete altAction_;
 
             altAction_ = pNext;
-        }
-    }
-}
-
-/*!
- * Deletes all actions in the ped's list.
- * \param includeDefault
- */
-void PedInstance::destroyAllActions(bool includeDefault) {
-    while (currentAction_ != NULL) {
-        fs_actions::MovementAction *pNext = currentAction_->next();
-
-        if (currentAction_->origin() != fs_actions::kOrigScript) {
-            // for scripted actions, just forget reference because
-            // those actions are stored in the defaultActionLst field
-            delete currentAction_;
-        }
-
-        currentAction_ = pNext;
-    }
-
-    if (includeDefault) {
-        while (defaultAction_ != NULL) {
-            fs_actions::MovementAction *pNext = defaultAction_->next();
-            delete defaultAction_;
-
-            defaultAction_ = pNext;
         }
     }
 }
@@ -196,13 +169,13 @@ void PedInstance::destroyUseWeaponAction() {
  * Restart the actions of given source and set as current action.
  * \param source
  */
-void PedInstance::resetActions(fs_actions::Action::ActionSource source) {
-    fs_actions::MovementAction *pAction = (source == fs_actions::Action::kActionDefault) ?
+void PedInstance::resetActions(Action::ActionSource source) {
+    MovementAction *pAction = (source == Action::kActionDefault) ?
                                             defaultAction_ : altAction_;
 
     if (pAction) {
         // reset all scripted actions
-        fs_actions::MovementAction *pActionToReset = pAction;
+        MovementAction *pActionToReset = pAction;
         while (pActionToReset != NULL) {
             pActionToReset->reset();
             pActionToReset = pActionToReset->next();
@@ -216,12 +189,12 @@ void PedInstance::resetActions(fs_actions::Action::ActionSource source) {
  * Change the current action to the list of actions identified by given source.
  * \param source The new source of actions
  */
-void PedInstance::changeSourceOfActions(fs_actions::Action::ActionSource source) {
+void PedInstance::changeSourceOfActions(Action::ActionSource source) {
     if (currentAction_ == NULL) {
         // no action currently defined so immediately assign new chain
         resetActions(source);
     } else {
-        fs_actions::MovementAction *pAction = new fs_actions::ResetScriptedAction(source);
+        MovementAction *pAction = new ResetScriptedAction(source);
         if (currentAction_->suspend(this)) {
             // action has been suspended
 			// so we can change source immediately
@@ -241,13 +214,13 @@ void PedInstance::changeSourceOfActions(fs_actions::Action::ActionSource source)
  * \param origin Origin of action
  * \param appendAction If true action is append after all existing actions.
  */
-void PedInstance::addActionWalk(const PathNode &tpn, fs_actions::CreatOrigin origin, bool appendAction) {
-    fs_actions::WalkAction *action = new fs_actions::WalkAction(origin, tpn);
+void PedInstance::addActionWalk(const PathNode &tpn, bool appendAction) {
+    WalkAction *action = new WalkAction(tpn);
     addMovementAction(action, appendAction);
 }
 
-void PedInstance::addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance *pPed) {
-    fs_actions::FollowAction *pAction = new fs_actions::FollowAction(origin, pPed);
+void PedInstance::addActionFollowPed(PedInstance *pPed) {
+    FollowAction *pAction = new FollowAction(pPed);
     addMovementAction(pAction, false);
 }
 
@@ -257,8 +230,8 @@ void PedInstance::addActionFollowPed(fs_actions::CreatOrigin origin, PedInstance
  * is the default action for this ped.
  */
 void PedInstance::followNewPed(PedInstance *pPed) {
-    if (defaultAction_ != NULL && defaultAction_->type() == fs_actions::Action::kActTypeFollow) {
-        fs_actions::FollowAction *pAction = static_cast<fs_actions::FollowAction *> (defaultAction_);
+    if (defaultAction_ != NULL && defaultAction_->type() == Action::kActTypeFollow) {
+        FollowAction *pAction = static_cast<FollowAction *> (defaultAction_);
         pAction->setTarget(pPed);
     }
 }
@@ -269,7 +242,7 @@ void PedInstance::followNewPed(PedInstance *pPed) {
  * \param appendAction If true action is append after all existing actions.
  */
 void PedInstance::addActionPutdown(uint8 weaponIndex, bool appendAction) {
-    fs_actions::PutdownWeaponAction *action = new fs_actions::PutdownWeaponAction(weaponIndex);
+    PutdownWeaponAction *action = new PutdownWeaponAction(weaponIndex);
     addMovementAction(action, appendAction);
 }
 
@@ -278,11 +251,11 @@ void PedInstance::addActionPutdown(uint8 weaponIndex, bool appendAction) {
  * to pick up weapon.
  * \param pWeapon the weapon to pick up.
  */
-fs_actions::MovementAction * PedInstance::createActionPickup(WeaponInstance *pWeapon) {
+MovementAction * PedInstance::createActionPickup(WeaponInstance *pWeapon) {
     // First go to weapon
-    fs_actions::WalkAction *pWalk = new fs_actions::WalkAction(fs_actions::kOrigUser, pWeapon);
+    WalkAction *pWalk = new WalkAction(pWeapon);
     // Then pick it up
-    fs_actions::PickupWeaponAction *pPick = new fs_actions::PickupWeaponAction(pWeapon);
+    PickupWeaponAction *pPick = new PickupWeaponAction(pWeapon);
     pWalk->link(pPick);
 
     return pWalk;
@@ -293,20 +266,20 @@ fs_actions::MovementAction * PedInstance::createActionPickup(WeaponInstance *pWe
  * \param pVehicle
  * \return The first action is returned.
  */
-fs_actions::MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVehicle) {
+MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVehicle) {
     // First go to vehicle
-    fs_actions::WalkAction *action = new fs_actions::WalkAction(fs_actions::kOrigDefault, (ShootableMapObject *) pVehicle);
+    WalkAction *action = new WalkAction((ShootableMapObject *) pVehicle);
     // Then get in
-    fs_actions::EnterVehicleAction *enterAct = new fs_actions::EnterVehicleAction(fs_actions::kOrigDefault, pVehicle);
+    EnterVehicleAction *enterAct = new EnterVehicleAction(pVehicle);
     action->link(enterAct);
 
     return action;
 }
 
 //! Adds action to drive vehicle to destination
-void PedInstance::addActionDriveVehicle(fs_actions::CreatOrigin origin,
+void PedInstance::addActionDriveVehicle(
         VehicleInstance *pVehicle, PathNode &destination, bool appendAction) {
-    fs_actions::DriveVehicleAction *pAction = new fs_actions::DriveVehicleAction(origin, pVehicle, destination);
+    DriveVehicleAction *pAction = new DriveVehicleAction(pVehicle, destination);
     addMovementAction(pAction, appendAction);
 }
 
@@ -315,31 +288,31 @@ void PedInstance::addActionDriveVehicle(fs_actions::CreatOrigin origin,
  * currently executing action.
  */
 void PedInstance::insertHitAction(DamageInflictType &d) {
-    fs_actions::HitAction *pHitAct = NULL;
+    HitAction *pHitAct = NULL;
     if (d.d_owner == this) { // it's a suicide
         if (d.dtype == dmg_Bullet) {
             // Ped's instantly dead
-            pHitAct = new fs_actions::FallDeadHitAction(d);
+            pHitAct = new FallDeadHitAction(d);
         } else {
             // it's an explosion : walk and burn
-            pHitAct = new fs_actions::WalkBurnHitAction(d);
+            pHitAct = new WalkBurnHitAction(d);
         }
     } else if (d.dtype == dmg_Explosion) {
         if (hasMinimumVersionOfMod(Mod::MOD_CHEST, Mod::MOD_V2)) {
-            pHitAct = new fs_actions::RecoilHitAction(d);
+            pHitAct = new RecoilHitAction(d);
         } else {
-            pHitAct = new fs_actions::WalkBurnHitAction(d);
+            pHitAct = new WalkBurnHitAction(d);
         }
     } else if (d.dtype & (dmg_Bullet | dmg_Collision)) {
         // When hit by a bullet or collision, ped is ejected
-        pHitAct = new fs_actions::RecoilHitAction(d);
+        pHitAct = new RecoilHitAction(d);
     } else if (d.dtype == dmg_Burn) {
-        pHitAct = new fs_actions::WalkBurnHitAction(d);
+        pHitAct = new WalkBurnHitAction(d);
     } else if (d.dtype == dmg_Laser) {
         // When hit by a laser, ped is vaporized
-        pHitAct = new fs_actions::LaserHitAction(d);
+        pHitAct = new LaserHitAction(d);
     } else if (d.dtype == dmg_Persuasion) {
-        pHitAct = new fs_actions::PersuadedHitAction(d);
+        pHitAct = new PersuadedHitAction(d);
     }
 
     if (pHitAct != NULL) {
@@ -368,11 +341,11 @@ uint8 PedInstance::addActionShootAt(const PathNode &aimedPt) {
         WeaponInstance *pWeapon = selectedWeapon();
         adjustAimedPtWithRangeAndAccuracy(pWeapon->getWeaponClass(), adjAimedPt);
         if (pWeapon->getWeaponClass()->isAutomatic()) {
-            pUseWeaponAction_ = new fs_actions::AutomaticShootAction(fs_actions::kOrigUser, adjAimedPt, pWeapon);
-            res = fs_actions::ShootAction::kShootActionAutomaticShoot;
+            pUseWeaponAction_ = new AutomaticShootAction(adjAimedPt, pWeapon);
+            res = ShootAction::kShootActionAutomaticShoot;
         } else {
-            pUseWeaponAction_ = new fs_actions::ShootAction(fs_actions::kOrigUser, adjAimedPt, pWeapon);
-            res = fs_actions::ShootAction::kShootActionSingleShoot;
+            pUseWeaponAction_ = new ShootAction(adjAimedPt, pWeapon);
+            res = ShootAction::kShootActionSingleShoot;
         }
 
         // notify persuadeds to shoot
@@ -384,14 +357,14 @@ uint8 PedInstance::addActionShootAt(const PathNode &aimedPt) {
         return res;
     }
 
-    return fs_actions::ShootAction::kShootActionNotAdded;
+    return ShootAction::kShootActionNotAdded;
 }
 
 /*!
  * Adds an action to use the medikit on the owner.
  */
 void PedInstance::addActionUseMedikit() {
-    pUseWeaponAction_ = new fs_actions::UseMedikitAction(fs_actions::kOrigUser);
+    pUseWeaponAction_ = new UseMedikitAction();
 }
 
 void PedInstance::createActQStanding(actionQueueGroupType &as) {
@@ -961,7 +934,7 @@ void PedInstance::createDefQueue() {
     default_actions_.clear();
 
     actionQueueGroupType as;
-    as.origin_desc = fs_actions::kOrigDefault;
+    as.origin_desc = fs_action::kOrigDefault;
     as.main_act = 0;
 
     if (createActQFindEnemy(as)) {
@@ -1127,7 +1100,7 @@ void PedInstance::updtActGFiring(uint32 id, PathNode* tpn,
     }
 }
 
-bool PedInstance::checkActGCompleted(fs_actions::CreatOrigin origin) {
+bool PedInstance::checkActGCompleted(fs_action::CreatOrigin origin) {
     for (std::vector <actionQueueGroupType>::iterator it =
         actions_queue_.begin(); it != actions_queue_.end(); ++it)
     {

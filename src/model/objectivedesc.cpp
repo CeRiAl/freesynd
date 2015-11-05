@@ -108,7 +108,7 @@ void ObjProtect::evaluate(Mission *pMission) {
         // Target is dead -> objective is failed
         endObjective(false);
     } else {
-        if(p->checkActGCompleted(fs_actions::kOrigScript))
+        if(p->checkActGCompleted(fs_action::kOrigScript))
             endObjective(true);
     }
 }
@@ -154,7 +154,7 @@ void ObjUseVehicle::evaluate(Mission *pMission) {
         endObjective(false);
         return;
     }
-    
+
     PedInstance *p = pVehicle->getDriver();
     if (p && p->isOurAgent()) {
         endObjective(true);
@@ -188,7 +188,7 @@ void ObjTakeWeapon::evaluate(Mission *pMission) {
     }
 }
 
-ObjEliminate::ObjEliminate(PedInstance::objGroupDefMasks subtype) : 
+ObjEliminate::ObjEliminate(PedInstance::objGroupDefMasks subtype) :
         ObjectiveDesc() {
     if (subtype == PedInstance::og_dmAgent) {
         msg = g_Ctx.getMessage("GOAL_ELIMINATE_AGENTS");
@@ -224,7 +224,7 @@ void ObjEliminate::evaluate(Mission *pMission) {
     status = kCompleted;
 }
 
-ObjEvacuate::ObjEvacuate(int x, int y, int z, std::vector <PedInstance *> &lstOfPeds) : 
+ObjEvacuate::ObjEvacuate(int x, int y, int z, std::vector <PedInstance *> &lstOfPeds) :
         LocationObjective(x, y, z) {
     msg = g_Ctx.getMessage("GOAL_EVACUATE");
     // Copy all peds in the local list

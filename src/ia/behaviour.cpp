@@ -161,9 +161,9 @@ PersuadedBehaviourComponent::PersuadedBehaviourComponent():
 
 void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
     if (status_ == kPersuadStatusInitializing) {
-        pPed->destroyAllActions2(true);
+        pPed->destroyAllActions(true);
         // set follow owner as new default action
-        fs_actions::FollowAction *pAction = new fs_actions::FollowAction(fs_actions::kOrigScript, pPed->owner());
+        FollowAction *pAction = new FollowAction(pPed->owner());
         pPed->addToDefaultActions(pAction);
         pPed->addMovementAction(pAction, false);
         status_ = kPersuadStatusFollow;
@@ -175,19 +175,19 @@ void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedIns
                 // initiate alternative actions : go to weapon and take it
                 status_ = kPersuadStatusTakeWeapon;
                 if (pPed->altAction() == NULL) {
-                    fs_actions::MovementAction * pActions = pPed->createActionPickup(pWeapon);
+                    MovementAction * pActions = pPed->createActionPickup(pWeapon);
                     // set a warning after picking up weapon so we know we can select it
                     pActions->next()->setWarnBehaviour(true);
                     // add a reset action to automatically go back to follow owner after picking up weapon
                     pActions->next()->link(
-                        new fs_actions::ResetScriptedAction(fs_actions::Action::kActionDefault));
+                        new ResetScriptedAction(Action::kActionDefault));
                     pPed->addToAltActions(pActions);
                 } else {
                     // just update weapon
                     updateAltActionsWith(pWeapon, pPed);
                 }
                 // execute alternative actions
-                pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
+                pPed->changeSourceOfActions(Action::kActionAlt);
             }
         }
     }
@@ -218,14 +218,14 @@ void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
         if (status_ == kPersuadStatusWaitInit) {
             status_ = kPersuadStatusInitializing;
         } else {
-            fs_actions::Action::ActionType *pType = static_cast<fs_actions::Action::ActionType *> (pCtxt);
-            if (*pType == fs_actions::Action::kActTypePickUp) {
+            Action::ActionType *pType = static_cast<Action::ActionType *> (pCtxt);
+            if (*pType == Action::kActTypePickUp) {
                 if (pPed->owner()->isArmed()) {
                     pPed->selectWeapon(0);
                 }
                 // weapon found so back to normal
                 status_ = kPersuadStatusFollow;
-            } else if (*pType == fs_actions::Action::kActTypeDrop) {
+            } else if (*pType == Action::kActTypeDrop) {
                 // weapon dropped so look for another
                 status_ = kPersuadStatusLookForWeapon;
             }
@@ -263,13 +263,13 @@ WeaponInstance * PersuadedBehaviourComponent::findWeaponWithAmmo(Mission *pMissi
 }
 
 void PersuadedBehaviourComponent::updateAltActionsWith(WeaponInstance *pWeapon, PedInstance *pPed) {
-    fs_actions::MovementAction *pAction = pPed->altAction();
+    MovementAction *pAction = pPed->altAction();
     while (pAction != NULL) {
-        if (pAction->type() == fs_actions::Action::kActTypeWalk) {
-            fs_actions::WalkAction *pWalk = static_cast<fs_actions::WalkAction *> (pAction);
+        if (pAction->type() == Action::kActTypeWalk) {
+            WalkAction *pWalk = static_cast<WalkAction *> (pAction);
             pWalk->setDestination(pWeapon);
-        } else if (pAction->type() == fs_actions::Action::kActTypePickUp) {
-            fs_actions::PickupWeaponAction *pWalk = static_cast<fs_actions::PickupWeaponAction *> (pAction);
+        } else if (pAction->type() == Action::kActTypePickUp) {
+            PickupWeaponAction *pWalk = static_cast<PickupWeaponAction *> (pAction);
             pWalk->setWeapon(pWeapon);
         }
         pAction = pAction->next();
@@ -297,7 +297,7 @@ void PanicComponent::execute(int elapsed, Mission *pMission, PedInstance *pCivil
             status_ = kPanicStatusInPanic;
         } else if (backFromPanic_) {
             backFromPanic_ = false;
-            pCivil->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            pCivil->changeSourceOfActions(Action::kActionDefault);
             status_ = kPanicStatusAlert;
         }
     }
@@ -318,8 +318,8 @@ void PanicComponent::handleBehaviourEvent(PedInstance *pCivil, Behaviour::Behavi
     case Behaviour::kBehvEvtWeaponCleared:
         if (g_Session.getMission()->numArmedPeds() == 0) {
             setEnabled(false);
-            if (!pCivil->isCurrentActionFromSource(fs_actions::Action::kActionDefault)) {
-                pCivil->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            if (!pCivil->isCurrentActionFromSource(Action::kActionDefault)) {
+                pCivil->changeSourceOfActions(Action::kActionDefault);
                 status_ = kPanicStatusAlert;
             }
         }
@@ -368,16 +368,16 @@ void  PanicComponent::runAway(PedInstance *pPed) {
         otherLoc.y - thisPedLoc.y);
     if (pPed->altAction() == NULL) {
         // Adds the action of running away
-        fs_actions::WalkToDirectionAction *pAction =
-            new fs_actions::WalkToDirectionAction(fs_actions::kOrigAction, 256);
+        WalkToDirectionAction *pAction =
+            new WalkToDirectionAction(256);
         // walk for a certain distance
         pAction->setMaxDistanceToWalk(kDistanceToRun);
         pAction->setWarnBehaviour(true);
         pPed->addToAltActions(pAction);
-        pPed->addToAltActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionAlt));
+        pPed->addToAltActions(new ResetScriptedAction(Action::kActionAlt));
     }
 
-    pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
+    pPed->changeSourceOfActions(Action::kActionAlt);
 }
 
 PoliceBehaviourComponent::PoliceBehaviourComponent():
@@ -398,10 +398,10 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
         if (findArmedPedNotPolice(pMission, pPed) != NULL) {
             status_ = kPoliceStatusAlert;
             scoutTimer_.setToMax(); // don't waste time waiting
-        } else if (!pPed->isCurrentActionFromSource(fs_actions::Action::kActionDefault)) {
+        } else if (!pPed->isCurrentActionFromSource(Action::kActionDefault)) {
             // there is no one around so go back to patrol if it's not already the case
             pPed->deselectWeapon();
-            pPed->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            pPed->changeSourceOfActions(Action::kActionDefault);
             if (pMission->numArmedPeds() != 0) {
                 // There are still some armed peds so keep on alert
                 status_ = kPoliceStatusAlert;
@@ -428,7 +428,7 @@ void PoliceBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour
                 pPed->stopUsingWeapon();
                 // just wait a few time before engaging another target or simply
                 // continue with default behavior
-                fs_actions::WaitAction *pWait = new fs_actions::WaitAction(fs_actions::WaitAction::kWaitWeapon, kPolicePendingTime);
+                WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon, kPolicePendingTime);
                 pWait->setWarnBehaviour(true);
                 pPed->addMovementAction(pWait, false);
             }
@@ -462,31 +462,31 @@ void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstan
 
     // Set new actions
     if (pPed->altAction() == NULL) { // the first time
-        fs_actions::WaitBeforeShootingAction *pWarnAction = new fs_actions::WaitBeforeShootingAction(pArmedGuy);
+        WaitBeforeShootingAction *pWarnAction = new WaitBeforeShootingAction(pArmedGuy);
         pPed->addToAltActions(pWarnAction);
-        fs_actions::FollowToShootAction* pFollowAction = new fs_actions::FollowToShootAction(fs_actions::kOrigScript, pArmedGuy);
+        FollowToShootAction* pFollowAction = new FollowToShootAction(pArmedGuy);
         pPed->addToAltActions(pFollowAction);
-        pPed->addToAltActions(new fs_actions::FireWeaponAction(pArmedGuy));
-        pPed->addToAltActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionAlt));
+        pPed->addToAltActions(new FireWeaponAction(pArmedGuy));
+        pPed->addToAltActions(new ResetScriptedAction(Action::kActionAlt));
     } else { // just update the target in the existing chain of actions
-        fs_actions::MovementAction *pAction = pPed->altAction();
+        MovementAction *pAction = pPed->altAction();
         while (pAction != NULL) {
             switch(pAction->type()) {
-            case fs_actions::Action::kActTypeWaitShoot:
+            case Action::kActTypeWaitShoot:
                 {
-                fs_actions::WaitBeforeShootingAction *pAct = dynamic_cast<fs_actions::WaitBeforeShootingAction *>(pAction);
+                WaitBeforeShootingAction *pAct = dynamic_cast<WaitBeforeShootingAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
-            case fs_actions::Action::kActTypeFollowToShoot:
+            case Action::kActTypeFollowToShoot:
                 {
-                fs_actions::FollowToShootAction *pAct = dynamic_cast<fs_actions::FollowToShootAction *>(pAction);
+                FollowToShootAction *pAct = dynamic_cast<FollowToShootAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
-            case fs_actions::Action::kActTypeFire:
+            case Action::kActTypeFire:
                 {
-                fs_actions::FireWeaponAction *pAct = dynamic_cast<fs_actions::FireWeaponAction *>(pAction);
+                FireWeaponAction *pAct = dynamic_cast<FireWeaponAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
@@ -496,7 +496,7 @@ void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstan
             pAction = pAction->next();
         }
     }
-    pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
+    pPed->changeSourceOfActions(Action::kActionAlt);
 }
 
 GuardBehaviourComponent::GuardBehaviourComponent():
@@ -518,7 +518,7 @@ void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstanc
         pPed->stopUsingWeapon();
         // just wait a few time before engaging another target or simply
         // continue with default behavior
-        fs_actions::WaitAction *pWait = new fs_actions::WaitAction(fs_actions::WaitAction::kWaitWeapon);
+        WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon);
         pWait->setWarnBehaviour(true);
         pPed->addMovementAction(pWait, false);
     } else if (status_ == kEnemyStatusCheckForDefault) {
@@ -529,7 +529,7 @@ void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstanc
             followAndShootTarget(pPed, pArmedGuy);
         } else {
             pPed->deselectWeapon();
-            pPed->changeSourceOfActions(fs_actions::Action::kActionDefault);
+            pPed->changeSourceOfActions(Action::kActionDefault);
             status_ = kEnemyStatusDefault;
         }
     }
@@ -558,31 +558,31 @@ void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstanc
 
     // Set new actions
     if (pPed->altAction() == NULL) { // the first time
-        fs_actions::WaitBeforeShootingAction *pWarnAction = new fs_actions::WaitBeforeShootingAction(pArmedGuy);
+        WaitBeforeShootingAction *pWarnAction = new WaitBeforeShootingAction(pArmedGuy);
         pPed->addToAltActions(pWarnAction);
-        fs_actions::FollowToShootAction* pFollowAction = new fs_actions::FollowToShootAction(fs_actions::kOrigScript, pArmedGuy);
+        FollowToShootAction* pFollowAction = new FollowToShootAction(pArmedGuy);
         pPed->addToAltActions(pFollowAction);
-        pPed->addToAltActions(new fs_actions::FireWeaponAction(pArmedGuy));
-        pPed->addToAltActions(new fs_actions::ResetScriptedAction(fs_actions::Action::kActionAlt));
+        pPed->addToAltActions(new FireWeaponAction(pArmedGuy));
+        pPed->addToAltActions(new ResetScriptedAction(Action::kActionAlt));
     } else { // just update the target in the existing chain of actions
-        fs_actions::MovementAction *pAction = pPed->altAction();
+        MovementAction *pAction = pPed->altAction();
         while (pAction != NULL) {
             switch(pAction->type()) {
-            case fs_actions::Action::kActTypeWaitShoot:
+            case Action::kActTypeWaitShoot:
                 {
-                fs_actions::WaitBeforeShootingAction *pAct = dynamic_cast<fs_actions::WaitBeforeShootingAction *>(pAction);
+                WaitBeforeShootingAction *pAct = dynamic_cast<WaitBeforeShootingAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
-            case fs_actions::Action::kActTypeFollowToShoot:
+            case Action::kActTypeFollowToShoot:
                 {
-                fs_actions::FollowToShootAction *pAct = dynamic_cast<fs_actions::FollowToShootAction *>(pAction);
+                FollowToShootAction *pAct = dynamic_cast<FollowToShootAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
-            case fs_actions::Action::kActTypeFire:
+            case Action::kActTypeFire:
                 {
-                fs_actions::FireWeaponAction *pAct = dynamic_cast<fs_actions::FireWeaponAction *>(pAction);
+                FireWeaponAction *pAct = dynamic_cast<FireWeaponAction *>(pAction);
                 pAct->setTarget(pArmedGuy);
                 }
                 break;
@@ -592,5 +592,5 @@ void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstanc
             pAction = pAction->next();
         }
     }
-    pPed->changeSourceOfActions(fs_actions::Action::kActionAlt);
+    pPed->changeSourceOfActions(Action::kActionAlt);
 }
