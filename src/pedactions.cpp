@@ -225,14 +225,17 @@ void PedInstance::addActionFollowPed(PedInstance *pPed) {
 }
 
 /*!
- * Change the ped that this one is following.
- * Called when a persuaded changes owner so it assumes following action
- * is the default action for this ped.
+ * Change the owner of this ped.
+ * Called when the former owner dies.
+ * \param pNewOwner The new owner
  */
-void PedInstance::followNewPed(PedInstance *pPed) {
+void PedInstance::setNewOwner(PedInstance *pNewOwner) {
+    pNewOwner->addPersuaded(this);
+    owner_ = pNewOwner;
+    // follow new owner
     if (defaultAction_ != NULL && defaultAction_->type() == Action::kActTypeFollow) {
         FollowAction *pAction = static_cast<FollowAction *> (defaultAction_);
-        pAction->setTarget(pPed);
+        pAction->setTarget(pNewOwner);
     }
 }
 

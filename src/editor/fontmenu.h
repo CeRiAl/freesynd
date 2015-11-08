@@ -38,7 +38,7 @@ public:
     void handleLeave();
 
 private:
-    void FontMenu::displayFont();
+    void displayFont();
 };
 
 #endif // EDITOR_FONTMENU_H_

@@ -335,8 +335,6 @@ public:
 
     //! Adds action to follow a ped
     void addActionFollowPed(PedInstance *pPed);
-    //! Change the ped to follow (used for persuaded)
-    void followNewPed(PedInstance *pPed);
     //! Adds action to put down weapon on the ground
     void addActionPutdown(uint8 weaponIndex, bool appendAction);
     //! Adds action to pick up weapon from the ground
@@ -369,8 +367,7 @@ public:
     //*************************************
     // Weapon management
     //*************************************
-    WeaponInstance * dropWeapon(int n);
-    void dropWeapon(WeaponInstance *w);
+    WeaponInstance * dropWeapon(uint8 index);
     void dropAllWeapons();
     void destroyAllWeapons();
     bool wePickupWeapon();
@@ -415,6 +412,8 @@ public:
     void rmvPersuaded(PedInstance *p);
     //! Method called when an agent persuads this ped
     void handlePersuadedBy(PedInstance *pAgent);
+    //! Change the owner of the ped
+    void setNewOwner(PedInstance *pPed);
 
     bool inSightRange(MapObject *t);
     VehicleInstance *inVehicle();

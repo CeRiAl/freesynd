@@ -542,10 +542,6 @@ bool PutdownWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             pWeapon->activate();
         }
 
-        if (pPed->selectedWeapon() == NULL && pWeapon->canShoot()) {
-            GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponCleared, pPed);
-        }
-
         setSucceeded();
     }
 

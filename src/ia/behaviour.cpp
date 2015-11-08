@@ -165,6 +165,7 @@ void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedIns
         // set follow owner as new default action
         FollowAction *pAction = new FollowAction(pPed->owner());
         pPed->addToDefaultActions(pAction);
+        pPed->addToDefaultActions(new ResetScriptedAction(Action::kActionDefault));
         pPed->addMovementAction(pAction, false);
         status_ = kPersuadStatusFollow;
     } else if (status_ == kPersuadStatusLookForWeapon) {

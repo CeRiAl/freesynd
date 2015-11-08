@@ -58,9 +58,9 @@ public:
         /*! Send when an objective has been completed succesfuly.*/
         kObjCompleted,
         /*! Sent when a ped has shown his weapon.*/
-        kEvtWeaponOut,
-        /*! Sent when a ped cleared his weapon.*/
-        kEvtWeaponCleared,
+        kEvtShootingWeaponSelected,
+        /*! Sent when a ped cleared his selected shooting weapon.*/
+        kEvtShootingWeaponDeselected,
         /*! Sent when a policeman warns a player agent.*/
         kEvtWarnAgent
     };

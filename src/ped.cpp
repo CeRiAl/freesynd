@@ -276,7 +276,8 @@ bool PedInstance::switchActionStateFrom(uint32 as) {
             //printf("Ped has undefined state");
             break;
         case pa_smStanding:
-            state_ &= pa_smAll ^ pa_smStanding;
+            //state_ &= pa_smAll ^ pa_smStanding;
+            printf("switchActionStateFrom : Ped %d cannot leave standing state\n", id_);
             break;
         case pa_smWalking:
             state_ &= pa_smAll ^ pa_smWalking;
@@ -362,7 +363,7 @@ void PedInstance::synchDrawnAnimWithActionState(void) {
     }
 #ifdef _DEBUG
     if (state_ ==  pa_smNone)
-        printf("synchDrawnAnimWithActionState : undefined state_ %d\n", state_);
+        printf("synchDrawnAnimWithActionState : undefined state_ %d for ped %d\n", state_, id_);
 #endif
 }
 
@@ -976,7 +977,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
                         if (wi->owner() != this)
                             aqt->state |= 8;
                         else {
-                            dropWeapon(wi);
+                            //dropWeapon(wi);
                             aqt->state |= 36;
                         }
                     }
@@ -2325,13 +2326,16 @@ void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
     if (wi->getWeaponType() == Weapon::EnergyShield) {
         setRcvDamageDef(MapObject::ddmg_Ped);
         wi->deactivate();
-    }
-    if (wi->getWeaponType() == Weapon::AccessCard)
+    } else if (wi->getWeaponType() == Weapon::AccessCard) {
         rmEmulatedGroupDef(4, og_dmPolice);
+    }
     desc_state_ &= (pd_smAll ^ (pd_smArmed | pd_smNoAmmunition));
 
     if (wi->getWeaponType() == Weapon::Persuadatron) {
         behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtPersuadotronDeactivated);
+    } else if (wi->canShoot() && (type_ != kPedTypePolice || isPersuaded())) {
+        // don't warn if ped is police to limit calls
+        GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtShootingWeaponDeselected, this);
     }
 }
 
@@ -2373,37 +2377,39 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
         break;
     }
 
-    if (previousWeapon == NULL && selectedWeapon()->canShoot()) {
-        // alert if it's the first time the ped shows a shooting weapon
-        GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponOut, this);
-    } else if (previousWeapon != NULL && previousWeapon->canShoot() && !selectedWeapon()->canShoot()) {
-        // or alert if ped go from a shooting weapon to a no shooting weapon like the persuadotron
-        GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponCleared, this);
+    if (type_ != kPedTypePolice || isPersuaded()) {
+        if (previousWeapon == NULL && selectedWeapon()->canShoot()) {
+            // alert if it's the first time the ped shows a shooting weapon
+            GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtShootingWeaponSelected, this);
+        } else if (previousWeapon != NULL && previousWeapon->canShoot() && !selectedWeapon()->canShoot()) {
+            // or alert if ped go from a shooting weapon to a no shooting weapon like the persuadotron
+            GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtShootingWeaponDeselected, this);
+        }
     }
 }
 
 /*!
- * Drops the weapon at given index.
- * \param n Index of weapon in the agent inventory.
+ * Drops the weapon at given index on the ground.
+ * \param index Index of weapon in the agent inventory.
  * \return the instance of dropped weapon
  */
-WeaponInstance * PedInstance::dropWeapon(int n) {
-    assert(n >= 0 && n < (int) weapons_.size());
+WeaponInstance * PedInstance::dropWeapon(uint8 index) {
+    WeaponInstance *pWeapon = removeWeaponAtIndex(index);
 
-    WeaponInstance *pWeapon = weapons_[n];
-    dropWeapon(pWeapon);
+    if(pWeapon) {
+        pWeapon->setMap(map_);
+        pWeapon->setIsIgnored();
+        pWeapon->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+    }
 
     return pWeapon;
 }
 
-void PedInstance::dropWeapon(WeaponInstance *wi) {
-    removeWeapon(wi);
-
-    wi->setMap(map_);
-    wi->setIsIgnored();
-    wi->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
-}
-
+/*!
+ * Drop all the ped's weapons on the ground around him.
+ * \return void
+ *
+ */
 void PedInstance::dropAllWeapons() {
     Mission *m = g_Session.getMission();
     uint8 twd = m->mtsurfaces_[tile_x_ + m->mmax_x_ * tile_y_
@@ -2417,6 +2423,14 @@ void PedInstance::dropAllWeapons() {
         int oy = rand() % 256;
         w->setPosition(tile_x_, tile_y_, tile_z_, ox, oy);
         w->offzOnStairs(twd);
+    }
+}
+
+void PedInstance::destroyAllWeapons() {
+    while (!weapons_.empty()) {
+        WeaponInstance * w = removeWeaponAtIndex(0);
+        w->setMap(-1);
+        w->setIsIgnored(true);
     }
 }
 
@@ -2665,12 +2679,6 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
         clearDestination();
         switchActionStateTo(PedInstance::pa_smDead);
 
-        updatePersuadedRelations(pMission->getSquad());
-
-        if (selectedWeapon() && selectedWeapon()->canShoot()) {
-            GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponCleared, this);
-        }
-
         switch (d.dtype) {
             case MapObject::dmg_Bullet:
                 setDrawnAnim(PedInstance::ad_DieAnim);
@@ -2698,6 +2706,9 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
                 }
                 break;
         }
+
+        updatePersuadedRelations(pMission->getSquad());
+
         // send an event to alert agent died
         if (isOurAgent()) {
             GameEvent::sendEvt(GameEvent::kMission, GameEvent::kAgentDied, this);
@@ -2773,14 +2784,6 @@ bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
         setDrawnAnim(PedInstance::ad_HitAnim);
     }
     return true;
-}
-
-void PedInstance::destroyAllWeapons() {
-    while (!weapons_.empty()) {
-        WeaponInstance * w = dropWeapon(0);
-        w->setMap(-1);
-        w->setIsIgnored(true);
-    }
 }
 
 void PedInstance::addEnemyGroupDef(uint32 eg_id, uint32 eg_def) {
@@ -3213,8 +3216,7 @@ void PedInstance::updatePersuadedRelations(Squad *pSquad) {
                     std::set <PedInstance *>::iterator it = persuadedSet_.begin();
                     PedInstance *pPed = *it;
                     persuadedSet_.erase(it);
-                    pAgent->addPersuaded(pPed);
-                    pPed->followNewPed(pAgent);
+                    pPed->setNewOwner(pAgent);
                 }
                 break;
             }

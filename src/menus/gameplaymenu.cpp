@@ -1477,7 +1477,7 @@ void GameplayMenu::handleGameEvent(GameEvent evt) {
         // Anyway update selection
         PedInstance *p_ped = static_cast<PedInstance *> (evt.pCtxt);
         updateSelectionForDeadAgent(p_ped);
-    } else if (evt.type == GameEvent::kEvtWeaponOut) {
+    } else if (evt.type == GameEvent::kEvtShootingWeaponSelected) {
         PedInstance *pPedSource = static_cast<PedInstance *> (evt.pCtxt);
         mission_->addArmedPed(pPedSource);
         for (size_t i = 0; i < mission_->numPeds(); i++) {
@@ -1486,7 +1486,7 @@ void GameplayMenu::handleGameEvent(GameEvent evt) {
                 pPed->behaviour().handleBehaviourEvent(Behaviour::kBehvEvtWeaponOut, pPedSource);
             }
         }
-    } else if (evt.type == GameEvent::kEvtWeaponCleared) {
+    } else if (evt.type == GameEvent::kEvtShootingWeaponDeselected) {
         PedInstance *pPedSource = static_cast<PedInstance *> (evt.pCtxt);
         mission_->removeArmedPed(pPedSource);
         for (size_t i = 0; i < mission_->numPeds(); i++) {

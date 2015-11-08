@@ -164,10 +164,7 @@ void SquadSelection::checkLeader(size_t agentNo) {
 void SquadSelection::deselectAllWeapons() {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
         PedInstance *pAgent = *it;
-        WeaponInstance *pWi = pAgent->deselectWeapon();
-        if (pWi && pWi->canShoot()) {
-            GameEvent::sendEvt(GameEvent::kMission, GameEvent::kEvtWeaponCleared, pAgent);
-        }
+        pAgent->deselectWeapon();
     }
 }
 
