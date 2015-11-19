@@ -25,6 +25,14 @@
  *                                                                      *
  ************************************************************************/
 
+#ifdef EDITOR_
+// if EDITOR_ variable is defined that means that we are building
+// the editor so we want to load the EditorApp and not the regular App class.
+
+#include "editor/editorapp.h"
+
+#else
+
 #ifndef APP_H
 #define APP_H
 
@@ -165,4 +173,6 @@ private:
 
 #define g_App   App::singleton()
 
-#endif
+#endif  // APP_H
+
+#endif // EDITOR_

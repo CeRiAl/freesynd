@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include "app.h"
+#include "core/gamesession.h"
 #include "gfx/screen.h"
 #include "vehicle.h"
 #include "model/shot.h"
@@ -826,7 +827,7 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
             PedInstance *p = *(passengers_.begin());
             dropPassenger(p);
         }
-        
+
         Explosion::createExplosion(g_Session.getMission(), this, 512.0);
     } else {// NOTE: maybe reduce speed on hit?
         // TODO: let passengers know that vehicle is attacked

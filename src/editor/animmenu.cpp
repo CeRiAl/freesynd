@@ -31,7 +31,7 @@
 #include "editor/editorapp.h"
 
 AnimMenu::AnimMenu(MenuManager * m):
-    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdGfx, "", "")
+    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdMain, "", "")
 {
     isCachable_ = false;
     animId_ = 1960;
@@ -60,7 +60,7 @@ void AnimMenu::handleLeave() {
 
 void AnimMenu::displayFont() {
 
-    
+
 }
 
 bool AnimMenu::handleUnknownKey(Key key, const int modKeys) {

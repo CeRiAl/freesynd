@@ -36,6 +36,7 @@
 #include "vehicle.h"
 #include "mission.h"
 #include "model/shot.h"
+#include "core/gamesession.h"
 
 #define Z_SHIFT_TO_AIR   4
 
@@ -55,7 +56,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::Minigun:
             idx_ = Weapon::Minigun_Anim;
@@ -65,7 +66,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::Flamer:
             idx_ = Weapon::Flamer_Anim;
@@ -75,7 +76,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_FlamerFire;
             impactAnims_.objectHit = SFXObject::sfxt_FlamerFire;
             impactAnims_.trace_anim = SFXObject::sfxt_FlamerFire;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::LongRange:
             idx_ = Weapon::LongRange_Anim;
@@ -85,7 +86,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::EnergyShield:
             idx_ = Weapon::EnergyShield_Anim;
@@ -95,7 +96,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::Uzi:
             idx_ = Weapon::Uzi_Anim;
@@ -105,7 +106,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::Laser:
             idx_ = Weapon::Laser_Anim;
@@ -115,7 +116,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Fire_LongSmoke;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::GaussGun:
             idx_ = Weapon::Gauss_Anim;
@@ -125,7 +126,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_ExplosionFire;
             impactAnims_.objectHit = SFXObject::sfxt_ExplosionBall;
             impactAnims_.trace_anim = SFXObject::sfxt_Smoke;
-            impactAnims_.rd_anim = SFXObject::sfxt_LargeFire; 
+            impactAnims_.rd_anim = SFXObject::sfxt_LargeFire;
             break;
         case Weapon::Shotgun:
             idx_ = Weapon::Shotgun_Anim;
@@ -135,7 +136,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::MediKit:
             idx_ = Weapon::Unarmed_Anim;
@@ -145,7 +146,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::Scanner:
             idx_ = Weapon::Unarmed_Anim;
@@ -155,7 +156,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::AccessCard:
             idx_ = Weapon::Unarmed_Anim;
@@ -165,7 +166,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         case Weapon::TimeBomb:
             idx_ = Weapon::Unarmed_Anim;
@@ -175,7 +176,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_ExplosionFire;
             impactAnims_.objectHit = SFXObject::sfxt_ExplosionBall;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_ExplosionFire; 
+            impactAnims_.rd_anim = SFXObject::sfxt_ExplosionFire;
             break;
         case Weapon::Persuadatron:
             idx_ = Weapon::Unarmed_Anim;
@@ -185,7 +186,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
             impactAnims_.trace_anim = SFXObject::sfxt_Unknown;
-            impactAnims_.rd_anim = SFXObject::sfxt_Unknown; 
+            impactAnims_.rd_anim = SFXObject::sfxt_Unknown;
             break;
         default:
 #if _DEBUG
@@ -298,7 +299,7 @@ bool WeaponInstance::animate(int elapsed) {
             if (bombSoundTimer.update(elapsed)) {
                 g_App.gameSounds().play(snd::TIMEBOMB);
             }
-            
+
             is_ignored_ = true;
             if (bombExplosionTimer.update(elapsed)) {
                 ShootableMapObject::DamageInflictType dmg;
@@ -963,7 +964,7 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         // which will give the current moving point of impact
         toDefineXYZ xyz;
         dmg.aimedLoc.convertPosToXYZ(&xyz);
-        
+
         switch(direction()) {
         case 0:
             xyz.y += 160;
@@ -1011,7 +1012,7 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         map_ = -1;
         health_ = 0;
         deactivate();
-        Explosion::createExplosion(pMission, this, 
+        Explosion::createExplosion(pMission, this,
             (double)pWeaponClass_->rangeDmg(), pWeaponClass_->damagePerShot());
     } else {
         // For other weapons, damage are done immediatly because projectile speed
@@ -1153,7 +1154,7 @@ void WeaponInstance::getHostileInRange(toDefineXYZ * cp,
 {
     bool ownerState, vehicleState, selfState = isIgnored();
     setIsIgnored(true);
- 
+
     if (pOwner_) {
         ownerState = pOwner_->isIgnored();
         pOwner_->setIsIgnored(true);
@@ -1224,7 +1225,7 @@ void WeaponInstance::getNonFriendInRange(toDefineXYZ * cp,
 {
     bool ownerState, vehicleState, selfState = isIgnored();
     setIsIgnored(true);
- 
+
     if (pOwner_) {
         ownerState = pOwner_->isIgnored();
         pOwner_->setIsIgnored(true);

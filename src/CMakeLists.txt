@@ -213,9 +213,10 @@ if (BUILD_DEV_TOOLS)
 		editor/editormenuid.h
 		editor/logoutmenu.h
 		editor/mainmenu.h
-		editor/gfxmenu.h
 		editor/fontmenu.h
-		editor/animmenu.h)
+		editor/animmenu.h
+		editor/searchmissionmenu.h
+		editor/listmissionmenu.h)
 	
 	add_executable (dump
 		dump.cpp
@@ -240,6 +241,32 @@ if (BUILD_DEV_TOOLS)
 		appcontext.cpp
 		map.cpp
 		mapmanager.cpp
+		mapobject.cpp
+		agent.cpp
+		agentmanager.cpp
+		ipastim.cpp
+		pedmanager.cpp
+		ped.cpp
+		pedactions.cpp
+		pedpathfinding.cpp
+		mod.cpp
+		modmanager.cpp
+		missionmanager.cpp
+		vehicle.cpp
+		weapon.cpp
+		weaponmanager.cpp
+		core/gamecontroller.cpp
+		core/gamesession.cpp
+		core/missionbriefing.cpp
+		core/researchmanager.cpp
+		core/research.cpp
+		core/squad.cpp
+		model/objectivedesc.cpp
+		model/shot.cpp
+		model/weaponholder.cpp
+		ia/action.cpp
+		ia/behaviour.cpp
+		mission.cpp
 		utils/dernc.cpp
 		utils/file.cpp
 		utils/log.cpp
@@ -251,13 +278,16 @@ if (BUILD_DEV_TOOLS)
 		editor/editormenufactory.cpp
 		editor/logoutmenu.cpp
 		editor/mainmenu.cpp
-		editor/gfxmenu.cpp
 		editor/fontmenu.cpp
 		editor/animmenu.cpp
+		editor/searchmissionmenu.cpp
+		editor/listmissionmenu.cpp
 		system_sdl.cpp
 		${DEV_TOOLS_HEADERS}
 	)
 	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL_LIBRARY} ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY})
+	
+	target_compile_definitions (dump PRIVATE EDITOR_)
 else ()
 	# We only define an install target if we're doing a release build.
 	if (APPLE)

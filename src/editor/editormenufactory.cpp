@@ -28,9 +28,10 @@
 #include "utils/log.h"
 #include "editor/mainmenu.h"
 #include "editor/logoutmenu.h"
-#include "editor/gfxmenu.h"
 #include "editor/fontmenu.h"
 #include "editor/animmenu.h"
+#include "editor/searchmissionmenu.h"
+#include "editor/listmissionmenu.h"
 
 Menu * EditorMenuFactory::createMenu(const int menuId) {
     Menu *pMenu = NULL;
@@ -39,12 +40,14 @@ Menu * EditorMenuFactory::createMenu(const int menuId) {
         pMenu =  new MainMenu(pManager_);
     } else if (menuId == Menu::kMenuIdLogout) {
         pMenu =  new LogoutMenu(pManager_);
-    } else if (menuId == fs_edit_menus::kMenuIdGfx) {
-        pMenu =  new GfxMenu(pManager_);
     } else if (menuId == fs_edit_menus::kMenuIdFont) {
         pMenu =  new FontMenu(pManager_);
     } else if (menuId == fs_edit_menus::kMenuIdAnim) {
         pMenu =  new AnimMenu(pManager_);
+    } else if (menuId == fs_edit_menus::kMenuIdSrchMis) {
+        pMenu = new SearchMissionMenu(pManager_);
+    } else if (menuId == fs_edit_menus::kMenuIdListMis) {
+        pMenu = new ListMissionMenu(pManager_);
     } else {
         FSERR(Log::k_FLG_UI, "EditorMenuFactory", "createMenu", ("Cannot create Menu : unknown id (%d)", menuId));
     }

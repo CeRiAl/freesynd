@@ -30,6 +30,7 @@
 #include "vehicle.h"
 #include "mission.h"
 #include "core/squad.h"
+#include "core/gamesession.h"
 #include "model/shot.h"
 #include "ia/behaviour.h"
 
