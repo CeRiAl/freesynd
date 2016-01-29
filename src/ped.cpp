@@ -600,6 +600,7 @@ bool PedInstance::useNewAnimation() {
         || type() == kPedTypeCivilian
         || type() == kPedTypePolice
         || type() == kPedTypeGuard
+        || type() == kPedTypeAgent
         ;
 }
 

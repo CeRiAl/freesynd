@@ -291,6 +291,8 @@ void PedManager::initEnemyAgent(PedInstance *pPed) {
     pPed->addMod(g_gameCtrl.mods().getHighestVersion(Mod::MOD_BRAIN));
     pPed->setTimeBeforeCheck(400);
     pPed->setBaseModAcc(0.5);
+
+    pPed->behaviour().addComponent(new PlayerHostileBehaviourComponent());
 }
 
 /*!
@@ -308,7 +310,7 @@ void PedManager::initGuard(PedInstance *pPed) {
     pPed->setTimeBeforeCheck(300);
     pPed->setBaseModAcc(0.45);
 
-    pPed->behaviour().addComponent(new GuardBehaviourComponent());
+    pPed->behaviour().addComponent(new PlayerHostileBehaviourComponent());
 }
 
 /*!

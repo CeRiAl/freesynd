@@ -40,7 +40,7 @@ const int PanicComponent::kDistanceToRun = 500;
 const double PersuadedBehaviourComponent::kMaxRangeForSearchingWeapon = 500.0;
 const int PoliceBehaviourComponent::kPoliceScoutDistance = 1500;
 const int PoliceBehaviourComponent::kPolicePendingTime = 1500;
-const int GuardBehaviourComponent::kEnemyScoutDistance = 1500;
+const int PlayerHostileBehaviourComponent::kEnemyScoutDistance = 1500;
 
 Behaviour::~Behaviour() {
     destroyComponents();
@@ -500,21 +500,21 @@ void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstan
     pPed->changeSourceOfActions(Action::kActionAlt);
 }
 
-GuardBehaviourComponent::GuardBehaviourComponent():
+PlayerHostileBehaviourComponent::PlayerHostileBehaviourComponent():
         BehaviourComponent() {
-    status_ = kEnemyStatusDefault;
+    status_ = kHostileStatusDefault;
 }
 
-void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (status_ == kEnemyStatusDefault) {
+void PlayerHostileBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
+    if (status_ == kHostileStatusDefault) {
         // In this mode, ped is looking for an enemy
         PedInstance *pArmedGuy = findPlayerAgent(pMission, pPed);
         if (pArmedGuy != NULL) {
-            status_ = kEnemyStatusFollowAndShoot;
+            status_ = kHostileStatusFollowAndShoot;
             followAndShootTarget(pPed, pArmedGuy);
         }
-    } else if (status_ == kEnemyStatusFollowAndShoot && pTarget_->isDead()) {
-        status_ = kEnemyStatusPendingEndFollow;
+    } else if (status_ == kHostileStatusFollowAndShoot && pTarget_->isDead()) {
+        status_ = kHostileStatusPendingEndFollow;
         pTarget_ = NULL;
         pPed->stopUsingWeapon();
         // just wait a few time before engaging another target or simply
@@ -522,29 +522,29 @@ void GuardBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstanc
         WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon);
         pWait->setWarnBehaviour(true);
         pPed->addMovementAction(pWait, false);
-    } else if (status_ == kEnemyStatusCheckForDefault) {
+    } else if (status_ == kHostileStatusCheckForDefault) {
         // check if there is a nearby enemy
         PedInstance *pArmedGuy = findPlayerAgent(pMission, pPed);
         if (pArmedGuy != NULL) {
-            status_ = kEnemyStatusFollowAndShoot;
+            status_ = kHostileStatusFollowAndShoot;
             followAndShootTarget(pPed, pArmedGuy);
         } else {
             pPed->deselectWeapon();
             pPed->changeSourceOfActions(Action::kActionDefault);
-            status_ = kEnemyStatusDefault;
+            status_ = kHostileStatusDefault;
         }
     }
 }
 
-void GuardBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
+void PlayerHostileBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
     if (evtType == Behaviour::kBehvEvtActionEnded) {
         // We are at the end of waiting period so check if we need to engage right now
         // of if we can go back to default
-        status_ = kEnemyStatusCheckForDefault;
+        status_ = kHostileStatusCheckForDefault;
     }
 }
 
-PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedInstance *pPed) {
+PedInstance * PlayerHostileBehaviourComponent::findPlayerAgent(Mission *pMission, PedInstance *pPed) {
     for (size_t i = 0; i < pMission->getSquad()->size(); i++) {
         PedInstance *pAgent = pMission->getSquad()->member(i);
         if (pAgent && pAgent->isAlive() && pPed->isCloseTo(pAgent, kEnemyScoutDistance)) {
@@ -554,7 +554,7 @@ PedInstance * GuardBehaviourComponent::findPlayerAgent(Mission *pMission, PedIns
     return NULL;
 }
 
-void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy) {
+void PlayerHostileBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy) {
     pTarget_ = pArmedGuy;
 
     // Set new actions
@@ -595,3 +595,4 @@ void GuardBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstanc
     }
     pPed->changeSourceOfActions(Action::kActionAlt);
 }
+

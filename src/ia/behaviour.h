@@ -265,37 +265,42 @@ private:
     PedInstance *pTarget_;
 };
 
-class GuardBehaviourComponent : public BehaviourComponent {
+/*!
+ * This behaviour is for peds that fight only player's agents.
+ */
+class PlayerHostileBehaviourComponent : public BehaviourComponent {
 public:
-    GuardBehaviourComponent();
+    PlayerHostileBehaviourComponent();
 
     void execute(int elapsed, Mission *pMission, PedInstance *pPed);
 
     void handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt);
 
 private:
+    //! looking for the nearest player agent
     PedInstance * findPlayerAgent(Mission *pMission, PedInstance *pPed);
     void followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy);
 private:
     static const int kEnemyScoutDistance;
 
    /*!
-     * Status of police behaviour.
+     * Status for behavior.
      */
-    enum EnemyStatus {
+    enum PlayerHostileStatus {
         //! Default status : ped execute default actions
-        kEnemyStatusDefault,
+        kHostileStatusDefault,
         //! The owner has found a target : so he follows it and shoot when nearby
-        kEnemyStatusFollowAndShoot,
+        kHostileStatusFollowAndShoot,
         //! When target is dead, wait some time
-        kEnemyStatusPendingEndFollow,
+        kHostileStatusPendingEndFollow,
         //! after waiting, check if ped go back to default
-        kEnemyStatusCheckForDefault
+        kHostileStatusCheckForDefault
     };
 
-    EnemyStatus status_;
-    /*! The ped that the owner has targeted and potentally is shooting at.*/
+    PlayerHostileStatus status_;
+    /*! The ped that the owner has targeted and potentially is shooting at.*/
     PedInstance *pTarget_;
 };
+
 
 #endif // IA_BEHAVIOUR_H_
