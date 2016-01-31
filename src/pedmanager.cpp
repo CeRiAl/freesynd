@@ -184,12 +184,14 @@ PedInstance *PedManager::loadInstance(const LevelData::People & gamdata, uint16 
         newped->setHealth(hp);
         newped->setStateMasks(PedInstance::pa_smStanding);
         if (gamdata.state == 0x10) {
-            PedInstance::actionQueueGroupType as;
+            LOG(Log::k_FLG_GAME, "PedManager","loadInstance", ("Unhandled gamedata state for ped %d", newped->id()))
+/*            PedInstance::actionQueueGroupType as;
             newped->createActQWalking(as, NULL, NULL, gamdata.orientation);
             as.main_act = as.actions.size() - 1;
             as.group_desc = PedInstance::gd_mStandWalk;
             as.origin_desc = fs_action::kOrigDefault;
             newped->addActQToQueue(as);
+*/
         }
     }
     // this is tile based Z we get, realword Z is in gamdata,

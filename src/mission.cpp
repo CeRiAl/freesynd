@@ -60,7 +60,7 @@ void MissionStats::init(int nbAgents) {
 Mission::Mission(const LevelData::MapInfos & map_infos)
 {
     status_ = RUNNING;
-    
+
     mtsurfaces_ = NULL;
     mdpoints_ = NULL;
     mdpoints_cp_ = NULL;
@@ -211,15 +211,9 @@ void Mission::start()
             }
         }
     }
-
-    for (uint16 i = 0, sz = peds_.size(); i < sz; ++i) {
-        PedInstance *p = peds_[i];
-        if (p->isAlive())
-            p->createDefQueue();
-    }
 }
 
-/*! 
+/*!
  * Checks if objectives are completed or failed and updates
  * mission status.
  */
@@ -1065,7 +1059,7 @@ bool Mission::setSurfaces() {
                                 }
                             } else if (this_s == 0x03) {
                                 nxtfp = &(mdpoints_[x + ym + z]);
-                                if (sWalkable(this_s, upper_s)) { 
+                                if (sWalkable(this_s, upper_s)) {
                                     sdirm |= 0x10;
                                     if (nxtfp->t == m_fdNotDefined) {
                                         nxtfp->t = m_fdDefReq;
@@ -2433,7 +2427,7 @@ bool Mission::getWalkable(MapTilePoint &mtp) {
                     default:
                         break;
                 }
-                
+
             }
         }
     } while (bz != 0 && !gotit);
@@ -2731,7 +2725,7 @@ uint8 Mission::checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTarg
 /*!
  * \param maxr maximum distance we can run
  * \return mask where bits are:
- * - 0b : target in range(1) 
+ * - 0b : target in range(1)
  * - 1b : blocker is object, "t" is set(2)
  * - 2b : blocker object, "pn" is set(4)
  * - 3b : reachable point set (8)
@@ -2781,7 +2775,7 @@ uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
     int tx = tmp.tileX() * 256 + tmp.offX();
     int ty = tmp.tileY() * 256 + tmp.offY();
     int tz = tmp.tileZ() * 128 + tmp.offZ();
-    double dist_blocker = sqrt((double)((tx - originLoc->x) * 
+    double dist_blocker = sqrt((double)((tx - originLoc->x) *
         (tx - originLoc->x) + (ty - originLoc->y) * (ty - originLoc->y)
         + (tz - originLoc->z) * (tz - originLoc->z)));
     blockerExists(&startXYZ, &endXYZ, &dist_blocker, &blockerObj);

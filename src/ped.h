@@ -202,9 +202,6 @@ public:
     PedInstance(Ped *ped, uint16 id, int m, bool isOur);
     ~PedInstance();
 
-    //! Temporary method
-    bool useNewAnimation();
-
     //*************************************
     // Properties
     //*************************************
@@ -287,8 +284,7 @@ public:
     bool switchActionStateFrom(uint32 as);
     void synchDrawnAnimWithActionState(void);
     bool animate(int elapsed, Mission *mission);
-    //! Temporary version of animate()
-    bool animate2(int elapsed, Mission *mission);
+
     void drawSelectorAnim(int x, int y);
     //! Update frame to render
     bool updateAnimation(int elapsed);
@@ -615,12 +611,6 @@ public:
 
     typedef std::pair<ShootableMapObject *, double> Pairsmod_t;
     typedef std::map <ShootableMapObject *, double> Msmod_t;
-    void addHostilesFound(ShootableMapObject * hostile_found) {
-        hostiles_found_.insert(Pairsmod_t(hostile_found, -1.0));
-    }
-    void rmHostilesFound(ShootableMapObject * hostile_found) {
-        hostiles_found_.erase(hostile_found);
-    }
     bool isInHostilesFound(ShootableMapObject * hostile_found) {
         return hostiles_found_.find(hostile_found)
             != hostiles_found_.end();
@@ -650,55 +640,6 @@ public:
         og_dmCriminal = 0x10
     } objGroupDefMasks;
 
-    typedef enum {
-        ai_aNone = 0x0,
-        // Setup control over object where possible to lose this control
-        ai_aAquireControl = 0x0001,
-        // Leave control over object where possible to lose this control
-        ai_aLoseControl = 0x0002,
-        // this event should not be used as seperate action only
-        ai_aWaitToStart = 0x0004,
-        // Obtain inventory object
-        ai_aPickUpObject = 0x0008,
-        // Object of defined subtype (of type) should be destroyed
-        // defined by indx
-        ai_aDestroyObject = 0x0010,
-        // Use of object untill condition is met
-        ai_aUseObject = 0x0020,
-        ai_aPutDownObject = 0x0040,
-        // Objects should be at defined location
-        ai_aReachLocation = 0x0080,
-        ai_aFollowObject = 0x0100,
-        // Should wait some time to end or works as delay for other action
-        // to have animation drawn, or as simple wait
-        ai_aWait = 0x0200,
-        ai_aAttackLocation = 0x0400,
-        // in range of current weapon or inrange of other friendly units:
-        // will execute ai_aReachLocation
-        ai_aFindEnemy = 0x0800,
-        // in range of current weapon
-        ai_aFindNonFriend = 0x1000,
-        ai_aDeselectCurWeapon = 0x2000,
-        ai_aTrigger = 0x4000,
-        // checking persuador to mimic his actions and to follow him
-        ai_aCheckOwner = 0x8000,
-        // action should be executed within this time limit, if it will
-        // not complete (any result) in time it will be marked as failed
-        ai_aTimeExecute = 0x10000,
-        ai_aFindWeapon = 0x20000,
-        ai_aResetActionQueueQueue = 0x40000000,
-        ai_aNonFinishable = 0x80000000,
-        ai_aAll = 0xFFFFFFFF
-    } AiAction;
-
-    typedef enum {
-        gd_mNone = 0,
-        gd_mStandWalk = 0x0001,
-        gd_mFire = 0x0002,
-        gd_mThink = 0x0004,
-        gd_mExclusive = 0x8000,
-        gd_mAll = (gd_mStandWalk | gd_mFire | gd_mThink)
-    } groupDescMasks;
 
     typedef struct {
         PathNode t_pn;
@@ -708,184 +649,6 @@ public:
         // 4 - t_xyz used
         uint8 desc;
     } targetDescType;
-
-    typedef struct {
-        // action state (pedActionStateMasks)
-        uint32 as;
-        // PedInstance::AiAction
-        uint32 act_exec;
-        targetDescType target;
-        // 0b(1) - not started, 1b(2) - executing, 2b(4) - finished, 3b(8) - failed,
-        // 4b(16) - suspended, 5b(32) - waiting to complete (ai_aWait),
-        // 6b(64) - not ready (empty, should be skipped), 7b(128) - waiting (ai_aWait
-        // | ai_aWaitToStart), 8b(256) - waiting to start
-        uint16 state;
-        // 0 - not set, 0b - stand/walking group(has walking action or
-        // action requires ped to stand), 1b - firing only(no walking action),
-        // (0b+1b) - walking + firing, 2b - decision making(thinking),
-        // 3b - exclusive, no other action can be executed in parallel with it
-        // and all before it should be completed
-        // NOTE: group with same type as previous cannot be executed until
-        // previous is completed or failed
-        uint32 group_desc;
-        struct {
-            struct {
-                // (objGroupDefMasks)
-                uint32 t_ogd;
-                // (pedDescStateMasks)
-                uint32 t_hostile_desc;
-                // how many shots to do, 0 = shoot until cancelled
-                uint32 make_shots;
-                uint32 shots_done;
-                bool forced_shot;
-                WeaponSelectCriteria pw_to_use;
-                // upon reaching this value action is complete;
-                // health dropped to this value( or persuade resistance points?)
-                int32 value;
-            } enemy_var;
-            struct {
-                int32 elapsed;
-                // = -1 forever(ai_aWait)
-                int32 time_wait;
-                // = 0 || t > 0 (ai_aWaitToStart)
-                int32 time_to_start;
-                // time for execution of action(ai_aTimeExecute)
-                int32 exec_time;
-                // time action was executing(ai_aTimeExecute)
-                int32 exec_elapsed;
-                // wait event, 0 - standalone - time(milliseconds), 1 - waits
-                // till animation finished, 2 - attached to process time
-                uint8 desc;
-            } time_var;
-            struct {
-                // move into this direction, -1 is unset
-                int32 dir;
-                // dist to target pos/object, 0 is unset/not used
-                int32 dist;
-                // already walked distance
-                int32 dist_walked;
-                // radius for distance checking
-                // dist + rd > cur_dist > dist - rd
-                // 0 or > 0
-                int32 rd;
-                // -1 is unset
-                int32 speed;
-                DirMoveType dir_move;
-            } dist_var;
-        } multi_var;
-        /* for ai_aReachLocation 0 - go to location, 1 - go to direction,
-         * 2 - go to position of object; if dist is set, on reaching
-         * this value action complete, 3 - pathnode coords = x, y are used to
-         * calculate direction, 4 - objects coords = x, y to calculate direction
-         * NOTE: coords x,y : tile_x_ * 256 + off_x_, tile_y_ * 256 + off_y_
-         * for ai_aFollowObject 0 - until dist is reached, 1 - in range
-         * of shot view
-         * for ai_aAquireControl, for car, 0 - become passenger(or driver),
-         * 1 - become driver only if else failed
-         * for ai_aAquireControl, for ped, 0 - controled or not is ok,
-         * 1 - controlled if else failed
-         * for ai_aFindEnemy; 0 - scout - will not attack, 1 - search and
-         * destroy
-         * for ai_aUseObject, 0 - use following vehicle to get to location
-         * (can be passenger); 1 - drive following vehicle to location
-         * (only driver can do this)
-         */
-        uint32 condition;
-    } actionQueueType;
-
-    typedef struct {
-        std::vector <actionQueueType> actions;
-        // index refers to action, state of which defines state of group
-        uint32 main_act;
-        // same as in actionQueueType, groupDescMasks
-        // NOTE: this value is never set in createActQ* functions, should be
-        // always set before adding to one of actions queues
-        uint32 group_desc;
-        // same as in actionQueueType.state
-        uint16 state;
-        uint32 group_id;
-        //! Which process created this action group
-        fs_action::CreatOrigin origin_desc;
-    } actionQueueGroupType;
-
-    // act_find (PedInstance::AiAction)
-    std::vector <actionQueueType>::iterator findActInQueue(uint32 act_find,
-        actionQueueGroupType &as, std::vector <actionQueueType>::iterator search_from);
-
-    std::vector <actionQueueGroupType>::iterator findQueueInActQueue(uint32 id);
-    void setActQInQueue(actionQueueGroupType &as,
-        uint32 * id = NULL);
-    bool addActQToQueue(actionQueueGroupType &as,
-        uint32 * id = NULL);
-    /*!
-     * Add the action to the list of actions.
-     * \param as The action to add
-     * \param append True means the action is added after existing actions. False
-     *   means the action is the only one executed.
-     * \param id
-     */
-    void addAction(actionQueueGroupType &as, bool append = false, uint32 * id = NULL) {
-        if (append) {
-            addActQToQueue(as, id);
-        } else {
-            setActQInQueue(as, id);
-        }
-    }
-    void clearActQ() { actions_queue_.clear(); }
-
-    void createDefQueue();
-    void addDefActsToActions(uint32 groups_used = 0);
-    void clearDefActs() { default_actions_.clear(); }
-
-    void dropActQ();
-
-    void createActQStanding(actionQueueGroupType &as);
-    void createActQWalking(actionQueueGroupType &as, PathNode *tpn,
-        ShootableMapObject *tsmo, int32 dir = -1, int32 dist = 0,
-        bool bounce = true);
-    void createActQHit(actionQueueGroupType &as, PathNode *tpn,
-        int32 dir = -1);
-    bool createActQFiring(actionQueueGroupType &as, PathNode *tpn,
-        ShootableMapObject *tsmo = NULL, bool forced_shot = false,
-        uint32 make_shots = 0, WeaponSelectCriteria *pw_to_use = NULL,
-        int32 value = -1);
-    void createActQFollowing(actionQueueGroupType &as,
-        ShootableMapObject *tsmo, uint32 condition, int32 dist = 128, int32 rd = 0);
-
-    void createActQPickUp(actionQueueGroupType &as,
-        ShootableMapObject *tsmo);
-    void createActQPutDown(actionQueueGroupType &as,
-        ShootableMapObject *tsmo);
-
-    void createActQBurning(actionQueueGroupType &as);
-
-    void createActQGetInCar(actionQueueGroupType &as,
-        ShootableMapObject *tsmo, int32 dir = -1);
-    void createActQUsingCar(actionQueueGroupType &as, PathNode *tpn,
-        ShootableMapObject *tsmo);
-    void createActQWait(actionQueueGroupType& as, int tm_wait,
-        uint8 desc = 0);
-
-    bool createActQFindEnemy(actionQueueGroupType &as);
-    bool createActQFindNonFriend(actionQueueGroupType &as);
-
-    void createActQResetActionQueue(actionQueueGroupType &as);
-    void createActQDeselectCurWeapon(actionQueueGroupType &as);
-    void createActQTrigger(actionQueueGroupType &as, PathNode *tpn, int32 range);
-
-    void createActQFindWeapon(actionQueueGroupType &as,
-        WeaponSelectCriteria *pw_to_use = NULL, int dist = -1);
-
-    void createActQCheckOwner(actionQueueGroupType &as);
-
-    void discardActG(uint32 id);
-    void discardActG(std::vector <actionQueueGroupType>::iterator it_a);
-
-    void updtActGFiringShots(uint32 id, uint32 make_shots);
-    void updtActGFiring(uint32 id, PathNode *tpn,
-        ShootableMapObject *tsmo = NULL);
-    bool checkActGCompleted(fs_action::CreatOrigin origin);
-    void pauseAllInActG(actionQueueGroupType &as, uint32 start_pos = 1);
 
     //! Returns ped's speed under normal conditions
     int getDefaultSpeed();
@@ -897,7 +660,6 @@ public:
     void cpyEnemyDefs(Mmuu32_t &eg_defs) { eg_defs = enemy_group_defs_; }
     bool isArmed() { return (desc_state_ & pd_smArmed) != 0; }
     bool isExcluded() { return (state_ & pa_smCheckExcluded) != 0; }
-    targetDescType * lastFiringTarget() { return &last_firing_target_; }
 
     IPAStim *adrenaline_;
     IPAStim *perception_;
@@ -927,10 +689,6 @@ protected:
     Ped *ped_;
     //! Type of Ped
     PedType type_;
-    //! If this flag is true, all actions should be dropped
-    bool drop_actions_;
-    std::vector <actionQueueGroupType> actions_queue_;
-    std::vector <actionQueueGroupType> default_actions_;
 
     /*! Ped's behaviour.*/
     Behaviour behaviour_;
@@ -947,8 +705,6 @@ protected:
     /*! Current action of using a weapon.*/
     UseWeaponAction *pUseWeaponAction_;
 
-
-    uint32 action_grp_id_;
     // (pedDescStateMasks)
     uint32 desc_state_;
     // this inherits definition from desc_state_
@@ -988,7 +744,6 @@ protected:
     bool is_our_;
     //! controller of ped - for persuaded
     PedInstance *owner_;
-    targetDescType last_firing_target_;
     //! Points obtained by agents for persuading peds
     uint16 totalPersuasionPoints_;
     //! The group of peds that this ped has persuaded

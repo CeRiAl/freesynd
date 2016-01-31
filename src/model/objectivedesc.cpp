@@ -107,9 +107,9 @@ void ObjProtect::evaluate(Mission *pMission) {
     if (p->isDead()) {
         // Target is dead -> objective is failed
         endObjective(false);
-    } else {
-        if(p->checkActGCompleted(fs_action::kOrigScript))
-            endObjective(true);
+    } else if(p->currentAction() == NULL) {
+        // Ped has finished all his actions
+        endObjective(true);
     }
 }
 

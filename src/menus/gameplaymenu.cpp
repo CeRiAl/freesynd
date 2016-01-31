@@ -1041,23 +1041,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
          sound_num = 20;
     }
 #endif
-#if 1
-    if (key.unicode == 'm') {
-        for (SquadSelection::Iterator it = selection_.begin();
-                            it != selection_.end(); ++it) {
-            PedInstance *ped = *it;
-            PedInstance::actionQueueGroupType as;
-            ped->createActQWalking(as, NULL, NULL, 160, 1024);
-            as.main_act = as.actions.size() - 1;
-            as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_action::kOrigUser;
-            if (modKeys & KMD_CTRL)
-                ped->addActQToQueue(as);
-            else
-                ped->setActQInQueue(as);
-        }
-    }
-#endif
+
 #if 0
     if (key == KEY_i)
         mission_->ped(0)->setTileY(mission_->ped(0)->tileY() - 1);
