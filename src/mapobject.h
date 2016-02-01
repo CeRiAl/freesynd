@@ -259,13 +259,6 @@ public:
         return false;
     }
 
-    void setRcvDamageDef(DefDamageType rcvDamageDef) {
-        rcv_damage_def_ = rcvDamageDef;
-    }
-    DefDamageType getRcvDamageDef() {
-        return rcv_damage_def_;
-    }
-
     void setFrame(int frame) { frame_ = frame;}
     void setFrameFromObject(MapObject *m) {
         frame_ = m->frame_;
@@ -327,7 +320,6 @@ protected:
     int elapsed_carry_;
     //! how often this frame should be drawn per seccond
     int frames_per_sec_;
-    DefDamageType rcv_damage_def_;
     //! objects direction
     int dir_;
     //! looped animations, time to show them is set here, if = -1 show forever
@@ -494,21 +486,12 @@ public:
 
     /*!
      * Method called when object is hit by a weapon shot.
+     * By default do nothing. Subclasses must implement
+     * to react to a shot.
      * \param d Damage description
      */
-    virtual void handleHit(DamageInflictType &d) {
-        // TODO : remove handleDamage()
-        handleDamage(&d);
-    }
+    virtual void handleHit(DamageInflictType &d) {}
 
-    virtual bool handleDamage(ShootableMapObject::DamageInflictType * d) {
-        if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
-            || (d->dtype & rcv_damage_def_) == 0)
-            return false;
-        health_ -= d->dvalue;
-        health_ = 0;
-        return true;
-    }
     virtual bool isExcluded() { return health_ <= 0; }
     bool isAlive() { return health_ > 0; }
     bool isDead() { return health_ <= 0; }
@@ -627,7 +610,7 @@ public:
         sttsem_Stt3,
         sttsem_Damaged
     }stateSemaphores;
-    
+
     typedef enum {
         sttwnd_Closed = 0,
         sttwnd_Open,
@@ -699,7 +682,7 @@ public:
 
     void draw(int x, int y);
     bool animate(int elapsed, Mission *obj);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, burning_anim_, damaged_anim_;
@@ -716,7 +699,7 @@ public:
 
     bool animate(int elapsed, Mission *obj);
     void draw(int x, int y);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, open_anim_, breaking_anim_, damaged_anim_;
@@ -760,8 +743,9 @@ public:
     virtual ~Semaphore() {}
 
     bool animate(int elapsed, Mission *obj);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
     void draw(int x, int y);
+
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, damaged_anim_;

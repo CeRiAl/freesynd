@@ -44,7 +44,7 @@ MapObject::MapObject(uint16 id, int m, ObjectNature nature):
     is_ignored_(false), is_frame_drawn_(false),
     state_(0xFFFFFFFF)
 {
-    nature_ = nature; 
+    nature_ = nature;
     id_ = id;
 }
 
@@ -194,7 +194,7 @@ void MapObject::setDirection(int posx, int posy, int * dir) {
 void MapObject::setDirectionTowardObject(const MapObject &object) {
     int xb = this->tileX() * 256 + this->offX();
     int yb = this->tileY() * 256 + this->offY();
-    
+
     int txb = object.tileX() * 256 + object.offX();
     int tyb = object.tileY() * 256 + object.offY();
 
@@ -577,9 +577,7 @@ void SFXObject::reset() {
 
 ShootableMapObject::ShootableMapObject(uint16 id, int m, ObjectNature nature):
     MapObject(id, m, nature)
-{
-    rcv_damage_def_ = MapObject::ddmg_Invulnerable;
-}
+{}
 
 ShootableMovableMapObject::ShootableMovableMapObject(uint16 id, int m, ObjectNature nature):
         ShootableMapObject(id, m, nature) {
@@ -589,7 +587,7 @@ ShootableMovableMapObject::ShootableMovableMapObject(uint16 id, int m, ObjectNat
 }
 
 /*!
- * This method adds the given offsets to the object's offX and offY 
+ * This method adds the given offsets to the object's offX and offY
  * and moves it to a new tile if necessary.
  * \param nOffX amount to add to offX
  * \param nOffY amount to add to offY
@@ -1274,7 +1272,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     d.d_owner = NULL;
                     d.dvalue = 1024;
                     d.ddir = -1;
-                    p->handleDamage(&d);
+                    p->handleHit(d);
                 }
             }
             break;
@@ -1464,7 +1462,6 @@ bool LargeDoor::isPathBlocker()
 Tree::Tree(uint16 id, int m, int anim, int burningAnim, int damagedAnim) :
         Static(id, m, Static::smt_Tree), anim_(anim), burning_anim_(burningAnim),
         damaged_anim_(damagedAnim) {
-    rcv_damage_def_ = MapObject::ddmg_StaticTree;
     state_ = Static::stttree_Healthy;
 }
 
@@ -1498,27 +1495,26 @@ bool Tree::animate(int elapsed, Mission *obj) {
     return MapObject::animate(elapsed);
 }
 
-bool Tree::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
-        || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::stttree_Burning;
-        setTimeShowAnim(10000);
-        is_ignored_ = true;
-        health_ = 0;
+/*!
+ * Implementation for the Tree. Tree burns only when hit by laser of fire.
+ * \param d Damage information
+ */
+void Tree::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Laser || d.dtype == dmg_Burn || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::stttree_Burning;
+            setTimeShowAnim(10000);
+            is_ignored_ = true;
+        }
     }
-    return true;
 }
 
 WindowObj::WindowObj(uint16 id, int m, int anim, int openAnim, int breakingAnim,
                      int damagedAnim) :
         Static(id, m, Static::smt_Window), anim_(anim), open_anim_(openAnim),
-        breaking_anim_(breakingAnim), damaged_anim_(damagedAnim) {
-    rcv_damage_def_ = MapObject::ddmg_StaticWindow;
-}
+        breaking_anim_(breakingAnim), damaged_anim_(damagedAnim) {}
 
 bool WindowObj::animate(int elapsed, Mission *obj) {
     bool updated = MapObject::animate(elapsed);
@@ -1538,25 +1534,26 @@ void WindowObj::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_ + (state_ << 1), frame_, x, y);
 }
 
-bool WindowObj::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::sttwnd_Breaking;
-        is_ignored_ = true;
-        frame_ = 0;
-        setFramesPerSec(6);
+/*!
+ * Implementation for the Tree. Tree burns only when hit by laser of fire.
+ * \param d Damage information
+ */
+void WindowObj::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Bullet || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::sttwnd_Breaking;
+            is_ignored_ = true;
+            frame_ = 0;
+            setFramesPerSec(6);
+        }
     }
-    return true;
 }
 
 EtcObj::EtcObj(uint16 id, int m, int anim, int burningAnim, int damagedAnim, StaticType type) :
         Static(id, m, type), anim_(anim), burning_anim_(burningAnim),
-        damaged_anim_(damagedAnim) {
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
-}
+        damaged_anim_(damagedAnim) {}
 
 void EtcObj::draw(int x, int y)
 {
@@ -1577,8 +1574,8 @@ void NeonSign::draw(int x, int y)
 Semaphore::Semaphore(uint16 id, int m, int anim, int damagedAnim) :
         Static(id, m, Static::smt_Semaphore), anim_(anim),
         damaged_anim_(damagedAnim), elapsed_left_smaller_(0),
-        elapsed_left_bigger_(0), up_down_(1) {
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
+        elapsed_left_bigger_(0), up_down_(1)
+{
     setFramesPerSec(2);
 }
 
@@ -1628,31 +1625,33 @@ bool Semaphore::animate(int elapsed, Mission *obj) {
     return MapObject::animate(elapsed);
 }
 
-bool Semaphore::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::sttsem_Damaged;
-        // To make this thing reach the ground need to get solid surface 0x0F
-        Mission * m = g_Session.getMission();
-        int z = tile_z_;
-        int indx = tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy;
-        elapsed_left_bigger_ = 0;
-        while (z != 0) {
-            z--;
-            indx -= m->mmax_m_xy;
-            int twd = m->mtsurfaces_[indx].twd;
-            if (twd == 0x0F) {
-                elapsed_left_bigger_ = (tile_z_ - z) * 128 + off_z_;
-                break;
+/*!
+ * Implementation for the Semaphore.
+ * \param d Damage information
+ */
+void Semaphore::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Laser || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::sttsem_Damaged;
+            // To make this thing reach the ground need to get solid surface 0x0F
+            Mission * m = g_Session.getMission();
+            int z = tile_z_;
+            int indx = tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy;
+            elapsed_left_bigger_ = 0;
+            while (z != 0) {
+                z--;
+                indx -= m->mmax_m_xy;
+                int twd = m->mtsurfaces_[indx].twd;
+                if (twd == 0x0F) {
+                    elapsed_left_bigger_ = (tile_z_ - z) * 128 + off_z_;
+                    break;
+                }
             }
+            is_ignored_ = true;
         }
-        is_ignored_ = true;
-        health_ = 0;
     }
-    return true;
 }
 
 void Semaphore::draw(int x, int y)
@@ -1662,7 +1661,6 @@ void Semaphore::draw(int x, int y)
 }
 
 AnimWindow::AnimWindow(uint16 id, int m, int anim) : Static(id, m, smt_AnimatedWindow) {
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
     setIsIgnored(true);
     setFramesPerSec(4);
     anim_ = anim;

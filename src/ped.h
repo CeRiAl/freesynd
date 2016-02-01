@@ -391,7 +391,6 @@ public:
     void handleHit(ShootableMapObject::DamageInflictType &d);
     //! Method called to check if ped has died
     bool handleDeath(Mission *pMission, ShootableMapObject::DamageInflictType &d);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
 
     //*************************************
     // Persuasion

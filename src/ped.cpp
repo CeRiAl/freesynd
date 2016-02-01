@@ -693,7 +693,6 @@ PedInstance::PedInstance(Ped *ped, uint16 id, int m, bool isOur) :
     owner_(NULL)
 {
     hold_on_.wayFree = 0;
-    rcv_damage_def_ = MapObject::ddmg_Ped;
     state_ = PedInstance::pa_smNone;
     is_our_ = isOur;
 
@@ -893,7 +892,6 @@ bool PedInstance::canSelectWeapon(WeaponInstance *pNewWeapon) {
  */
 void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
     if (wi->getWeaponType() == Weapon::EnergyShield) {
-        setRcvDamageDef(MapObject::ddmg_Ped);
         wi->deactivate();
     } else if (wi->getWeaponType() == Weapon::AccessCard) {
         rmEmulatedGroupDef(4, og_dmPolice);
@@ -932,7 +930,6 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
 
     switch(wi->getWeaponType()) {
     case Weapon::EnergyShield:
-        setRcvDamageDef(MapObject::ddmg_PedWithEnergyShield);
         wi->activate();
         break;
     case Weapon::AccessCard:
@@ -1285,73 +1282,6 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
     }
 
     return health_ == 0;
-}
-
-bool PedInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
-        || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    if ((d->dtype & MapObject::dmg_Physical) != 0)
-        health_ -= d->dvalue;
-    else if (d->dtype == MapObject::dmg_Persuasion) {
-        handlePersuadedBy((PedInstance *)d->d_owner);
-        return isPersuaded();
-    }
-
-    // Change direction due to impact
-    toDefineXYZ locW;
-    convertPosToXYZ(&locW);
-    setDirection(d->originLocW.x - locW.x, d->originLocW.y - locW.y);
-
-    if (health_ <= 0) {
-        health_ = 0;
-        clearDestination();
-        destroyAllActions(true);
-        switchActionStateTo(PedInstance::pa_smDead);
-        if (isPersuaded())
-            owner_->rmvPersuaded(this);
-
-        switch (d->dtype) {
-            case MapObject::dmg_Bullet:
-                setDrawnAnim(PedInstance::ad_DieAnim);
-                dropAllWeapons();
-                break;
-            case MapObject::dmg_Laser:
-                setDrawnAnim(PedInstance::ad_VaporizeAnim);
-                destroyAllWeapons();
-                break;
-            case MapObject::dmg_Burn:
-                // TODO: sometime we will walk burning
-                setDrawnAnim(PedInstance::ad_StandBurnAnim);
-                destroyAllWeapons();
-                setTimeShowAnim(4000);
-                break;
-            case MapObject::dmg_Explosion:
-                // TODO: sometime we will walk burning
-                setDrawnAnim(PedInstance::ad_StandBurnAnim);
-                destroyAllWeapons();
-                setTimeShowAnim(4000);
-                break;
-            case MapObject::dmg_Collision:
-                setDrawnAnim(PedInstance::ad_HitAnim);
-                dropAllWeapons();
-                break;
-        }
-
-        // send an event to alert agent died
-        if (isOurAgent()) {
-            GameEvent evt;
-            evt.stream = GameEvent::kMission;
-            evt.type = GameEvent::kAgentDied;
-            evt.pCtxt = this;
-            g_gameCtrl.fireGameEvent(evt);
-        }
-    } else {
-        // TODO: agent sometime can survive explosion, they need to walk burning?
-        setDrawnAnim(PedInstance::ad_HitAnim);
-    }
-    return true;
 }
 
 void PedInstance::addEnemyGroupDef(uint32 eg_id, uint32 eg_def) {

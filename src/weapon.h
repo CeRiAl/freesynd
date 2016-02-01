@@ -273,27 +273,10 @@ protected:
     snd::InGameSample sample_;
 };
 
-class ShotClass {
-public:
-    ShotClass(ShootableMapObject *tobj = NULL) : target_object_(tobj){}
-    ~ShotClass(){}
-
-    void shotTargetRandomizer(toDefineXYZ * cp, toDefineXYZ * tp, double angle,
-        double dist_new = -1, bool exclude_z = false);
-
-protected:
-    void makeShot(bool rangeChecked, toDefineXYZ &cp, SFXObject::SfxTypeEnum anim_hit,
-        std::vector <Weapon::ShotDesc> &all_shots, SFXObject::SfxTypeEnum anim_obj_hit,
-        WeaponInstance *w = NULL);
-
-protected:
-    ShootableMapObject *target_object_;
-};
-
 /*!
  * Weapon instance class.
  */
-class WeaponInstance : public ShootableMapObject, public ShotClass{
+class WeaponInstance : public ShootableMapObject {
 public:
     //! Creates a instance for the given weapon class
     static WeaponInstance *createInstance(Weapon *pWeaponClass);
@@ -312,9 +295,6 @@ public:
 
     bool animate(int elapsed);
     void draw(int x, int y);
-    uint16 inflictDamage(ShootableMapObject * tobj, PathNode * tp,
-        int *elapsed = NULL, bool ignoreBlocker = false,
-        uint32 *make_shots = NULL);
 
     Weapon *getWeaponClass() { return pWeaponClass_; }
 
@@ -350,11 +330,6 @@ public:
     void activate();
     void deactivate();
 
-    void getHostileInRange(toDefineXYZ * cp, ShootableMapObject * & target,
-        uint8 mask, bool checkTileOnly = true, int maxr = -1);
-    void getNonFriendInRange(toDefineXYZ * cp,
-        ShootableMapObject * & target, bool checkTileOnly = true,
-        int maxr = -1);
     void handleHit(ShootableMapObject::DamageInflictType & d);
 
     bool canShoot() {
@@ -394,7 +369,7 @@ protected:
     /*! Owner of the weapon.*/
     PedInstance *pOwner_;
     int ammo_remaining_;
-    /*! if this value is smaller time_for_shot_ shot cannot be done 
+    /*! if this value is smaller time_for_shot_ shot cannot be done
     * if is greater then time_for_shot_ reload is in execution
     * if is greater then time_for_shot_ + time_reload_ then full shot is done
     * */
