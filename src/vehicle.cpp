@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -29,8 +30,10 @@
 #include <assert.h>
 
 #include "app.h"
+#include "core/gamesession.h"
 #include "gfx/screen.h"
 #include "vehicle.h"
+#include "model/shot.h"
 
 VehicleAnimation::VehicleAnimation() {
     vehicle_anim_ = kNormalAnim;
@@ -59,6 +62,19 @@ void VehicleAnimation::set_base_anims(int anims) {
 
 void Vehicle::addPassenger(PedInstance *p) {
     passengers_.insert(p);
+}
+
+/*!
+ * Removes given passenger from vehicle.
+ * \param pPed Ped to remove
+ */
+void Vehicle::dropPassenger(PedInstance *pPed) {
+    if(isInsideVehicle(pPed)) {
+        pPed->leaveVehicle();
+        passengers_.erase(passengers_.find(pPed));
+        pPed->setPosition(tile_x_, tile_y_, tile_z_,
+        off_x_, off_y_, off_z_);
+    }
 }
 
 /*!
@@ -93,12 +109,10 @@ bool Vehicle::containsHostilesForPed(PedInstance* p,
     return false;
 }
 
-VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, int m):
-    Vehicle(m, true), vehicle_(vehicle), vehicle_driver_(NULL)
+VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 id, int m):
+    Vehicle(id, m, true), vehicle_(vehicle), vehicle_driver_(NULL)
 {
     hold_on_.wayFree = 0;
-    rcv_damage_def_ = MapObject::ddmg_Vehicle;
-    major_type_ = MapObject::mjt_Vehicle;
 }
 
 bool VehicleInstance::animate(int elapsed)
@@ -374,6 +388,19 @@ bool VehicleInstance::dirWalkable(PathNode *p, int x, int y, int z) {
                 return true;
 
     return false;
+}
+
+/*!
+ * Sets a destination point for the vehicle to reach at given speed.
+ * \param m
+ * \param node destination point
+ * \param newSpeed Speed of movement
+ * \return true if destination has been set correctly.
+ */
+bool VehicleInstance::setDestination(Mission *m, PathNode &node, int newSpeed) {
+    speed_ = newSpeed;
+    setDestinationV(node.tileX(), node.tileY(), node.tileZ(), node.offX(), node.offY(), newSpeed);
+    return !dest_path_.empty();
 }
 
 void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int new_speed)
@@ -675,7 +702,7 @@ bool VehicleInstance::move_vehicle(int elapsed)
             return updated;
         } else if (hold_on_.wayFree == 2){
             // Must stop : clear destination and stop
-            resetDest_Speed();
+            clearDestination();
             return updated;
         }
 
@@ -772,16 +799,19 @@ bool VehicleInstance::move_vehicle(int elapsed)
 }
 
 
-bool VehicleInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || d->dtype == MapObject::dmg_Persuasion)
-        return false;
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        speed_ = 0;
-        health_ = 0;
+/*!
+ * Method called when object is hit by a weapon shot.
+ * \param d Damage description
+ */
+void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
+    if (health_ <= 0)
+        return;
+
+    decreaseHealth(d.dvalue);
+    if (health_ == 0) {
         is_ignored_ = true;
         clearDestination();
-        switch ((unsigned int)d->dtype) {
+        switch ((unsigned int)d.dtype) {
             case MapObject::dmg_Bullet:
             case MapObject::dmg_Laser:
             case MapObject::dmg_Burn:
@@ -794,15 +824,13 @@ bool VehicleInstance::handleDamage(ShootableMapObject::DamageInflictType *d) {
         while (passengers_.size() != 0)
         {
             PedInstance *p = *(passengers_.begin());
-            p->leaveVehicle();
-            removeDriver(p);
+            dropPassenger(p);
         }
-        ShotClass explosion;
-        explosion.createExplosion(this, 512.0);
+
+        Explosion::createExplosion(g_Session.getMission(), this, 512.0);
     } else {// NOTE: maybe reduce speed on hit?
         // TODO: let passengers know that vehicle is attacked
     }
-    return true;
 }
 
 /*!
@@ -822,20 +850,29 @@ void VehicleInstance::addPassenger(PedInstance *p) {
     }
 }
 
+/*!
+ * Overload initial method to manage driver.
+ * \param pPed The ped to remove.
+ */
+void VehicleInstance::dropPassenger(PedInstance *pPed) {
+    Vehicle::dropPassenger(pPed);
+    if (vehicle_driver_ == pPed) {
+        vehicle_driver_ = NULL;
+        clearDestination();
+
+        // find another driver in the remaining passengers
+        for (std::set<PedInstance *>::iterator it = passengers_.begin();
+            it != passengers_.end(); it++) {
+            // take the first one
+            vehicle_driver_ = *it;
+            break;
+        }
+    }
+}
+
 void VehicleInstance::forceSetDriver(PedInstance *vehicleDriver) {
     vehicle_driver_ = vehicleDriver;
     if (!isInsideVehicle(vehicleDriver)) {
         Vehicle::addPassenger(vehicleDriver);
     }
-}
-
-void VehicleInstance::removeDriver(PedInstance* vehicleDriver) {
-    if (vehicle_driver_ == vehicleDriver) {
-        vehicle_driver_ = NULL;
-        clearDestination();
-        setSpeed(0);
-    }
-    passengers_.erase(passengers_.find(vehicleDriver));
-    ((MapObject *)vehicleDriver)->setPosition(tile_x_, tile_y_, tile_z_,
-        off_x_, off_y_, off_z_);
 }

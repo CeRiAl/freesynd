@@ -13,12 +13,15 @@ set (SOURCES
 	app.cpp
 	model/objectivedesc.cpp
 	model/weaponholder.cpp
+	model/shot.cpp
 	core/squad.cpp
 	core/gamesession.cpp
 	core/gamecontroller.cpp
 	core/missionbriefing.cpp
 	core/research.cpp
 	core/researchmanager.cpp
+	ia/action.cpp
+	ia/behaviour.cpp
 	default_ini.h
 	freesynd.cpp
     ipastim.cpp
@@ -95,7 +98,7 @@ set(HEADERS
 	common.h
 	config.h
 	cp437.h
-  ipastim.h
+    ipastim.h
 	keys.h
 	map.h
 	mapmanager.h
@@ -115,7 +118,6 @@ set(HEADERS
 	vehicle.h
 	version.h
 	weapon.h
-	weaponholder.h
 	weaponmanager.h
 	core/gameevent.h
 	core/squad.h
@@ -124,7 +126,8 @@ set(HEADERS
 	core/missionbriefing.h
 	core/research.h
 	core/researchmanager.h
-	core/actions.h
+	ia/actions.h
+	ia/behaviour.h
 	gfx/dirtylist.h
 	gfx/fliplayer.h
 	gfx/font.h
@@ -136,6 +139,8 @@ set(HEADERS
 	gfx/tilemanager.h
 	model/objectivedesc.h
 	model/leveldata.h
+	model/shot.h
+	model/weaponholder.h
 	menus/agentselectorrenderer.h
 	menus/maprenderer.h
 	menus/minimaprenderer.h
@@ -188,6 +193,7 @@ source_group(Gfx REGULAR_EXPRESSION gfx/*)
 source_group(Sound REGULAR_EXPRESSION sound/*)
 source_group(Model REGULAR_EXPRESSION model/*)
 source_group(Editor REGULAR_EXPRESSION editor/*)
+source_group(IA REGULAR_EXPRESSION ia/*)
 
 add_executable (freesynd ${SOURCES} ${HEADERS})
 
@@ -207,9 +213,10 @@ if (BUILD_DEV_TOOLS)
 		editor/editormenuid.h
 		editor/logoutmenu.h
 		editor/mainmenu.h
-		editor/gfxmenu.h
 		editor/fontmenu.h
-		editor/animmenu.h)
+		editor/animmenu.h
+		editor/searchmissionmenu.h
+		editor/listmissionmenu.h)
 	
 	add_executable (dump
 		dump.cpp
@@ -234,6 +241,32 @@ if (BUILD_DEV_TOOLS)
 		appcontext.cpp
 		map.cpp
 		mapmanager.cpp
+		mapobject.cpp
+		agent.cpp
+		agentmanager.cpp
+		ipastim.cpp
+		pedmanager.cpp
+		ped.cpp
+		pedactions.cpp
+		pedpathfinding.cpp
+		mod.cpp
+		modmanager.cpp
+		missionmanager.cpp
+		vehicle.cpp
+		weapon.cpp
+		weaponmanager.cpp
+		core/gamecontroller.cpp
+		core/gamesession.cpp
+		core/missionbriefing.cpp
+		core/researchmanager.cpp
+		core/research.cpp
+		core/squad.cpp
+		model/objectivedesc.cpp
+		model/shot.cpp
+		model/weaponholder.cpp
+		ia/action.cpp
+		ia/behaviour.cpp
+		mission.cpp
 		utils/dernc.cpp
 		utils/file.cpp
 		utils/log.cpp
@@ -245,13 +278,16 @@ if (BUILD_DEV_TOOLS)
 		editor/editormenufactory.cpp
 		editor/logoutmenu.cpp
 		editor/mainmenu.cpp
-		editor/gfxmenu.cpp
 		editor/fontmenu.cpp
 		editor/animmenu.cpp
+		editor/searchmissionmenu.cpp
+		editor/listmissionmenu.cpp
 		system_sdl.cpp
 		${DEV_TOOLS_HEADERS}
 	)
 	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL_LIBRARY} ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY})
+	
+	target_compile_definitions (dump PRIVATE EDITOR_)
 else ()
 	# We only define an install target if we're doing a release build.
 	if (APPLE)

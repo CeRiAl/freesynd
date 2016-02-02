@@ -37,11 +37,30 @@
 #include "utils/log.h"
 #include "vehicle.h"
 #include "core/squad.h"
+#include "model/shot.h"
+
+/*!
+ * Initialize the statistics.
+ * \param nbAgents Number of agents for the mission
+ */
+void MissionStats::init(int nbAgents) {
+    agents_ = nbAgents;
+    missionDuration_ = 0;
+    agentCaptured_ = 0;
+    enemyKilled_ = 0;
+    criminalKilled_ = 0;
+    civilKilled_ = 0;
+    policeKilled_ = 0;
+    guardKilled_ = 0;
+    convinced_ = 0;
+    nbOfShots_ = 0;
+    nbOfHits_ = 0;
+}
 
 Mission::Mission(const LevelData::MapInfos & map_infos)
 {
     status_ = RUNNING;
-    
+
     mtsurfaces_ = NULL;
     mdpoints_ = NULL;
     mdpoints_cp_ = NULL;
@@ -53,7 +72,6 @@ Mission::Mission(const LevelData::MapInfos & map_infos)
     max_y_ = READ_LE_UINT16(map_infos.max_y) / 2;
     cur_objective_ = 0;
     p_minimap_ = NULL;
-    players_group_id_ = 1;
     p_squad_ = new Squad();
 }
 
@@ -65,14 +83,16 @@ Mission::~Mission()
         delete peds_[i];
     for (unsigned int i = 0; i < weapons_.size(); i++)
         delete weapons_[i];
-    for (unsigned int i = 0; i < sfx_objects_.size(); i++)
-        delete sfx_objects_[i];
+    while (sfx_objects_.size() != 0) {
+        delSfxObject(0);
+    }
     for (unsigned int i = 0; i < prj_shots_.size(); i++)
         delete prj_shots_[i];
     for (unsigned int i = 0; i < statics_.size(); i++)
         delete statics_[i];
     for (unsigned int i = 0; i < objectives_.size(); i++)
         delete objectives_[i];
+    armedPedsVec_.clear();
     clrSurfaces();
 
     if (p_minimap_) {
@@ -81,6 +101,24 @@ Mission::~Mission()
 
     if (p_squad_) {
         delete p_squad_;
+    }
+}
+
+void Mission::delPrjShot(size_t i) {
+    delete prj_shots_[i];
+    prj_shots_.erase((prj_shots_.begin() + i));
+}
+
+/*!
+ * Removes given ped from the list of armed peds.
+ * \param pPed The ped to remove
+ */
+void Mission::removeArmedPed(PedInstance *pPed) {
+    for (size_t i = 0; i < armedPedsVec_.size();  i++) {
+        if (pPed == armedPedsVec_[i]) {
+            armedPedsVec_.erase(armedPedsVec_.begin() + i);
+            break;
+        }
     }
 }
 
@@ -126,17 +164,7 @@ void Mission::start()
 {
     LOG(Log::k_FLG_GAME, "Mission", "start()", ("Start mission"));
     // Reset mission statistics
-    stats_.agents = p_squad_->size();
-    stats_.mission_duration = 0;
-    stats_.agentCaptured = 0;
-    stats_.enemyKilled = 0;
-    stats_.criminalKilled = 0;
-    stats_.civilKilled = 0;
-    stats_.policeKilled = 0;
-    stats_.guardKilled = 0;
-    stats_.convinced = 0;
-    stats_.nbOfShots = 0;
-    stats_.nbOfHits = 0;
+    stats_.init(p_squad_->size());
 
     cur_objective_ = 0;
 
@@ -171,29 +199,21 @@ void Mission::start()
             int index_give = indx_best;
             if (indx_second != -1 && (rand() & 0xFF) > 200)
                 index_give = indx_second;
-            WeaponInstance *wi = wpns[index_give]->createInstance();
+            WeaponInstance *wi = WeaponInstance::createInstance(wpns[index_give]);
             p->addWeapon(wi);
             wi->setOwner(p);
-            wi->setIsIgnored(true);
             weapons_.push_back(wi);
             if (bomb) {
-                WeaponInstance *w_bomb = bomb->createInstance();
+                WeaponInstance *w_bomb = WeaponInstance::createInstance(bomb);
                 p->addWeapon(w_bomb);
                 w_bomb->setOwner(p);
-                w_bomb->setIsIgnored(true);
                 weapons_.push_back(w_bomb);
             }
         }
     }
-
-    for (uint16 i = 0, sz = peds_.size(); i < sz; ++i) {
-        PedInstance *p = peds_[i];
-        if (p->isAlive())
-            p->createDefQueue();
-    }
 }
 
-/*! 
+/*!
  * Checks if objectives are completed or failed and updates
  * mission status.
  */
@@ -253,7 +273,7 @@ void Mission::endWithStatus(Status status) {
 void Mission::addWeaponsFromPedToAgent(PedInstance* p, Agent* pAg)
 {
     while (p->numWeapons()) {
-        WeaponInstance *wi = p->removeWeapon(0);
+        WeaponInstance *wi = p->removeWeaponAtIndex(0);
         std::vector < WeaponInstance * >::iterator it =
             weapons_.begin();
         while (it != weapons_.end() && *it != wi)
@@ -262,7 +282,7 @@ void Mission::addWeaponsFromPedToAgent(PedInstance* p, Agent* pAg)
         weapons_.erase(it);
         wi->deactivate();
         // auto-reload for pistol
-        if (wi->getMainType() == Weapon::Pistol)
+        if (wi->getWeaponType() == Weapon::Pistol)
             wi->setAmmoRemaining(wi->ammo());
         wi->resetWeaponUsedTime();
         pAg->addWeapon(wi);
@@ -279,26 +299,26 @@ void Mission::end()
         // civilians+police, more killed less happy
         // TODO: add money per every persuaded non-agent ped
         if (p->isDead()) {
-            switch (p->getMainType()) {
-                case PedInstance::m_tpAgent:
-                    stats_.enemyKilled++;
+            switch (p->type()) {
+                case PedInstance::kPedTypeAgent:
+                    stats_.incrEnemyKilled();
                     break;
-                case PedInstance::m_tpCriminal:
-                    stats_.criminalKilled++;
+                case PedInstance::kPedTypeCriminal:
+                    stats_.incrCriminalKilled();
                     break;
-                case PedInstance::m_tpPedestrian:
-                    stats_.civilKilled++;
+                case PedInstance::kPedTypeCivilian:
+                    stats_.incrCivilKilled();
                     break;
-                case PedInstance::m_tpGuard:
-                    stats_.guardKilled++;
+                case PedInstance::kPedTypeGuard:
+                    stats_.incrGuardKilled();
                     break;
-                case PedInstance::m_tpPolice:
-                    stats_.policeKilled++;
+                case PedInstance::kPedTypePolice:
+                    stats_.incrPoliceKilled();
                     break;
             }
         } else if (p->isPersuaded()) {
             if (p->objGroupDef() == PedInstance::og_dmAgent) {
-                stats_.agentCaptured++;
+                stats_.incrAgentCaptured();
                 if (completed()) {
                     Agent *pAg = g_gameCtrl.agents().createAgent(false);
                     if (pAg) {
@@ -307,7 +327,7 @@ void Mission::end()
                     }
                 }
             } else
-                stats_.convinced++;
+                stats_.incrConvinced();
         }
     }
 
@@ -340,62 +360,62 @@ void Mission::addWeapon(WeaponInstance * w)
 }
 
 MapObject * Mission::findAt(int tilex, int tiley, int tilez,
-                            MapObject::MajorTypeEnum *majorT, int *searchIndex,
+                            MapObject::ObjectNature *nature, int *searchIndex,
                             bool only)
 {
-    switch(*majorT) {
-        case MapObject::mjt_Ped:
+    switch(*nature) {
+        case MapObject::kNaturePed:
             for (unsigned int i = *searchIndex; i < peds_.size(); i++)
                 if ((!peds_[i]->isIgnored()) && peds_[i]->tileX() == tilex
                     && peds_[i]->tileY() == tiley
                     && peds_[i]->tileZ() == tilez)
                 {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Ped;
+                    *nature = MapObject::kNaturePed;
                     return peds_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Weapon:
+        case MapObject::kNatureWeapon:
             for (unsigned int i = *searchIndex; i < weapons_.size(); i++)
                 if ((!weapons_[i]->isIgnored()) && weapons_[i]->tileX() == tilex
                     && weapons_[i]->tileY() == tiley
                     && weapons_[i]->tileZ() == tilez)
                 {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Weapon;
+                    *nature = MapObject::kNatureWeapon;
                     return weapons_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Static:
+        case MapObject::kNatureStatic:
             for (unsigned int i = *searchIndex; i < statics_.size(); i++)
                 if (statics_[i]->tileX() == tilex
                     && statics_[i]->tileY() == tiley
                     && statics_[i]->tileZ() == tilez)
                 {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Static;
+                    *nature = MapObject::kNatureStatic;
                     return statics_[i];
                 }
             if(only)
                 return NULL;
             *searchIndex = 0;
-        case MapObject::mjt_Vehicle:
+        case MapObject::kNatureVehicle:
             for (unsigned int i = *searchIndex; i < vehicles_.size(); i++)
                 if (vehicles_[i]->tileX() == tilex
                     && vehicles_[i]->tileY() == tiley
                     && vehicles_[i]->tileZ() == tilez)
                 {
                     *searchIndex = i + 1;
-                    *majorT = MapObject::mjt_Vehicle;
+                    *nature = MapObject::kNatureVehicle;
                     return vehicles_[i];
                 }
             break;
         default:
-            printf("undefined majortype %i", *majorT);
+            printf("undefined majortype %i", *nature);
             break;
     }
     return NULL;
@@ -463,16 +483,16 @@ bool Mission::setSurfaces() {
         it != statics_.end(); ++it)
     {
         Static *s = *it;
-        if (s->getMainType() == Static::smt_LargeDoor) {
+        if (s->type() == Static::smt_LargeDoor) {
             int indx = s->tileX() + s->tileY() * mmax_x_
                 + s->tileZ() * mmax_m_xy;
             mtsurfaces_[indx].twd = 0x00;
-            if (s->getSubType() == 0) {
+            if (s->subType() == Static::kStaticSubtype1) {
                 if (indx - 1 >= 0)
                     mtsurfaces_[indx - 1].twd = 0x00;
                 if (indx + 1 < mmax_m_all)
                     mtsurfaces_[indx + 1].twd = 0x00;
-            } else if (s->getSubType() == 2) {
+            } else if (s->subType() == Static::kStaticSubtype2) {
                 if (indx - mmax_x_ >= 0)
                     mtsurfaces_[indx - mmax_x_].twd = 0x00;
                 if (indx + mmax_x_ < mmax_m_all)
@@ -1039,7 +1059,7 @@ bool Mission::setSurfaces() {
                                 }
                             } else if (this_s == 0x03) {
                                 nxtfp = &(mdpoints_[x + ym + z]);
-                                if (sWalkable(this_s, upper_s)) { 
+                                if (sWalkable(this_s, upper_s)) {
                                     sdirm |= 0x10;
                                     if (nxtfp->t == m_fdNotDefined) {
                                         nxtfp->t = m_fdDefReq;
@@ -2407,7 +2427,7 @@ bool Mission::getWalkable(MapTilePoint &mtp) {
                     default:
                         break;
                 }
-                
+
             }
         }
     } while (bz != 0 && !gotit);
@@ -2509,8 +2529,8 @@ void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         }
     }
     for (unsigned int i = 0; i < peds_.size(); ++i) {
-        MapObject * p_blocker = peds_[i];
-        if (p_blocker->isIgnored())
+        PedInstance * p_blocker = peds_[i];
+        if (p_blocker->isDead() || p_blocker->isIgnored())
             continue;
         if (p_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
             int cx = startXYZ->x - copyStartXYZ.x;
@@ -2554,46 +2574,45 @@ void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
 }
 
 /*!
-* \return mask where bits are:
-* 0b - target in range(1); 1b - blocker is object, "t" is set(2)
-* 2b - blocker object, "pn" is set(4), 3b - reachable point set,
-* 4b - blocker tile, "pn" is set(16), 5b - out of visible reach(32)
-* NOTE: only if "pn" or "t" are not null, variables are set
-*/
-uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
-    PathNode * pn, bool setBlocker, bool checkTileOnly, double maxr,
-    double * distTo)
-{
+ * Verify that the path from originLoc to pTargetLoc is not blocked by a tile.
+ * If such a tile exists, pTargetLoc is updated with the position of the blocking tile.
+ * \param originLoc Path starting point
+ * \param pTargetLoc Path end point
+ * \param updateLoc Set to true to update pTargetLoc when blocking tile is found
+ * \param distanceMax Maximum distance we cannot cross. If distanceMax is
+ *   reached before pTargetLoc, then path is stopped.
+ * \param pInitialDistance This is the distance between origin and initial target position
+ * \return a bitmask indicating the type of result:
+ *      - 0b(1) : target in range
+ *      - 3b(8) : distanceMax is reached
+ *      - 4b(16): blocker tile, "pTargetLoc" is set
+ *      - 5b(32): out of visible reach
+ */
+uint8 Mission::checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTargetLoc,
+                                  bool updateLoc, double distanceMax, double *pInitialDistance) {
     // TODO: some objects mid point is higher then map z
-    assert(maxr >= 0);
+    assert(distanceMax >= 0);
 
-    int cx = (*cp).x;
-    int cy = (*cp).y;
-    int cz = (*cp).z;
+    int cx = originLoc.x;
+    int cy = originLoc.y;
+    int cz = originLoc.z;
     if (cz > (mmax_z_ - 1) * 128)
         return 32;
-    int tx = 0;
-    int ty = 0;
-    int tz = 0;
-    if (t && *t) {
-        tx = (*t)->tileX() * 256 + (*t)->offX();
-        ty = (*t)->tileY() * 256 + (*t)->offY();
-        tz = (*t)->tileZ() * 128 + (*t)->offZ() + ((*t)->sizeZ() >> 1);
-    } else {
-        tx = pn->tileX() * 256 + pn->offX();
-        ty = pn->tileY() * 256 + pn->offY();
-        tz = pn->tileZ() * 128 + pn->offZ();
-    }
-    if (tz > (mmax_z_ - 1) * 128)
+    // These are target coords
+    toDefineXYZ targetWLoc;
+    pTargetLoc->convertPosToXYZ(&targetWLoc);
+
+    if (targetWLoc.z > (mmax_z_ - 1) * 128)
         return 32;
 
+    // d is the distance between the origin and the target
     double d = 0;
-    d = sqrt((double)((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy)
-        + (tz - cz) * (tz - cz)));
+    d = sqrt((double)((targetWLoc.x - cx) * (targetWLoc.x - cx) + (targetWLoc.y - cy) * (targetWLoc.y - cy)
+        + (targetWLoc.z - cz) * (targetWLoc.z - cz)));
     uint8 block_mask = 1;
 
-    if (distTo)
-        *distTo = d;
+    if (pInitialDistance)
+        *pInitialDistance = d;
     if (d == 0)
         return block_mask;
 
@@ -2601,32 +2620,30 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
     double sy = (double) cy;
     double sz = (double) cz;
 
-    if (d >= maxr) {
-        block_mask = 0;
-        if (pn == NULL)
-            return block_mask;
-        if (t && *t) {
-            tz -= 128;
-            *t = NULL;
-        }
-        double dist_k = (double)maxr / d;
-        tx = cx + (int)((tx - cx) * dist_k);
-        ty = cy + (int)((ty - cy) * dist_k);
-        tz = cz + (int)((tz - cz) * dist_k);
+    if (d >= distanceMax) {
+        // the distance we have to cross (d) is higher than the maximum
+        // distance we are allowed to cross (distanceMax)
+
+        // update target position according to distanceMax
+        double dist_k = (double)distanceMax / d;
+        targetWLoc.x = cx + (int)((targetWLoc.x - cx) * dist_k);
+        targetWLoc.y = cy + (int)((targetWLoc.y - cy) * dist_k);
+        targetWLoc.z = cz + (int)((targetWLoc.z - cz) * dist_k);
+        // set mask to indicate distanceMax is reached
         block_mask = 8;
-        if (setBlocker) {
-            pn->setTileXYZ(tx / 256, ty / 256, tz / 128);
-            pn->setOffXYZ(tx % 256, ty % 256, tz % 128);
+        if (updateLoc) {
+            pTargetLoc->setTileXYZ(targetWLoc.x / 256, targetWLoc.y / 256, targetWLoc.z / 128);
+            pTargetLoc->setOffXYZ(targetWLoc.x % 256, targetWLoc.y % 256, targetWLoc.z % 128);
         }
-        d = maxr;
+        d = distanceMax;
     }
 
     // NOTE: these values are less then 1, if they are incremented time
     // required to check range will be shorter less precise check, if
     // decremented longer more precise. Increment is (n * 8)
-    double inc_x = ((tx - cx) * 8) / d;
-    double inc_y = ((ty - cy) * 8) / d;
-    double inc_z = ((tz - cz) * 8) / d;
+    double inc_x = ((targetWLoc.x - cx) * 8) / d;
+    double inc_y = ((targetWLoc.y - cy) * 8) / d;
+    double inc_z = ((targetWLoc.z - cz) * 8) / d;
 
     int oldx = cx / 256;
     int oldy = cy / 256;
@@ -2674,22 +2691,20 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
                     double dsx = sx - (double)cx;
                     double dsy = sy - (double)cy;
                     double dsz = sz - (double)cz;
-                    tx = (int)sx;
-                    ty = (int)sy;
-                    tz = (int)sz;
+                    targetWLoc.x = (int)sx;
+                    targetWLoc.y = (int)sy;
+                    targetWLoc.z = (int)sz;
                     dist_close = sqrt(dsx * dsx + dsy * dsy + dsz * dsz);
+                    // set mask to indicate path is blocked by a tile
                     if (block_mask == 1)
                         block_mask = 16;
                     else
                         block_mask |= 16;
-                    if (setBlocker) {
-                        if (pn) {
-                            pn->setTileXYZ((int)sx / 256, (int)sy / 256,
-                                (int)sz / 128);
-                            pn->setOffXYZ((int)sx % 256, (int)sy % 256,
-                                (int)sz % 128);
-                        }
-                        break;
+                    if (updateLoc) {
+                        pTargetLoc->setTileXYZ((int)sx / 256, (int)sy / 256,
+                            (int)sz / 128);
+                        pTargetLoc->setOffXYZ((int)sx % 256, (int)sy % 256,
+                            (int)sz % 128);
                     }
                     break;
                 }
@@ -2702,17 +2717,67 @@ uint8 Mission::inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
         sy += inc_y;
         sz += inc_z;
         dist_close -= dist_dec;
+    } // end while
+
+    return block_mask;
+}
+
+/*!
+ * \param maxr maximum distance we can run
+ * \return mask where bits are:
+ * - 0b : target in range(1)
+ * - 1b : blocker is object, "t" is set(2)
+ * - 2b : blocker object, "pn" is set(4)
+ * - 3b : reachable point set (8)
+ * - 4b : blocker tile, "pn" is set(16)
+ * - 5b : out of visible reach(32)
+ * NOTE: only if "pn" or "t" are not null, variables are set
+
+*/
+uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
+    PathNode * pn, bool setBlocker, bool checkTileOnly, double maxr,
+    double * distTo)
+{
+    // search for a tile blocking the path towards the target
+    // tmp will hold the updated position after that search
+    PathNode tmp;
+    if (t && *t) {
+        tmp.setTileX((*t)->tileX());
+        tmp.setTileY((*t)->tileY());
+        tmp.setTileZ((*t)->tileZ());
+        tmp.setOffX((*t)->offX());
+        tmp.setOffY((*t)->offY());
+        tmp.setOffZ((*t)->offZ());
+    } else {
+        tmp = *pn;
     }
+    uint8 block_mask = checkBlockedByTile(*originLoc, &tmp, true, maxr, distTo);
+    if (block_mask == 32) {
+        // coords are out of map limits
+        return block_mask;
+    }
+
+    if (setBlocker) {
+        pn->setTileXYZ(tmp.tileX(), tmp.tileY(), tmp.tileZ());
+        pn->setOffXYZ(tmp.offX(), tmp.offY(), tmp.offZ());
+    }
+
     if (checkTileOnly)
         return block_mask;
 
-    toDefineXYZ startXYZ = {cx, cy, cz};
-    toDefineXYZ endXYZ = {tx, ty, tz};
+    toDefineXYZ startXYZ = *originLoc;
+    toDefineXYZ endXYZ;
+    tmp.convertPosToXYZ(&endXYZ);
     MapObject *blockerObj = NULL;
 
-    // if blocker will exist it will be always closer then tile
-    // that might block
-    double dist_blocker = (block_mask & 16) != 0 ? dist_close : d;
+    // We search for a possible object blocking the way on the path
+    // between origin and the reached position
+    int tx = tmp.tileX() * 256 + tmp.offX();
+    int ty = tmp.tileY() * 256 + tmp.offY();
+    int tz = tmp.tileZ() * 128 + tmp.offZ();
+    double dist_blocker = sqrt((double)((tx - originLoc->x) *
+        (tx - originLoc->x) + (ty - originLoc->y) * (ty - originLoc->y)
+        + (tz - originLoc->z) * (tz - originLoc->z)));
     blockerExists(&startXYZ, &endXYZ, &dist_blocker, &blockerObj);
 
     if (blockerObj) {
@@ -2767,7 +2832,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
    std::vector<ShootableMapObject *> & targets, uint8 mask,
    bool checkTileOnly, double maxr)
 {
-    if (mask & MapObject::mjt_Ped) {
+    if (mask & MapObject::kNaturePed) {
         for (size_t i = 0; i < numPeds(); ++i) {
             ShootableMapObject *p = ped(i);
             if (!p->isIgnored() && p->isAlive())
@@ -2778,7 +2843,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Static) {
+    if (mask & MapObject::kNatureStatic) {
         for (size_t i = 0; i < numStatics(); ++i) {
             ShootableMapObject *st = statics(i);
             if (!st->isIgnored())
@@ -2789,7 +2854,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Vehicle) {
+    if (mask & MapObject::kNatureVehicle) {
         for (size_t i = 0; i < numVehicles(); ++i) {
             ShootableMapObject *v = vehicle(i);
             if (!v->isIgnored())
@@ -2800,7 +2865,7 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
-    if (mask & MapObject::mjt_Weapon) {
+    if (mask & MapObject::kNatureWeapon) {
         for (size_t i = 0; i < numWeapons(); ++i) {
             ShootableMapObject *w = weapon(i);
             if (!w->isIgnored())
@@ -2811,6 +2876,23 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
                 }
         }
     }
+}
+
+/*!
+ * Returns the length of the path between a ped and a object if such a path exists and it is
+ * shorter than the maximum length allowed.
+ * \param pPed The origin of the path
+ * \param objectToReach The end of the path
+ * \param maxLength The length of the path must not exceed this value
+ * \param length The returned length if the path exists
+ * \return 0 if a path exists, else path does not exist so length is not set.
+ */
+uint8 Mission::getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double maxLength, double *length) {
+    toDefineXYZ cur_xyz;
+    pPed->convertPosToXYZ(&cur_xyz);
+    cur_xyz.z += (pPed->sizeZ() >> 1);
+    uint8 res = inRangeCPos(&cur_xyz, &objectToReach, NULL, false, true, maxLength, length);
+    return res == 1 ? 0 : 1;
 }
 
 bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,

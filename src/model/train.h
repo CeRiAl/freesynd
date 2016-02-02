@@ -5,7 +5,8 @@
  *   Copyright (C) 2005  Stuart Binge  <skbinge@gmail.com>              *
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
- *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
+ *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
+ *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -23,22 +24,38 @@
  *                                                                      *
  ************************************************************************/
 
-#ifndef EDITOR_FONTMENU_H_
-#define EDITOR_FONTMENU_H_
+#ifndef MODEL_TRAIN_H_
+#define MODEL_TRAIN_H_
 
-#include "menus/menu.h"
+#include <string>
+#include <list>
+
+#include "vehicle.h"
+
 /*!
- * Font menu.
+ * .
  */
-class FontMenu : public Menu {
+class TrainElement : public Vehicle {
 public:
-    FontMenu(MenuManager *m);
+    TrainElement();
+    ~TrainElement();
 
-    void handleShow();
-    void handleLeave();
-
-private:
-    void displayFont();
 };
 
-#endif // EDITOR_FONTMENU_H_
+/*!
+ * .
+ */
+class Train {
+public:
+    Train();
+    ~Train();
+
+    std::list<TrainElement *> & elements() { return elements_; }
+
+    //! Animates the train
+    bool animate(int elapsed);
+private:
+    std::list<TrainElement *> elements_;
+};
+
+#endif // MODEL_TRAIN_H_

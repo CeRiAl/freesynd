@@ -30,10 +30,10 @@
 #include "system.h"
 
 FontMenu::FontMenu(MenuManager * m):
-    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdGfx, "", "")
+    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdMain, "", "")
 {
     isCachable_ = false;
-    
+
 }
 
 void FontMenu::handleShow()
@@ -71,7 +71,7 @@ void FontMenu::displayFont() {
                 spriteY += lineMaxHeight;
                 lineMaxHeight = sprh;
             }
-        
+
             if (spriteY + sprh > g_Screen.gameScreenHeight()) {
                 printf("Fin de boucle\n");
                 break;

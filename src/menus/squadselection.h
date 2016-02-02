@@ -27,6 +27,8 @@
 #include "agentmanager.h"
 #include "map.h"
 
+class Vehicle;
+
 /*!
  * This class manages the agents selection during a gameplay session.
  * A selection always contains at least one element.
@@ -40,8 +42,14 @@ class SquadSelection {
       */
      class Iterator {
          public:
-            Iterator(size_t idx, SquadSelection *pSel) : idx_(idx), pSel_(pSel) {}
-            ~Iterator() {}
+            Iterator(size_t idx, SquadSelection *pSel) {
+                idx_ = idx;
+                pSel_ = pSel;
+            }
+
+            ~Iterator() {
+                idx_ = idx_;
+            }
 
             // The assignment and relational operators are straightforward
             Iterator& operator=(const Iterator& other)
@@ -158,17 +166,19 @@ class SquadSelection {
     // Action on multiple agents
     //*************************************
     //! Deselects all selected agents weapons
-    void deselect_all_weapons();
+    void deselectAllWeapons();
     //! Select a weapon for the leader and for all selected agents
-    void select_weapon_from_leader(int weapon_idx, bool apply_to_all);
+    void selectWeaponFromLeader(int weapon_idx, bool apply_to_all);
     //! Go and pick up weapon
-    void pickupWeapon(ShootableMapObject *pWeapon, bool addAction);
+    void pickupWeapon(WeaponInstance *pWeapon, bool addAction);
     //! Follow Ped
-    void followPed(ShootableMapObject *pPed, bool addAction);
+    void followPed(PedInstance *pPed, bool addAction);
     //! Enter or leave the vehicle : do the same as leader
-    void enterOrLeaveVehicle(ShootableMapObject *pVehicle, bool addAction);
+    void enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction);
     //! Move selected agents to the given point
     void moveTo(MapTilePoint &mapPt, bool addAction);
+    //! Every selected armed agent shoot at location
+    void shootAt(PathNode &pn);
  private:
     /*!
      * Return true if an agent can be selected :

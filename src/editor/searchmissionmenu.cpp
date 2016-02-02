@@ -5,7 +5,7 @@
  *   Copyright (C) 2005  Stuart Binge  <skbinge@gmail.com>              *
  *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
- *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
+ *   Copyright (C) 2015  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -23,24 +23,32 @@
  *                                                                      *
  ************************************************************************/
 
-#include "editor/gfxmenu.h"
+#include "menus/menu.h"
 #include "menus/menumanager.h"
+#include "editor/editorapp.h"
+#include "editor/searchmissionmenu.h"
 #include "editor/editormenuid.h"
 #include "gfx/screen.h"
 #include "system.h"
+#include "missionmanager.h"
+#include "mission.h"
+#include "ped.h"
 
-GfxMenu::GfxMenu(MenuManager * m):
-    Menu(m, fs_edit_menus::kMenuIdGfx, fs_edit_menus::kMenuIdMain, "mscrenup.dat", "")
+SearchMissionMenu::SearchMissionMenu(MenuManager * m):
+    Menu(m, fs_edit_menus::kMenuIdSrchMis, fs_edit_menus::kMenuIdMain, "mscrenup.dat", "")
 {
     isCachable_ = false;
-    addStatic(0, 40, g_Screen.gameScreenWidth(), "GRAPHICS", FontManager::SIZE_4, false);
+    addStatic(0, 40, g_Screen.gameScreenWidth(), "SEARCH MISSION", FontManager::SIZE_4, false);
 
-    addOption(201, 130, 300, 25, "MENU SPRITES", FontManager::SIZE_3, fs_edit_menus::kMenuIdFont, true, false);
-    addOption(201, 150, 300, 25, "ANIMATIONS", FontManager::SIZE_3, fs_edit_menus::kMenuIdAnim, true, false);
-    addOption(201, 266, 300, 25, "BACK", FontManager::SIZE_3, fs_edit_menus::kMenuIdMain, true, false);
+
+
+    // Accept button
+    addOption(17, 347, 128, 25, "BACK", FontManager::SIZE_2, fs_edit_menus::kMenuIdMain);
+    // Main menu button
+    searchButId_ = addOption(500, 347,  128, 25, "SEARCH", FontManager::SIZE_2);
 }
 
-void GfxMenu::handleShow()
+void SearchMissionMenu::handleShow()
 {
     // If we came from the intro, the cursor is invisible
     // otherwise, it does no harm
@@ -48,7 +56,33 @@ void GfxMenu::handleShow()
     g_System.showCursor();
 }
 
-void GfxMenu::handleLeave() {
+void SearchMissionMenu::handleLeave() {
     g_System.hideCursor();
 }
 
+void SearchMissionMenu::handleAction(const int actionId, void *ctx, const int modKeys) {
+    if (actionId == searchButId_) {
+        MissionManager missionMgr;
+
+        // first clear result list
+        g_App.getMissionResultList().clear();
+
+        for (int misId = 1; misId <= 50; misId++) {
+            Mission *pMission = missionMgr.loadMission(misId);
+
+            if (pMission) {
+                for (size_t pedId = 0; pedId < pMission->numPeds(); pedId++) {
+                    PedInstance *pPed = pMission->ped(pedId);
+
+                    if (pPed->type() == PedInstance::kPedTypeCriminal) {
+                        g_App.getMissionResultList().push_back(misId);
+                        break;
+                    }
+                }
+                delete pMission;
+            }
+        }
+
+        menu_manager_->gotoMenu(fs_edit_menus::kMenuIdListMis);
+    }
+}

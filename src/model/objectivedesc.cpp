@@ -69,8 +69,7 @@ void ObjPersuade::evaluate(Mission *pMission) {
     {
         // Target is dead -> mission is failed
         endObjective(false);
-    } else if (p->isPersuaded())
-    {
+    } else if (p->isPersuaded()) {
         endObjective(true);
     }
 }
@@ -86,21 +85,11 @@ ObjAssassinate::ObjAssassinate(MapObject * pMapObject) : TargetObjective(pMapObj
  */
 void ObjAssassinate::evaluate(Mission *pMission) {
     PedInstance *p = static_cast<PedInstance *>(p_target_);
-    if (p->isDead())
-    {
+    if (p->isDead()) {
         // Target is dead -> objective is completed
         endObjective(true);
-    } else {
-        int x = p->tileX();
-        int y = p->tileY();
-        // target might be off visible area (escaped) -> failed
-        if (p->inVehicle() && (x < (pMission->minX() >> 1)
-            || x > pMission->maxX() + ((pMission->mmax_x_ - pMission->maxX()) >> 1)
-            || y < (pMission->minY() >> 1)
-            || y > pMission->maxY() + ((pMission->mmax_y_ - pMission->maxY()) >> 1)))
-        {
-            endObjective(false);
-        }
+    } else if (p->hasEscaped()) {
+        endObjective(false);
     }
 }
 
@@ -118,9 +107,9 @@ void ObjProtect::evaluate(Mission *pMission) {
     if (p->isDead()) {
         // Target is dead -> objective is failed
         endObjective(false);
-    } else {
-        if(p->checkActGCompleted(fs_actions::kOrigScript))
-            endObjective(true);
+    } else if(p->currentAction() == NULL) {
+        // Ped has finished all his actions
+        endObjective(true);
     }
 }
 
@@ -165,7 +154,7 @@ void ObjUseVehicle::evaluate(Mission *pMission) {
         endObjective(false);
         return;
     }
-    
+
     PedInstance *p = pVehicle->getDriver();
     if (p && p->isOurAgent()) {
         endObjective(true);
@@ -191,16 +180,15 @@ void ObjTakeWeapon::evaluate(Mission *pMission) {
     if (pWeapon->isDead()) {
         endObjective(false);
     } else {
-        ShootableMapObject *owner = pWeapon->getOwner();
-        if (owner && owner->majorType() == MapObject::mjt_Ped
-            && ((PedInstance *)owner)->isOurAgent())
+        PedInstance *owner = pWeapon->owner();
+        if (owner && owner->isOurAgent())
         {
             endObjective(true);
         }
     }
 }
 
-ObjEliminate::ObjEliminate(PedInstance::objGroupDefMasks subtype) : 
+ObjEliminate::ObjEliminate(PedInstance::objGroupDefMasks subtype) :
         ObjectiveDesc() {
     if (subtype == PedInstance::og_dmAgent) {
         msg = g_Ctx.getMessage("GOAL_ELIMINATE_AGENTS");
@@ -236,7 +224,7 @@ void ObjEliminate::evaluate(Mission *pMission) {
     status = kCompleted;
 }
 
-ObjEvacuate::ObjEvacuate(int x, int y, int z, std::vector <PedInstance *> &lstOfPeds) : 
+ObjEvacuate::ObjEvacuate(int x, int y, int z, std::vector <PedInstance *> &lstOfPeds) :
         LocationObjective(x, y, z) {
     msg = g_Ctx.getMessage("GOAL_EVACUATE");
     // Copy all peds in the local list

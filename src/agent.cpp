@@ -34,7 +34,6 @@
 #include "mod.h"
 
 int Agent::agentCnt = 1;
-const uint8 Agent::kMaxWeaponPerAgent = 8;
 
 /*!
  * Constructs a new agent.
@@ -50,11 +49,6 @@ male_(male), active_(true) {
 
 Agent::~Agent() {
     removeAllWeapons();
-}
-
-void Agent::removeAllWeapons() {
-    while (weapons_.size())
-        delete removeWeapon(0);
 }
 
 bool Agent::saveToFile(PortableFile &file) {
@@ -88,7 +82,7 @@ bool Agent::saveToFile(PortableFile &file) {
     file.write32(nb);
     for (int wIndex = 0; wIndex < numWeapons(); wIndex++) {
         WeaponInstance *pWinst = weapon(wIndex);
-        file.write32(pWinst->getMainType());
+        file.write32(pWinst->getWeaponType());
         file.write32(pWinst->ammoRemaining());
     }
     return true;

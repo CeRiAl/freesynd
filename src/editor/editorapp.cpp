@@ -57,8 +57,8 @@
 #include "editor/editormenufactory.h"
 #include "editor/editormenuid.h"
 
-EditorApp::EditorApp(bool disable_sound): 
-    context_(new AppContext),
+EditorApp::EditorApp(bool disable_sound):
+    context_(new AppContext), game_ctlr_(new GameController),
     screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT))
 #ifdef SYSTEM_SDL
     , system_(new SystemSDL())
@@ -402,6 +402,8 @@ bool EditorApp::initialize(const std::string& iniPath) {
     LOG(Log::k_FLG_INFO, "EditorApp", "initialize", ("Loading music..."))
     music_.loadMusic();
 
+    g_gameCtrl.reset();
+
     return true;
 }
 
@@ -474,3 +476,4 @@ void EditorApp::run() {
 #endif
 #endif
 }
+

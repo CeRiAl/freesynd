@@ -27,12 +27,13 @@
 #ifndef AGENT_H
 #define AGENT_H
 
-#include "common.h"
-#include "weaponholder.h"
-#include "modowner.h"
 #include <string>
 #include <vector>
 #include <fstream>
+
+#include "common.h"
+#include "model/weaponholder.h"
+#include "modowner.h"
 #include "utils/portablefile.h"
 
 class WeaponInstance;
@@ -42,9 +43,6 @@ class WeaponInstance;
  */
 class Agent : public WeaponHolder, public ModOwner {
 public:
-    /*! Defines the maximum number of weapons an agent can carry.*/
-    static const uint8 kMaxWeaponPerAgent;
-
     Agent(const char *agent_name, bool male);
     ~Agent();
 
@@ -55,8 +53,6 @@ public:
     void setActive(bool a) { active_ = a; }
     bool isAlive() { return is_alive_; }
     void set_dead() { is_alive_ = false; }
-
-    void removeAllWeapons();
 
     //! Save instance to file
     bool saveToFile(PortableFile &file);

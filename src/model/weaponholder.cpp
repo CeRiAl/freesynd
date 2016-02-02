@@ -26,16 +26,31 @@
  ************************************************************************/
 
 #include "weaponholder.h"
+#include "core/gameevent.h"
 
 //*************************************
 // Constant definition
 //*************************************
 const int WeaponHolder::kNoWeaponSelected = -1;
+const uint8 WeaponHolder::kMaxHoldedWeapons = 8;
 
 WeaponHolder::WeaponHolder() {
     // -1 means no weapon is selected
-    selected_weapon_ = -1;
+    selected_weapon_ = kNoWeaponSelected;
     updtPreferedWeapon();
+}
+
+/*!
+ * Adds the givent weapon to the inventory.
+ * Weapon is placed at the end of the inventory.
+ * \param w The weapon to add
+ */
+void WeaponHolder::addWeapon(WeaponInstance *w) {
+    assert(w);
+    assert(weapons_.size() < kMaxHoldedWeapons);
+    w->setMap(-1);
+    w->setIsIgnored(true);
+    weapons_.push_back(w);
 }
 
 /*!
@@ -44,12 +59,10 @@ WeaponHolder::WeaponHolder() {
  * \param n The index. Must be less than the total number of weapons.
  * \return The removed weapon or NULL if not found.
  */
-WeaponInstance *WeaponHolder::removeWeapon(uint8 n) {
+WeaponInstance *WeaponHolder::removeWeaponAtIndex(uint8 n) {
     if (n < weapons_.size()) {
         WeaponInstance *w = weapons_[n];
-        std::vector<WeaponInstance *>::iterator it = weapons_.begin() + n;
-
-        weapons_.erase(it);
+        removeWeapon(w);
         return w;
     }
 
@@ -57,19 +70,45 @@ WeaponInstance *WeaponHolder::removeWeapon(uint8 n) {
 }
 
 /*!
- * Removes the given weapon from the inventory.
+ * Deselects and removes the given weapon from the inventory.
  * Caller is responsible for freeing the returned value.
  * \param w The weapon instance.
  */
-void WeaponHolder::removeWeaponInstance(WeaponInstance *w) {
-    for (std::vector<WeaponInstance *>::iterator it = weapons_.begin();
-            it != weapons_.end(); ++it)
-    {
-        if (*it == w) {
+void WeaponHolder::removeWeapon(WeaponInstance *wi) {
+    // if no weapon was selected before dropping,
+    // no use to update selection
+    bool upd_selected = selected_weapon_ != kNoWeaponSelected;
+
+    for (int i = 0; i < (int)weapons_.size(); ++i) {
+        std::vector <WeaponInstance *>::iterator it = weapons_.begin() + i;
+        if ((*it) == wi) {
+            if (selectedWeapon() == wi) {
+                deselectWeapon();
+                // when dropping the selected weapon
+                // we don't select another weapon after
+                upd_selected = false;
+            }
+
+            // shift index to selected weapon if dropped weapon index
+            // was before selected weapon
+            if (upd_selected && selected_weapon_ > i)
+                --selected_weapon_;
+
             weapons_.erase(it);
+            wi->setOwner(NULL);
+
             break;
         }
     }
+}
+
+/*!
+ * Removes all weapons from the inventory.
+ * Caller is responsible for freeing the removed instances.
+ */
+void WeaponHolder::removeAllWeapons() {
+    while (weapons_.size())
+        delete removeWeaponAtIndex(0);
 }
 
 /*!
@@ -78,25 +117,32 @@ void WeaponHolder::removeWeaponInstance(WeaponInstance *w) {
  */
 void WeaponHolder::selectWeapon(uint8 n) {
     assert(n < weapons_.size());
-    // First deselect current weapon
-    deselectWeapon();
+    WeaponInstance *pNewWeapon = weapons_[n];
+    if (canSelectWeapon(pNewWeapon)) {
+        // First deselect current weapon if any
+        WeaponInstance *prevSelectedWeapon = deselectWeapon();
 
-    selected_weapon_ = n;
-    handleWeaponSelected(weapons_[selected_weapon_]);
-    updtPreferedWeapon();
+        selected_weapon_ = n;
+        handleWeaponSelected(pNewWeapon, prevSelectedWeapon);
+        updtPreferedWeapon();
+    }
 }
 
 /*!
  * Deselects a selected weapon if any.
  * Calls onWeaponDeselected().
+ * \return the deselected weapon.
  */
-void WeaponHolder::deselectWeapon() {
+WeaponInstance * WeaponHolder::deselectWeapon() {
+    WeaponInstance *wi = NULL;
     if (selected_weapon_ != kNoWeaponSelected) {
-        WeaponInstance *wi = weapons_[selected_weapon_];
+        wi = weapons_[selected_weapon_];
         selected_weapon_ = kNoWeaponSelected;
         handleWeaponDeselected(wi);
         updtPreferedWeapon();
     }
+
+    return wi;
 }
 
 /*!
@@ -231,6 +277,14 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
                         found_weapons.push_back(std::make_pair(pWI->rank(), i));
                         break;
                     }
+                }
+            }
+            break;
+        case WeaponSelectCriteria::kCritLoadedShoot:
+            for (uint8 i = 0; i < sz; ++i) {
+                WeaponInstance *pWI = weapons_[i];
+                if (pWI->canShoot() && pWI->ammoRemaining() > 0) {
+                    found_weapons.push_back(std::make_pair(pWI->rank(), i));
                 }
             }
             break;

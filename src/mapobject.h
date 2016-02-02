@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -33,14 +34,35 @@
 #include "pathsurfaces.h"
 
 class Mission;
+class WeaponInstance;
 
 /*!
  * Map object class.
  */
 class MapObject {
 public:
-    MapObject(int m);
+    /*!
+     * Express the nature of a MapObject.
+     */
+    enum ObjectNature {
+        kNatureUndefined = 0,
+        kNaturePed = 1,
+        kNatureWeapon = 2,
+        kNatureStatic = 4,
+        kNatureVehicle = 8
+    };
+
+public:
+    MapObject(uint16 id, int m, ObjectNature nature);
     virtual ~MapObject() {}
+
+    //! Return the nature of the object
+    ObjectNature nature() { return nature_; }
+    //! For debug purpose
+    const char* natureName();
+
+    //! Return the object's id
+    uint16 id() { return id_; }
 
     virtual void draw(int x, int y) = 0;
     enum DamageType {
@@ -49,13 +71,12 @@ public:
         dmg_Laser = 0x0002,
         dmg_Burn = 0x0004,
         dmg_Explosion = 0x0008,
-        dmg_Explosion_Suicide = 0x0100, // Explosion of suiciding agent
-        dmg_Hit = 0x0010,
-        dmg_Physical = (dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion | dmg_Hit | dmg_Explosion_Suicide),
+        dmg_Collision = 0x0010, // By car or door
+        dmg_Physical = (dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion | dmg_Collision),
         dmg_Persuasion = 0x0020,
         dmg_Heal = 0x0040,
         dmg_Panic = 0x0080,
-        dmg_Mental = (dmg_Persuasion | dmg_Panic),
+        // dmg_Mental = (dmg_Persuasion | dmg_Panic), not used
         dmg_All = 0xFFFF
     };
 
@@ -63,7 +84,7 @@ public:
         ddmg_Invulnerable = dmg_None,
         ddmg_Ped = dmg_All,
         ddmg_PedPanicImmune = dmg_All ^ dmg_Panic,
-        ddmg_PedWithEnergyShield = dmg_Explosion | dmg_Hit | dmg_Heal | dmg_Panic,
+        ddmg_PedWithEnergyShield = dmg_Explosion | dmg_Collision | dmg_Heal | dmg_Panic,
         ddmg_Vehicle = dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion,
         ddmg_StaticTree = dmg_Laser | dmg_Burn | dmg_Explosion,
         ddmg_StaticWindow = dmg_Bullet | dmg_Explosion,
@@ -81,17 +102,51 @@ public:
         off_z_ = off_z;
     }
 
-    int tileX() { return tile_x_; }
-    int tileY() { return tile_y_; }
-    int tileZ() { return tile_z_; }
+    /*!
+     * Set the position of the object to be the given one.
+     * \param pos New object position
+     */
+    void setPosition(const PathNode &pos) {
+        tile_x_ = pos.tileX();
+        tile_y_ = pos.tileY();
+        tile_z_ = pos.tileZ();
+        off_x_ = pos.offX();
+        off_y_ = pos.offY();
+        off_z_ = pos.offZ();
+    }
+
+    /*!
+     * Set the position of the object to be the given one.
+     * \param pos New object position
+     */
+    void setPosition(const toDefineXYZ &pos) {
+        setPosition(pos.x / 256, pos.y / 256, pos.z / 128, pos.x % 256,
+                    pos.y % 256, pos.z % 128 );
+    }
+
+    /*!
+     * Set the given position to the ped's position.
+     */
+    void getPosition(PathNode *pn) {
+        pn->setTileX(tile_x_);
+        pn->setTileY(tile_y_);
+        pn->setTileZ(tile_z_);
+        pn->setOffX(off_x_);
+        pn->setOffY(off_y_);
+        pn->setOffZ(off_z_);
+    }
+
+    int tileX() const { return tile_x_; }
+    int tileY() const { return tile_y_; }
+    int tileZ() const { return tile_z_; }
 
     void setTileX(int x) { tile_x_ = x; }
     void setTileY(int y) { tile_y_ = y; }
     void setTileZ(int z) { tile_z_ = z; }
 
-    int offX() { return off_x_; }
-    int offY() { return off_y_; }
-    int offZ() { return off_z_; }
+    int offX() const { return off_x_; }
+    int offY() const { return off_y_; }
+    int offZ() const { return off_z_; }
 
     void setOffX(int n);
     void setOffY(int n);
@@ -117,6 +172,34 @@ public:
                 && other->off_x_ == off_x_
                 && other->off_y_ == off_y_
                 && other->off_z_ == off_z_;
+    }
+
+    /*!
+     * Return true if the distance between this object and the given object
+     * is less than the given distance.
+     * \param pObject The other object.
+     * \param distance
+     */
+    bool isCloseTo(MapObject *pObject, int distance) {
+        int cx = tile_x_ * 256 + off_x_ - (pObject->tile_x_ * 256 + pObject->off_x_);
+        int cy = tile_y_ * 256 + off_y_ - (pObject->tile_y_ * 256 + pObject->off_y_);
+        int cz = tile_z_ * 128 + off_z_ - (pObject->tile_z_ * 128 + pObject->off_z_);
+
+        return (cx * cx + cy * cy + cz * cz) < (distance * distance);
+    }
+
+    /*!
+     * Return true if the distance between this object and the given location
+     * is less than the given distance.
+     * \param loc The location.
+     * \param distance
+     */
+    bool isCloseTo(const toDefineXYZ &loc, int32 distance) {
+        int cx = tile_x_ * 256 + off_x_ - (loc.x);
+        int cy = tile_y_ * 256 + off_y_ - (loc.y);
+        int cz = tile_z_ * 128 + off_z_ - (loc.z);
+
+        return (cx * cx + cy * cy + cz * cz) < (distance * distance);
     }
 
     double distanceTo(MapObject *t) {
@@ -153,10 +236,6 @@ public:
 
     virtual bool animate(int elapsed);
 
-    void setSubType(int objSubType) { sub_type_ = objSubType; }
-    int getSubType() { return sub_type_; }
-    void setMainType(int objMainType) { main_type_ = objMainType; }
-    int getMainType() { return main_type_; }
     void setFramesPerSec(int framesPerSec)
     {
         frames_per_sec_ = framesPerSec;
@@ -180,13 +259,6 @@ public:
         return false;
     }
 
-    void setRcvDamageDef(DefDamageType rcvDamageDef) {
-        rcv_damage_def_ = rcvDamageDef;
-    }
-    DefDamageType getRcvDamageDef() {
-        return rcv_damage_def_;
-    }
-
     void setFrame(int frame) { frame_ = frame;}
     void setFrameFromObject(MapObject *m) {
         frame_ = m->frame_;
@@ -194,8 +266,10 @@ public:
 
     void setDirection(int dir);
     void setDirection(int posx, int posy, int * dir = NULL);
+    //! Set this ped's direction so that he looks at the given object.
+    void setDirectionTowardObject(const MapObject &object);
 
-    int getDir() { return dir_;}
+    int direction() { return dir_;}
     int getDirection(int snum = 8);
 
     void setTimeShowAnim(int t) {
@@ -216,17 +290,6 @@ public:
     bool isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
                double * inc_xyz);
 
-    typedef enum {
-        mjt_Undefined = 0,
-        mjt_Ped = 1,
-        mjt_Weapon = 2,
-        mjt_Static = 4,
-        mjt_Vehicle = 8
-    } MajorTypeEnum;
-
-    MajorTypeEnum majorType() { return major_type_; }
-    void setMajorType(MajorTypeEnum mt) { major_type_ = mt; }
-
     void setStateMasks(unsigned int state) {
         state_ = state;
     }
@@ -234,11 +297,11 @@ public:
 
     void offzOnStairs(uint8 twd);
 
-#ifdef _DEBUG
-    uint32 getDebugID() { return debugId_; }
-#endif
-
 protected:
+    //! the nature of this object
+    ObjectNature nature_;
+    //! Id of the object. Id is unique within a nature
+    uint16 id_;
     /*!
      * Tile based coordinates, tile_x_ and tile_y_ have 256
      * tile_z_ has 128 base
@@ -257,10 +320,6 @@ protected:
     int elapsed_carry_;
     //! how often this frame should be drawn per seccond
     int frames_per_sec_;
-    int sub_type_, main_type_;
-    //! 0 - not defined, 1 - ped, 2 - weapon, 4 - static, 8 - vehicle
-    MajorTypeEnum major_type_;
-    DefDamageType rcv_damage_def_;
     //! objects direction
     int dir_;
     //! looped animations, time to show them is set here, if = -1 show forever
@@ -277,11 +336,6 @@ protected:
     uint32 state_;
 
     void addOffs(int &x, int &y);
-#ifdef _DEBUG
-private:
-    static uint32 debugIdCnt;
-    uint32 debugId_;
-#endif
 };
 
 /*!
@@ -289,22 +343,10 @@ private:
  */
 class SFXObject : public MapObject {
 public:
-    SFXObject(int m, int type, int t_show = 0);
-    virtual ~SFXObject() {}
-
-    bool sfxLifeOver() { return sfx_life_over_; }
-
-    void draw(int x, int y);
-    bool animate(int elapsed);
-    void correctZ();
-    void setDrawAllFrames(bool daf) {
-        if (daf != draw_all_frames_) {
-            draw_all_frames_ = daf;
-            frame_ = 0;
-        }
-    }
-
-    typedef enum {
+    /*!
+     * Type of SfxObject.
+     */
+    enum SfxTypeEnum {
         sfxt_Unknown = 0,
         sfxt_BulletHit = 1,
         sfxt_FlamerFire = 2,
@@ -318,13 +360,41 @@ public:
         sfxt_AgentSecond = 10,
         sfxt_AgentThird = 11,
         sfxt_AgentFourth = 12
-    }SfxTypeEnum;
+    };
+
+    SFXObject(int m, SfxTypeEnum type, int t_show = 0, bool managed = false);
+    virtual ~SFXObject() {}
+
+    bool sfxLifeOver() { return sfx_life_over_; }
+    //! Return true if object is managed by another object
+    bool isManaged() { return managed_; }
+    //! Set whether animation should loop or not
+    void setLoopAnimation(bool flag) { loopAnimation_ = flag; }
+    //! Reset animation
+    void reset();
+
+    void draw(int x, int y);
+    bool animate(int elapsed);
+    void correctZ();
+    void setDrawAllFrames(bool daf) {
+        if (daf != draw_all_frames_) {
+            draw_all_frames_ = daf;
+            frame_ = 0;
+        }
+    }
 protected:
+    static uint16 sfxIdCnt;
+    /*! The type of SfxObject.*/
+    SfxTypeEnum type_;
     int anim_;
     bool sfx_life_over_;
     // to draw all frames or first frame only
     bool draw_all_frames_;
+    //! Tells if the animation should restart automatically after ending
+    bool loopAnimation_;
     int elapsed_left_;
+    //! True means the life of the object is managed by something else than gameplaymenu
+    bool managed_;
 };
 
 /*!
@@ -338,16 +408,24 @@ public:
     struct DamageInflictType {
         //! The type of damage
         DamageType dtype;
+        //! Range of damage
+        double range;
         //! The value of the damage
         int dvalue;
         //! direction damage comes from, should be angle 256 degree based
         int ddir;
+        //! Location of aimed point
+        PathNode aimedLoc;
+        //! Location of origin of shot
+        toDefineXYZ originLocW;
         //! The object that inflicted the damage
         ShootableMapObject * d_owner;
+        //! The weapon that generated this damage
+        WeaponInstance *pWeapon;
     };
 
 public:
-    ShootableMapObject(int m);
+    ShootableMapObject(uint16 id, int m, ObjectNature nature);
     virtual ~ShootableMapObject() {}
 
     int health() { return health_; }
@@ -376,14 +454,44 @@ public:
         start_health_ = n;
     }
 
-    virtual bool handleDamage(ShootableMapObject::DamageInflictType * d) {
-        if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
-            || (d->dtype & rcv_damage_def_) == 0)
-            return false;
-        health_ -= d->dvalue;
-        health_ = 0;
-        return true;
+    /*!
+     * Add a certain amount to health.
+     * \return true if health reached max
+     * \param amount how much to increase health
+     */
+    bool increaseHealth(int amount) {
+        health_ += amount;
+        if (health_ > start_health_) {
+            health_ = start_health_;
+        }
+
+        return health_ == start_health_;
     }
+
+    /*!
+     * Remove a certain amount of health.
+     */
+    void decreaseHealth(int amount) {
+        health_ -= amount;
+        if (health_ <= 0) {
+            health_ = 0;
+        }
+    }
+    /*!
+     * Reset current ped's health to starting health.
+     */
+    void resetHealth() {
+        health_ = start_health_;
+    }
+
+    /*!
+     * Method called when object is hit by a weapon shot.
+     * By default do nothing. Subclasses must implement
+     * to react to a shot.
+     * \param d Damage description
+     */
+    virtual void handleHit(DamageInflictType &d) {}
+
     virtual bool isExcluded() { return health_ <= 0; }
     bool isAlive() { return health_ > 0; }
     bool isDead() { return health_ <= 0; }
@@ -397,7 +505,7 @@ public:
  */
 class ShootableMovableMapObject : public ShootableMapObject {
 public:
-    ShootableMovableMapObject(int m);
+    ShootableMovableMapObject(uint16 id, int m, ObjectNature nature);
     virtual ~ShootableMovableMapObject() {}
 
     void setSpeed(int new_speed) {
@@ -410,18 +518,22 @@ public:
     void setBaseSpeed(int bs) {
         base_speed_ = bs;
     }
-
+    /*!
+     * Clear path to destination and sets speed to 0.
+     */
     void clearDestination() {
-        dest_path_.clear();
-    }
-    void resetDest_Speed() {
         dest_path_.clear();
         speed_ = 0;
     }
 
+    //! Set the destination to reach at given speed
+    virtual bool setDestination(Mission *m, PathNode &node, int newSpeed = -1) = 0;
+
     //! checks whether final destination is same as pn
     bool checkFinalDest(PathNode& pn);
     bool isMoving() { return speed_ != 0 || !dest_path_.empty();}
+    //! Returns true if object currently has a destination point (ie it's arrived)
+    bool hasDestination() { return !dest_path_.empty(); }
     //! checks whether current position is same as pn
     bool checkCurrPos(PathNode &pn);
     //! checks whether current position is same as pn, tile only
@@ -445,8 +557,33 @@ protected:
  */
 class Static : public ShootableMapObject {
 public:
-    static Static *loadInstance(uint8 *data, int m);
+    /*! Const for subtype 1 of Static.*/
+    static const int kStaticSubtype1;
+    /*! Const for subtype 2 of Static.*/
+    static const int kStaticSubtype2;
+
+    enum StaticType {
+        // NOTE: should be the same name as Class
+        smt_None = 0,
+        smt_Advertisement,
+        smt_Semaphore,
+        smt_Door,
+        smt_LargeDoor,
+        smt_Tree,
+        smt_Window,
+        smt_AnimatedWindow,
+        smt_NeonSign
+    };
+public:
+    static Static *loadInstance(uint8 *data, uint16 id, int m);
     virtual ~Static() {}
+
+    //! Return the type of statics
+    StaticType type() { return type_; }
+    //! Set the sub type of statics
+    void setSubType(int objSubType) { subType_ = objSubType; }
+    //! Return the type of statics
+    int subType() { return subType_; }
 
     virtual bool animate(int elapsed, Mission *obj) {
         return MapObject::animate(elapsed);
@@ -473,7 +610,7 @@ public:
         sttsem_Stt3,
         sttsem_Damaged
     }stateSemaphores;
-    
+
     typedef enum {
         sttwnd_Closed = 0,
         sttwnd_Open,
@@ -490,21 +627,18 @@ public:
         sttawnd_LightOn
     }stateAnimatedWindows;
 
-    typedef enum {
-        // NOTE: should be the same name as Class
-        smt_None = 0,
-        smt_Advertisement,
-        smt_Semaphore,
-        smt_Door,
-        smt_LargeDoor,
-        smt_Tree,
-        smt_Window,
-        smt_AnimatedWindow,
-        smt_NeonSign
-    }staticMainType;
+protected:
+    Static(uint16 id, int m, StaticType type) :
+            ShootableMapObject(id, m, MapObject::kNatureStatic) {
+        type_ = type;
+        subType_ = kStaticSubtype1;
+    }
 
 protected:
-    Static(int m):ShootableMapObject(m) {}
+    /*! Type of statics.*/
+    StaticType type_;
+    /*! Sub division for statics of same type.*/
+    int subType_;
 };
 
 /*!
@@ -512,7 +646,7 @@ protected:
  */
 class Door : public Static {
 public:
-    Door(int m, int anim, int closingAnim, int openAnim, int openingAnim);
+    Door(uint16 id, int m, int anim, int closingAnim, int openAnim, int openingAnim);
     virtual ~Door() {}
 
     void draw(int x, int y);
@@ -528,7 +662,7 @@ protected:
  */
 class LargeDoor : public Static {
 public:
-    LargeDoor(int m, int anim, int closingAnim, int openingAnim);
+    LargeDoor(uint16 id, int m, int anim, int closingAnim, int openingAnim);
     virtual ~LargeDoor() {}
 
     void draw(int x, int y);
@@ -543,12 +677,12 @@ protected:
  */
 class Tree : public Static {
 public:
-    Tree(int m, int anim, int burningAnim, int damagedAnim);
+    Tree(uint16 id, int m, int anim, int burningAnim, int damagedAnim);
     virtual ~Tree() {}
 
     void draw(int x, int y);
     bool animate(int elapsed, Mission *obj);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, burning_anim_, damaged_anim_;
@@ -559,13 +693,13 @@ protected:
  */
 class WindowObj : public Static {
 public:
-    WindowObj(int m, int anim, int openAnim, int breakingAnim,
+    WindowObj(uint16 id, int m, int anim, int openAnim, int breakingAnim,
               int damagedAnim);
     virtual ~WindowObj() {}
 
     bool animate(int elapsed, Mission *obj);
     void draw(int x, int y);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, open_anim_, breaking_anim_, damaged_anim_;
@@ -576,7 +710,7 @@ protected:
  */
 class EtcObj : public Static {
 public:
-    EtcObj(int m, int anim, int burningAnim, int damagedAnim);
+    EtcObj(uint16 id, int m, int anim, int burningAnim, int damagedAnim, StaticType type = smt_None);
     virtual ~EtcObj() {}
 
     void draw(int x, int y);
@@ -590,7 +724,7 @@ protected:
  */
 class NeonSign : public Static {
 public:
-    NeonSign(int m, int anim);
+    NeonSign(uint16 id, int m, int anim);
     virtual ~NeonSign() {}
 
     void draw(int x, int y);
@@ -605,12 +739,13 @@ protected:
  */
 class Semaphore : public Static {
 public:
-    Semaphore(int m, int anim, int damagedAnim);
+    Semaphore(uint16 id, int m, int anim, int damagedAnim);
     virtual ~Semaphore() {}
 
     bool animate(int elapsed, Mission *obj);
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
     void draw(int x, int y);
+
+    void handleHit(DamageInflictType &d);
 
 protected:
     int anim_, damaged_anim_;
@@ -631,7 +766,7 @@ protected:
  */
 class AnimWindow : public Static {
 public:
-    AnimWindow(int m, int anim);
+    AnimWindow(uint16 id, int m, int anim);
     virtual ~AnimWindow() {}
 
     bool animate(int elapsed, Mission *obj);

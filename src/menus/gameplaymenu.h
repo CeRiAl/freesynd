@@ -48,6 +48,9 @@ public:
     void handleRender(DirtyList &dirtyList);
     void handleLeave();
 
+    //! Handles game events
+    void handleGameEvent(GameEvent evt);
+
 protected:
     bool handleUnknownKey(Key key, const int modKeys);
 
@@ -83,8 +86,9 @@ protected:
     void updateSelectionForDeadAgent(PedInstance *p_ped);
     //! updates visual markers for our agents
     void updtAgentsMarker();
-
-    void stopShootingEvent(void);
+    //! Set loc param with point on the map where player clicked to shoot
+    bool getAimedAt(int x, int y, PathNode &loc);
+    void stopShootingEvent();
     //! Centers the minimap on the selection leader
     void centerMinimapOnLeader();
     //! Animate the minimap
@@ -93,9 +97,6 @@ protected:
     void updateSelectAll();
     //! Update the target value for adrenaline etc for an agent
     void updateIPALevelMeters(int elapsed);
-
-    //! Handles game events
-    void handleGameEvent(GameEvent evt);
 
 protected:
     /*! Origin of the minimap on the screen.*/
@@ -125,23 +126,14 @@ protected:
     GamePlayMinimapRenderer mm_renderer_;
     /*! This renderer is in charge of drawing the IPA meters.*/
     AgentSelectorRenderer agt_sel_renderer_;
-    bool pressed_btn_select_all_;
-    struct ShootingEvents {
-        bool shooting_;
-        bool agents_shooting[4];
-        uint32 ids[4];
-        void clear() {
-            shooting_ = false;
-            agents_shooting[0] = false;
-            agents_shooting[1] = false;
-            agents_shooting[2] = false;
-            agents_shooting[3] = false;
-            ids[0] = 0;
-            ids[1] = 0;
-            ids[2] = 0;
-            ids[3] = 0;
-        }
-    } shooting_events_;
+    //! A flag to keep track of the state of the select all button
+    bool isButtonSelectAllPressed_;
+    /*! Flag to store the fact that player is currently shooting.*/
+    bool isPlayerShooting_;
+    /*! Flag to play the sound of police warning an agent.*/
+    bool canPlayPoliceWarnSound_;
+    /*! Delay between 2 police warnings.*/
+    fs_utils::Timer warningTimer_;
 
     // when ipa is manipulated this represents
     struct IPA_manipulation {

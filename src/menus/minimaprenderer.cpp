@@ -567,16 +567,15 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
         {
             int px = mapToMiniMapX(tx + 1, ox);
             int py = mapToMiniMapY(ty + 1, oy);
-            if (p_ped->isPersuaded())
-            {
+            if (p_ped->isPersuaded()) {
                 // col_Yellow circle with a black or lightgreen border (blinking)
                 uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorLightGreen : fs_cmn::kColorBlack;
                 drawPedCircle(a_minimap, px, py, fs_cmn::kColorYellow, borderColor);
             } else {
-                switch (p_ped->getMainType())
+                switch (p_ped->type())
                 {
-                case PedInstance::m_tpPedestrian:
-                case PedInstance::m_tpCriminal:
+                case PedInstance::kPedTypeCivilian:
+                case PedInstance::kPedTypeCriminal:
                     {
                         // white rect 2x2 (opaque and transparent blinking)
                         size_t ped_width = 2;
@@ -590,7 +589,7 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
                         }
                     break;
                     }
-                case PedInstance::m_tpAgent:
+                case PedInstance::kPedTypeAgent:
                 {
                     if (p_ped->isOurAgent())
                     {
@@ -605,14 +604,14 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
                     }
                 }
                 break;
-                case PedInstance::m_tpPolice:
+                case PedInstance::kPedTypePolice:
                     {
                     // blue circle with a black or col_BlueGrey (blinking)
                     uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorBlack : fs_cmn::kColorBlueGrey;
                     drawPedCircle(a_minimap, px, py, fs_cmn::kColorBlue, borderColor);
                     }
                     break;
-                case PedInstance::m_tpGuard:
+                case PedInstance::kPedTypeGuard:
                     {
                     // col_LightGrey circle with a black or white border (blinking) 
                     uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorWhite : fs_cmn::kColorBlack;

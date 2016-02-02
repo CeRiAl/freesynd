@@ -137,7 +137,7 @@ void GameController::change_user_infos(const char *company_name, const char *pla
 }
 
 void GameController::handle_mission_end(Mission *p_mission) {
-    int elapsed = p_mission->getStatistics()->mission_duration;
+    int elapsed = p_mission->stats()->missionDuration();
     g_Session.updateTime(elapsed);
 
     if (p_mission->completed()) {
@@ -265,4 +265,18 @@ int GameController::get_nb_mvt_for_active_synds(int nb_active_synds) {
     default:
         return 0;
     }
+}
+
+/*!
+ * This method is just a wrapper for the call of GameController.fireGameEvent().
+ * \param stream The stream of the event
+ * \param type The type of the event
+ * \param pCtx The context of the event.
+ */
+void GameEvent::sendEvt(EEventStream stream, EEventType type, void *pCtx) {
+    GameEvent evt;
+    evt.stream = stream;
+    evt.type = type;
+    evt.pCtxt = pCtx;
+    g_gameCtrl.fireGameEvent(evt);
 }

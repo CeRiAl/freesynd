@@ -25,26 +25,42 @@
  ************************************************************************/
 
 #include "common.h"
+#include "utils/log.h"
 #include "app.h"
 #include "vehicle.h"
 #include "core/gamesession.h"
 #include "mission.h"
 
-#ifdef _DEBUG
-uint32 MapObject::debugIdCnt = 0;
-#endif
+uint16 SFXObject::sfxIdCnt = 0;
+const int Static::kStaticSubtype1 = 0;
+const int Static::kStaticSubtype2 = 2;
 
-MapObject::MapObject(int m):size_x_(1), size_y_(1), size_z_(2),
+MapObject::MapObject(uint16 id, int m, ObjectNature nature):
+    size_x_(1), size_y_(1), size_z_(2),
     map_(m), frame_(0), elapsed_carry_(0),
-    frames_per_sec_(8), sub_type_(0), main_type_(0),
-    major_type_(MapObject::mjt_Undefined), dir_(0),
+    frames_per_sec_(8),
+    dir_(0),
     time_show_anim_(-1), time_showing_anim_(-1),
     is_ignored_(false), is_frame_drawn_(false),
     state_(0xFFFFFFFF)
 {
-#ifdef _DEBUG
-    debugId_ = ++debugIdCnt;
-#endif
+    nature_ = nature;
+    id_ = id;
+}
+
+const char* MapObject::natureName() {
+    switch (nature_) {
+    case kNaturePed:
+        return "Ped";
+    case kNatureWeapon:
+        return "Weapon";
+    case kNatureStatic:
+        return "Static";
+    case kNatureVehicle:
+        return "Vehicle";
+    default:
+        return "Undefined";
+    }
 }
 
 int MapObject::screenX()
@@ -173,6 +189,16 @@ void MapObject::setDirection(int posx, int posy, int * dir) {
         else
             *dir = direction;
     }
+}
+
+void MapObject::setDirectionTowardObject(const MapObject &object) {
+    int xb = this->tileX() * 256 + this->offX();
+    int yb = this->tileY() * 256 + this->offY();
+
+    int txb = object.tileX() * 256 + object.offX();
+    int tyb = object.tileY() * 256 + object.offY();
+
+    this->setDirection(txb - xb, tyb - yb);
 }
 
 /*!
@@ -425,14 +451,23 @@ void MapObject::offzOnStairs(uint8 twd) {
     }
 }
 
-SFXObject::SFXObject(int m, int type, int t_show) : MapObject(m),
-    sfx_life_over_(false), draw_all_frames_(true), elapsed_left_(0)
-{
-    main_type_ = type;
+/*!
+ * Constructor of the class.
+ * \param m Map id
+ * \param type Type of SfxObject (see SFXObject::SfxTypeEnum)
+ * \param t_show
+ * \param managed True means object is destroyed by another object than Mission
+ */
+SFXObject::SFXObject(int m, SfxTypeEnum type, int t_show, bool managed) : MapObject(sfxIdCnt++, m, kNatureUndefined) {
+    type_ = type;
+    managed_ = managed;
+    draw_all_frames_ = true;
+    loopAnimation_ = false;
     setTimeShowAnim(0);
+    reset();
     switch(type) {
         case SFXObject::sfxt_Unknown:
-            printf("Unknown sfx created");
+            FSERR(Log::k_FLG_UI, "SFXObject", "SFXObject", ("Sfx object of type Unknown created"));
             sfx_life_over_ = true;
             break;
         case SFXObject::sfxt_BulletHit:
@@ -498,7 +533,7 @@ bool SFXObject::animate(int elapsed) {
 
     if (is_frame_drawn_) {
         bool changed = draw_all_frames_ ? MapObject::animate(elapsed) : false;
-        if (main_type_ == SFXObject::sfxt_ExplosionBall) {
+        if (type_ == SFXObject::sfxt_ExplosionBall) {
             int z = tile_z_ * 128 + off_z_;
             // 250 per sec
             z += ((elapsed + elapsed_left_) >> 2);
@@ -511,7 +546,11 @@ bool SFXObject::animate(int elapsed) {
         if (frame_ > g_App.gameSprites().lastFrame(anim_)
             && !leftTimeShowAnim(elapsed))
         {
-            sfx_life_over_ = true;
+            if (loopAnimation_) {
+                reset();
+            } else {
+                sfx_life_over_ = true;
+            }
         }
         return changed;
     }
@@ -520,7 +559,7 @@ bool SFXObject::animate(int elapsed) {
 }
 
 void SFXObject::correctZ() {
-    if (main_type_ == SFXObject::sfxt_ExplosionBall) {
+    if (type_ == SFXObject::sfxt_ExplosionBall) {
         int z = tile_z_ * 128 + off_z_;
         z += 512;
         if (z > (g_Session.getMission()->mmax_z_ - 1) * 128)
@@ -530,19 +569,25 @@ void SFXObject::correctZ() {
     }
 }
 
-ShootableMapObject::ShootableMapObject(int m):MapObject(m)
-{
-    rcv_damage_def_ = MapObject::ddmg_Invulnerable;
+void SFXObject::reset() {
+    sfx_life_over_ = false;
+    frame_ = 0;
+    elapsed_left_ = 0;
 }
 
-ShootableMovableMapObject::
-ShootableMovableMapObject(int m):ShootableMapObject(m),
-speed_(0), base_speed_(0), dist_to_pos_(0)
-{
+ShootableMapObject::ShootableMapObject(uint16 id, int m, ObjectNature nature):
+    MapObject(id, m, nature)
+{}
+
+ShootableMovableMapObject::ShootableMovableMapObject(uint16 id, int m, ObjectNature nature):
+        ShootableMapObject(id, m, nature) {
+    speed_ = 0;
+    base_speed_ = 0;
+    dist_to_pos_ = 0;
 }
 
 /*!
- * This method adds the given offsets to the object's offX and offY 
+ * This method adds the given offsets to the object's offX and offY
  * and moves it to a new tile if necessary.
  * \param nOffX amount to add to offX
  * \param nOffY amount to add to offY
@@ -605,7 +650,7 @@ bool ShootableMovableMapObject::checkCurrPosTileOnly(PathNode &pn) {
         && pn.tileZ() == tile_z_;
 }
 
-Static *Static::loadInstance(uint8 * data, int m)
+Static *Static::loadInstance(uint8 * data, uint16 id, int m)
 {
     LevelData::Statics * gamdata =
         (LevelData::Statics *) data;
@@ -622,14 +667,14 @@ Static *Static::loadInstance(uint8 * data, int m)
     switch(gamdata->sub_type) {
         case 0x01:
             // phone booth
-            s = new EtcObj(m, curanim, curanim, curanim);
+            s = new EtcObj(id, m, curanim, curanim, curanim);
             s->setSizeX(128);
             s->setSizeY(128);
             s->setSizeZ(128);
             break;
         case 0x05:// 1040-1043, 1044 - damaged
             // crossroad things
-            s = new Semaphore(m, 1040, 1044);
+            s = new Semaphore(id, m, 1040, 1044);
             s->setSizeX(48);
             s->setSizeY(48);
             s->setSizeZ(48);
@@ -639,7 +684,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x06:
             // crossroad things
-            s = new Semaphore(m, 1040, 1044);
+            s = new Semaphore(id, m, 1040, 1044);
             s->setSizeX(48);
             s->setSizeY(48);
             s->setSizeZ(48);
@@ -649,7 +694,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x07:
             // crossroad things
-            s = new Semaphore(m, 1040, 1044);
+            s = new Semaphore(id, m, 1040, 1044);
             s->setSizeX(48);
             s->setSizeY(48);
             s->setSizeZ(48);
@@ -659,7 +704,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x08:
             // crossroad things
-            s = new Semaphore(m, 1040, 1044);
+            s = new Semaphore(id, m, 1040, 1044);
             s->setSizeX(48);
             s->setSizeY(48);
             s->setSizeZ(48);
@@ -673,7 +718,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             //printf("0x0B anim %X\n", curanim);
             break;
         case 0x0A:
-            s = new NeonSign(m, curanim);
+            s = new NeonSign(id, m, curanim);
             s->setFrame(g_App.gameSprites().getFrameFromFrameIndx(curframe));
             s->setIsIgnored(true);
             s->setSizeX(32);
@@ -683,15 +728,15 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x0C: // closed door
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(0);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(2);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -700,15 +745,15 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x0D: // closed door
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(0);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(2);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -717,15 +762,15 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x0E: // opening doors, not open
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(0);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(2);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -735,15 +780,15 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x0F: // opening doors, not open
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(0);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
-                s = new Door(m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(2);
+                s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -757,14 +802,14 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x12:
             // open window
-            s = new WindowObj(m, curanim - 2, curanim, curanim + 2, curanim + 4);
+            s = new WindowObj(id, m, curanim - 2, curanim, curanim + 2, curanim + 4);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(0);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(96);
                 s->setSizeY(4);
                 s->setSizeZ(96);
             } else {
-                s->setSubType(2);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(4);
                 s->setSizeY(96);
                 s->setSizeZ(96);
@@ -775,14 +820,14 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x13:
             // closed window
-            s = new WindowObj(m, curanim, curanim + 2, curanim + 4, curanim + 6);
+            s = new WindowObj(id, m, curanim, curanim + 2, curanim + 4, curanim + 6);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(0);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(96);
                 s->setSizeY(4);
                 s->setSizeZ(96);
             } else {
-                s->setSubType(2);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(4);
                 s->setSizeY(96);
                 s->setSizeZ(96);
@@ -793,7 +838,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x15:
             // damaged window
-            s = new WindowObj(m, curanim - 6, curanim - 4, curanim - 2, curanim);
+            s = new WindowObj(id, m, curanim - 6, curanim - 4, curanim - 2, curanim);
             s->setIsIgnored(true);
             s->setHealth(0);
             s->setStartHealth(1);
@@ -801,7 +846,7 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x16:
             // TODO: set state if damaged trees exist
-            s = new Tree(m, curanim, curanim + 1, curanim + 2);
+            s = new Tree(id, m, curanim, curanim + 1, curanim + 2);
             s->setSizeX(64);
             s->setSizeY(64);
             s->setSizeZ(256);
@@ -810,14 +855,14 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x19:
             // trash bin
-            s = new EtcObj(m, curanim, curanim, curanim);
+            s = new EtcObj(id, m, curanim, curanim, curanim);
             s->setSizeX(64);
             s->setSizeY(64);
             s->setSizeZ(96);
             break;
         case 0x1A:
             // mail box
-            s = new EtcObj(m, curanim, curanim, curanim);
+            s = new EtcObj(id, m, curanim, curanim, curanim);
             s->setSizeX(64);
             s->setSizeY(64);
             s->setSizeZ(96);
@@ -829,20 +874,19 @@ Static *Static::loadInstance(uint8 * data, int m)
             break;
         case 0x1F:
             // advertisement on wall
-            s = new EtcObj(m, curanim, curanim, curanim);
-            s->setMainType(smt_Advertisement);
+            s = new EtcObj(id, m, curanim, curanim, curanim, smt_Advertisement);
             s->setIsIgnored(true);
             break;
 
         case 0x20:
             // window without light
-            s = new AnimWindow(m, curanim);
+            s = new AnimWindow(id, m, curanim);
             s->setStateMasks(sttawnd_LightOff);
             s->setTimeShowAnim(30000 + (rand() % 30000));
             break;
         case 0x21:
             // window light turns on
-            s = new AnimWindow(m, curanim - 2);
+            s = new AnimWindow(id, m, curanim - 2);
             s->setTimeShowAnim(1000 + (rand() % 1000));
             s->setStateMasks(sttawnd_LightSwitching);
 
@@ -851,18 +895,18 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x23:
             // window with person's shadow non animated,
             // even though on 1 map person appears I will ignore it
-            s = new AnimWindow(m, 1959 + ((gamdata->orientation & 0x40) >> 5));
+            s = new AnimWindow(id, m, 1959 + ((gamdata->orientation & 0x40) >> 5));
             s->setStateMasks(sttawnd_ShowPed);
             s->setTimeShowAnim(15000 + (rand() % 5000));
             break;
         case 0x24:
             // window with person's shadow, hides, actually animation
             // is of ped standing, but I will ignore it
-            s = new AnimWindow(m, 1959 + 8 + ((gamdata->orientation & 0x40) >> 5));
+            s = new AnimWindow(id, m, 1959 + 8 + ((gamdata->orientation & 0x40) >> 5));
             s->setStateMasks(sttawnd_PedDisappears);
             break;
         case 0x25:
-            s = new AnimWindow(m, curanim);
+            s = new AnimWindow(id, m, curanim);
 
             // NOTE : orientation, I assume, plays role of hidding object,
             // orientation 0x40, 0x80 are drawn (gamdata->desc always 7)
@@ -878,14 +922,14 @@ Static *Static::loadInstance(uint8 * data, int m)
         case 0x26:
             // 0x00,0x80 south - north = 0
             // 0x40,0xC0 weast - east = 2
-            s = new LargeDoor(m, curanim, curanim + 1, curanim + 2);
+            s = new LargeDoor(id, m, curanim, curanim + 1, curanim + 2);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(0);
+                s->setSubType(kStaticSubtype1);
                 s->setSizeX(384);
                 s->setSizeY(64);
                 s->setSizeZ(192);
             } else {
-                s->setSubType(2);
+                s->setSubType(kStaticSubtype2);
                 s->setSizeX(64);
                 s->setSizeY(384);
                 s->setSizeZ(192);
@@ -910,7 +954,7 @@ Static *Static::loadInstance(uint8 * data, int m)
         int z = READ_LE_UINT16(gamdata->mapposz) >> 7;
         int oz = gamdata->mapposz[0] & 0x7F;
         // trick to draw
-        if (s->getMainType() == Static::smt_Advertisement)
+        if (s->type() == Static::smt_Advertisement)
             z += 1;
 
         s->setPosition(gamdata->mapposx[1], gamdata->mapposy[1],
@@ -927,13 +971,10 @@ Static *Static::loadInstance(uint8 * data, int m)
     return s;
 }
 
-Door::Door(int m, int anim, int closingAnim, int openAnim, int openingAnim)
-: Static(m), anim_(anim), closing_anim_(closingAnim),open_anim_(openAnim),
-opening_anim_(openingAnim)
-{
+Door::Door(uint16 id, int m, int anim, int closingAnim, int openAnim, int openingAnim) :
+    Static(id, m, Static::smt_Door), anim_(anim), closing_anim_(closingAnim),
+        open_anim_(openAnim), opening_anim_(openingAnim) {
     state_ = Static::sttdoor_Closed;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = Static::smt_Door;
 }
 
 void Door::draw(int x, int y)
@@ -948,7 +989,7 @@ bool Door::animate(int elapsed, Mission *obj)
     int x = tileX();
     int y = tileY();
     int z = tileZ();
-    MapObject::MajorTypeEnum mt;
+    MapObject::ObjectNature nature;
     int si;
     char inc_rel = 0, rel_inc = 0;
     char *i = 0, *j = 0;
@@ -957,19 +998,19 @@ bool Door::animate(int elapsed, Mission *obj)
     bool changed = MapObject::animate(elapsed);
     switch(state_) {
         case Static::sttdoor_Open:
-            if (sub_type_ == 0) {
+            if (subType_ == kStaticSubtype1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (sub_type_ == 2) {
+            } else if (subType_ == kStaticSubtype2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
             assert(i != 0 && j != 0);
             for(*i = 0; *i < 2; *i += 1) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + inc_rel,
-                        y + rel_inc, z, &mt, &si, true));
+                        y + rel_inc, z, &nature, &si, true));
                     if (!p && state_ == Static::sttdoor_Open && (!found)) {
                         state_ = Static::sttdoor_Closing;
                         is_ignored_ = false;
@@ -984,19 +1025,19 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             break;
         case Static::sttdoor_Closed:
-            if (sub_type_ == 0) {
+            if (subType_ == kStaticSubtype1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (sub_type_ == 2) {
+            } else if (subType_ == kStaticSubtype2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
             assert(i != 0 && j != 0);
             *i = 1;
-            mt = MapObject::mjt_Ped; si = 0;
+            nature = MapObject::kNaturePed; si = 0;
             do {
                 p = (PedInstance *)(obj->findAt(x + inc_rel,
-                    y + rel_inc, z, &mt, &si, true));
+                    y + rel_inc, z, &nature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
@@ -1014,10 +1055,10 @@ bool Door::animate(int elapsed, Mission *obj)
                 }
             } while (p);
             *i = 0;
-            mt = MapObject::mjt_Ped; si = 0;
+            nature = MapObject::kNaturePed; si = 0;
             do {
                 p = (PedInstance *)(obj->findAt(x + inc_rel,
-                    y + rel_inc, z, &mt, &si, true));
+                    y + rel_inc, z, &nature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
@@ -1059,12 +1100,10 @@ bool Door::isPathBlocker()
 }
 
 
-LargeDoor::LargeDoor(int m, int anim, int closingAnim, int openingAnim):Static(m), anim_(anim),
-closing_anim_(closingAnim), opening_anim_(openingAnim)
-{
+LargeDoor::LargeDoor(uint16 id, int m, int anim, int closingAnim, int openingAnim):
+        Static(id, m, Static::smt_LargeDoor), anim_(anim),
+        closing_anim_(closingAnim), opening_anim_(openingAnim) {
     state_ = Static::sttdoor_Closed;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = Static::smt_LargeDoor;
 }
 
 void LargeDoor::draw(int x, int y)
@@ -1093,7 +1132,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
     int x = tileX();
     int y = tileY();
     int z = tileZ();
-    MapObject::MajorTypeEnum mt;
+    MapObject::ObjectNature nature;
     int si;
     char inc_rel = 0, rel_inc = 0;
     char *i = 0, *j = 0;
@@ -1109,19 +1148,19 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
     uint32 cur_state = state_;
     switch(state_) {
         case Static::sttdoor_Open:
-            if (sub_type_ == 0) {
+            if (subType_ == kStaticSubtype1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (sub_type_ == 2) {
+            } else if (subType_ == kStaticSubtype2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
             assert(i != 0 && j != 0);
             *j = -1;
             for(*i = -2; *i < 3; (*i)++) {
-                mt = MapObject::mjt_Vehicle; si = 0;
+                nature = MapObject::kNatureVehicle; si = 0;
                 v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                    y + rel_inc,z, &mt, &si, true));
+                    y + rel_inc,z, &nature, &si, true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
                     is_ignored_ = false;
@@ -1134,9 +1173,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for(*i = -2; *i < 3; (*i)++) {
-                mt = MapObject::mjt_Vehicle; si = 0;
+                nature = MapObject::kNatureVehicle; si = 0;
                 v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                    y + rel_inc,z,&mt,&si,true));
+                    y + rel_inc,z,&nature,&si,true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
                     is_ignored_ = false;
@@ -1149,10 +1188,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1165,10 +1204,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1181,10 +1220,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 0;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds_mid.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1214,10 +1253,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     p->hold_on_.wayFree = 2;
                     p->hold_on_.tilex = x;
                     p->hold_on_.tiley = y;
-                    if (sub_type_ == 0) {
+                    if (subType_ == kStaticSubtype1) {
                         p->hold_on_.xadj = 1;
                         p->hold_on_.yadj = 0;
-                    } else if (sub_type_ == 2) {
+                    } else if (subType_ == kStaticSubtype2) {
                         p->hold_on_.xadj = 0;
                         p->hold_on_.yadj = 1;
                     }
@@ -1229,20 +1268,20 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 {
                     p = *it;
                     ShootableMapObject::DamageInflictType d;
-                    d.dtype = MapObject::dmg_Hit;
+                    d.dtype = MapObject::dmg_Collision;
                     d.d_owner = NULL;
                     d.dvalue = 1024;
                     d.ddir = -1;
-                    p->handleDamage(&d);
+                    p->handleHit(d);
                 }
             }
             break;
         case Static::sttdoor_Closed:
-            if (sub_type_ == 0) {
+            if (subType_ == kStaticSubtype1) {
                 i = &rel_inc;
                 j = &inc_rel;
                 sign = 1;
-            } else if (sub_type_ == 2) {
+            } else if (subType_ == kStaticSubtype2) {
                 i = &inc_rel;
                 j = &rel_inc;
                 sign = -1;
@@ -1250,9 +1289,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             assert(i != 0 && j != 0);
             *j = -1 * sign;
             *i = -2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            nature = MapObject::kNatureVehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                y + rel_inc,z, &mt, &si,true));
+                y + rel_inc,z, &nature, &si,true));
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
@@ -1264,9 +1303,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1 * sign;
             *i = 2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            nature = MapObject::kNatureVehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                y + rel_inc,z, &mt, &si,true));
+                y + rel_inc,z, &nature, &si,true));
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
@@ -1278,10 +1317,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1294,10 +1333,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1316,10 +1355,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 p->hold_on_.wayFree = set_wayFree;
                 p->hold_on_.tilex = x;
                 p->hold_on_.tiley = y;
-                if (sub_type_ == 0) {
+                if (subType_ == kStaticSubtype1) {
                     p->hold_on_.xadj = 1;
                     p->hold_on_.yadj = 0;
-                } else if (sub_type_ == 2) {
+                } else if (subType_ == kStaticSubtype2) {
                     p->hold_on_.xadj = 0;
                     p->hold_on_.yadj = 1;
                 }
@@ -1339,11 +1378,11 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 state_ = Static::sttdoor_Open;
                 is_ignored_ = true;
             }
-            if (sub_type_ == 0) {
+            if (subType_ == kStaticSubtype1) {
                 i = &rel_inc;
                 j = &inc_rel;
                 sign = 1;
-            } else if (sub_type_ == 2) {
+            } else if (subType_ == kStaticSubtype2) {
                 i = &inc_rel;
                 j = &rel_inc;
                 sign = -1;
@@ -1352,28 +1391,28 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = -1 * sign;
             *i = -2;
             set_wayFree = state_ == Static::sttdoor_Opening ? 1 : 2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            nature = MapObject::kNatureVehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                y + rel_inc,z, &mt, &si,true));
+                y + rel_inc,z, &nature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
                 v->hold_on_.pathBlocker = this;
             }
             *j = 1 * sign;
             *i = 2;
-            mt = MapObject::mjt_Vehicle; si = 0;
+            nature = MapObject::kNatureVehicle; si = 0;
             v = (VehicleInstance *)(obj->findAt(x + inc_rel,
-                y + rel_inc,z, &mt, &si,true));
+                y + rel_inc,z, &nature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
                 v->hold_on_.pathBlocker = this;
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                     }
@@ -1381,10 +1420,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                mt = MapObject::mjt_Ped; si = 0;
+                nature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findAt(x + rel_inc,
-                        y + inc_rel, z, &mt, &si, true));
+                        y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                     }
@@ -1397,10 +1436,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 p->hold_on_.wayFree = set_wayFree;
                 p->hold_on_.tilex = x;
                 p->hold_on_.tiley = y;
-                if (sub_type_ == 0) {
+                if (subType_ == kStaticSubtype1) {
                     p->hold_on_.xadj = 1;
                     p->hold_on_.yadj = 0;
-                } else if (sub_type_ == 2) {
+                } else if (subType_ == kStaticSubtype2) {
                     p->hold_on_.xadj = 0;
                     p->hold_on_.yadj = 1;
                 }
@@ -1420,13 +1459,10 @@ bool LargeDoor::isPathBlocker()
 }
 
 
-Tree::Tree(int m, int anim, int burningAnim, int damagedAnim) : Static(m),
-anim_(anim), burning_anim_(burningAnim), damaged_anim_(damagedAnim)
-{
-    rcv_damage_def_ = MapObject::ddmg_StaticTree;
-    major_type_ = MapObject::mjt_Static;
+Tree::Tree(uint16 id, int m, int anim, int burningAnim, int damagedAnim) :
+        Static(id, m, Static::smt_Tree), anim_(anim), burning_anim_(burningAnim),
+        damaged_anim_(damagedAnim) {
     state_ = Static::stttree_Healthy;
-    main_type_ = Static::smt_Tree;
 }
 
 void Tree::draw(int x, int y)
@@ -1459,30 +1495,26 @@ bool Tree::animate(int elapsed, Mission *obj) {
     return MapObject::animate(elapsed);
 }
 
-bool Tree::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || rcv_damage_def_ == MapObject::ddmg_Invulnerable
-        || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::stttree_Burning;
-        setTimeShowAnim(10000);
-        is_ignored_ = true;
-        health_ = 0;
+/*!
+ * Implementation for the Tree. Tree burns only when hit by laser of fire.
+ * \param d Damage information
+ */
+void Tree::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Laser || d.dtype == dmg_Burn || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::stttree_Burning;
+            setTimeShowAnim(10000);
+            is_ignored_ = true;
+        }
     }
-    return true;
 }
 
-WindowObj::WindowObj(int m, int anim, int openAnim,
-int breakingAnim, int damagedAnim) : Static(m),
-anim_(anim), open_anim_(openAnim), breaking_anim_(breakingAnim),
-damaged_anim_(damagedAnim)
-{
-    rcv_damage_def_ = MapObject::ddmg_StaticWindow;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = Static::smt_Window;
-}
+WindowObj::WindowObj(uint16 id, int m, int anim, int openAnim, int breakingAnim,
+                     int damagedAnim) :
+        Static(id, m, Static::smt_Window), anim_(anim), open_anim_(openAnim),
+        breaking_anim_(breakingAnim), damaged_anim_(damagedAnim) {}
 
 bool WindowObj::animate(int elapsed, Mission *obj) {
     bool updated = MapObject::animate(elapsed);
@@ -1502,27 +1534,26 @@ void WindowObj::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_ + (state_ << 1), frame_, x, y);
 }
 
-bool WindowObj::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::sttwnd_Breaking;
-        is_ignored_ = true;
-        frame_ = 0;
-        setFramesPerSec(6);
+/*!
+ * Implementation for the Tree. Tree burns only when hit by laser of fire.
+ * \param d Damage information
+ */
+void WindowObj::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Bullet || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::sttwnd_Breaking;
+            is_ignored_ = true;
+            frame_ = 0;
+            setFramesPerSec(6);
+        }
     }
-    return true;
 }
 
-EtcObj::EtcObj(int m, int anim, int burningAnim, int damagedAnim) : Static(m),
-anim_(anim), burning_anim_(burningAnim), damaged_anim_(damagedAnim)
-{
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = -1;
-}
+EtcObj::EtcObj(uint16 id, int m, int anim, int burningAnim, int damagedAnim, StaticType type) :
+        Static(id, m, type), anim_(anim), burning_anim_(burningAnim),
+        damaged_anim_(damagedAnim) {}
 
 void EtcObj::draw(int x, int y)
 {
@@ -1530,11 +1561,8 @@ void EtcObj::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_, frame_, x, y);
 }
 
-NeonSign::NeonSign(int m, int anim):Static(m),
-anim_(anim)
-{
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = Static::smt_NeonSign;
+NeonSign::NeonSign(uint16 id, int m, int anim) : Static(id, m, Static::smt_NeonSign) {
+    anim_ = anim;
 }
 
 void NeonSign::draw(int x, int y)
@@ -1543,13 +1571,11 @@ void NeonSign::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_, frame_, x, y);
 }
 
-Semaphore::Semaphore(int m, int anim, int damagedAnim) : Static(m),
-anim_(anim), damaged_anim_(damagedAnim), elapsed_left_smaller_(0),
-elapsed_left_bigger_(0), up_down_(1)
+Semaphore::Semaphore(uint16 id, int m, int anim, int damagedAnim) :
+        Static(id, m, Static::smt_Semaphore), anim_(anim),
+        damaged_anim_(damagedAnim), elapsed_left_smaller_(0),
+        elapsed_left_bigger_(0), up_down_(1)
 {
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = Static::smt_Semaphore;
     setFramesPerSec(2);
 }
 
@@ -1599,31 +1625,33 @@ bool Semaphore::animate(int elapsed, Mission *obj) {
     return MapObject::animate(elapsed);
 }
 
-bool Semaphore::handleDamage(ShootableMapObject::DamageInflictType *d) {
-    if (health_ <= 0 || (d->dtype & rcv_damage_def_) == 0)
-        return false;
-
-    health_ -= d->dvalue;
-    if (health_ <= 0) {
-        state_ = Static::sttsem_Damaged;
-        // To make this thing reach the ground need to get solid surface 0x0F
-        Mission * m = g_Session.getMission();
-        int z = tile_z_;
-        int indx = tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy;
-        elapsed_left_bigger_ = 0;
-        while (z != 0) {
-            z--;
-            indx -= m->mmax_m_xy;
-            int twd = m->mtsurfaces_[indx].twd;
-            if (twd == 0x0F) {
-                elapsed_left_bigger_ = (tile_z_ - z) * 128 + off_z_;
-                break;
+/*!
+ * Implementation for the Semaphore.
+ * \param d Damage information
+ */
+void Semaphore::handleHit(DamageInflictType &d) {
+    if (isAlive() &&
+        (d.dtype == dmg_Laser || d.dtype == dmg_Explosion)) {
+        decreaseHealth(d.dvalue);
+        if (isDead()) {
+            state_ = Static::sttsem_Damaged;
+            // To make this thing reach the ground need to get solid surface 0x0F
+            Mission * m = g_Session.getMission();
+            int z = tile_z_;
+            int indx = tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy;
+            elapsed_left_bigger_ = 0;
+            while (z != 0) {
+                z--;
+                indx -= m->mmax_m_xy;
+                int twd = m->mtsurfaces_[indx].twd;
+                if (twd == 0x0F) {
+                    elapsed_left_bigger_ = (tile_z_ - z) * 128 + off_z_;
+                    break;
+                }
             }
+            is_ignored_ = true;
         }
-        is_ignored_ = true;
-        health_ = 0;
     }
-    return true;
 }
 
 void Semaphore::draw(int x, int y)
@@ -1632,14 +1660,10 @@ void Semaphore::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_ +  state_, frame_, x, y);
 }
 
-AnimWindow::AnimWindow(int m, int anim) : Static(m),
-anim_(anim)
-{
-    rcv_damage_def_ = MapObject::ddmg_StaticGeneral;
-    major_type_ = MapObject::mjt_Static;
-    main_type_ = smt_AnimatedWindow;
+AnimWindow::AnimWindow(uint16 id, int m, int anim) : Static(id, m, smt_AnimatedWindow) {
     setIsIgnored(true);
     setFramesPerSec(4);
+    anim_ = anim;
 }
 
 void AnimWindow::draw(int x, int y)

@@ -58,7 +58,8 @@ public:
             kCritWeaponType = 3,        // wpn_type
             kCritDamageStrict = 4,      // type == dmg_type
             kCritDamageNonStrict = 5,   // type & dmg_type != 0
-            kCritPlayerSelection = 6    // Manage selection from weapon selector
+            kCritPlayerSelection = 6,   // Manage selection from weapon selector
+            kCritLoadedShoot = 7        // select weapon who can shoot and has ammo
         };
         //! Union descriptor
         CriteriaType desc;
@@ -73,33 +74,33 @@ public:
 public:
     //! This constat indicates that there is no weapon selected.
     static const int kNoWeaponSelected;
+    /*! Defines the maximum number of weapons an agent can carry.*/
+    static const uint8 kMaxHoldedWeapons;
 
     WeaponHolder();
     virtual ~WeaponHolder() {}
 
-    int numWeapons() { return weapons_.size(); }
+    uint8 numWeapons() { return weapons_.size(); }
 
-    WeaponInstance *weapon(int n) {
-        assert(n < (int) weapons_.size());
+    WeaponInstance *weapon(uint8 n) {
+        assert(n < weapons_.size());
         return weapons_[n];
     }
 
-    void addWeapon(WeaponInstance *w) {
-        assert(w);
-        assert(weapons_.size() < 8);
-        weapons_.push_back(w);
-    }
+    void addWeapon(WeaponInstance *w);
 
     //! Removes the weapon from the inventory at the given index.
-    WeaponInstance *removeWeapon(uint8 n);
+    WeaponInstance *removeWeaponAtIndex(uint8 n);
 
     //! Removes the given weapon from the inventory.
-    void removeWeaponInstance(WeaponInstance *w);
+    void removeWeapon(WeaponInstance *w);
+    //! Removes all weapons in the inventory
+    void removeAllWeapons();
 
     //! Selects the weapon at given index in the inventory
     void selectWeapon(uint8 n);
     //! Deselects a selected weapon if any
-    void deselectWeapon();
+    WeaponInstance * deselectWeapon();
 
     //! Returns the currently used weapon or null if no weapon is used
     WeaponInstance *selectedWeapon() {
@@ -115,6 +116,11 @@ public:
 
 protected:
     /*!
+     * Called before a weapon is selected to check if weapon can be selected.
+     * \param wi The weapon to select
+     */
+    virtual bool canSelectWeapon(WeaponInstance *pNewWeapon) { return true;}
+    /*!
      * Called when a weapon has been deselected.
      * \param wi The deselected weapon
      */
@@ -122,8 +128,9 @@ protected:
     /*!
      * Called when a weapon has been selected.
      * \param wi The selected weapon
+     * \param previousWeapon The previous selected weapon (can be null if no weapon was selected)
      */
-    virtual void handleWeaponSelected(WeaponInstance * wi) {}
+    virtual void handleWeaponSelected(WeaponInstance * wi, WeaponInstance * previousWeapon) {}
     //! Updates the prefered weapon criteria based on current selection
     void updtPreferedWeapon();
 protected:

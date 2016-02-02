@@ -33,16 +33,16 @@
 #include "mapobject.h"
 #include "sound/sound.h"
 #include "utils/configfile.h"
+#include "utils/timer.h"
 
-class WeaponInstance;
+class FlamerShot;
+class PedInstance;
 
 /*!
  * Weapon class.
  */
 class Weapon {
 public:
-
-    WeaponInstance *createInstance();
     enum WeaponType {
         Unknown = 0,
         Pistol = 1,
@@ -73,6 +73,20 @@ public:
         Gauss_Anim,
         Shotgun_Anim
     } WeaponAnimIndex;
+
+    /*!
+     * This structure holds animation ids of impacts for a weapon.
+     */
+    struct ImpactAnims {
+        //! Animation played when impact is on the ground.
+        SFXObject::SfxTypeEnum groundHit;
+        //! Animation played when impact is on a living object.
+        SFXObject::SfxTypeEnum objectHit;
+        SFXObject::SfxTypeEnum trace_anim;
+        /*! if weapon can do range damage this is used for range definition
+         * with animation.*/
+        int rd_anim;
+    };
 
     Weapon(WeaponType w_type, ConfigFile &conf);
 
@@ -111,10 +125,6 @@ public:
         return (shot_property_ & Weapon::spe_CanShoot) != 0;
     }
 
-    bool doesMentalDmg() {
-        return (dmg_type_ & MapObject::dmg_Persuasion) != 0;
-    }
-
     bool doesPhysicalDmg() {
         return (dmg_type_ & MapObject::dmg_Physical) != 0;
     }
@@ -139,13 +149,14 @@ public:
         spe_ChangeAttribute = 0x0100,
         spe_SelfDestruction = 0x0200,
         spe_TargetPedOnly = 0x0400,
-        spe_CanShoot = 0x0800
+        spe_CanShoot = 0x0800,
+        //! Automatic weapon can shot continuously
+        spe_Automatic = 0X1000
     } ShotPropertyEnum;
 
     typedef enum {
         wspt_None = spe_None,
-        wspt_Persuadatron = (spe_PointToPoint | spe_TargetReachInstant
-            | spe_TargetPedOnly | spe_CanShoot),
+        wspt_Persuadatron = spe_None,
         wspt_Pistol =
             (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo
             | spe_CanShoot),
@@ -156,16 +167,16 @@ public:
             (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo
             | spe_CanShoot),
         wspt_Uzi = (spe_PointToPoint | spe_TargetReachInstant
-            | spe_UsesAmmo | spe_CanShoot),
+            | spe_UsesAmmo | spe_CanShoot | spe_Automatic),
         wspt_Minigun =
             (spe_PointToManyPoints | spe_TargetReachInstant | spe_UsesAmmo
-            | spe_CanShoot),
+            | spe_CanShoot | spe_Automatic),
         wspt_Laser =
             (spe_PointToPoint | spe_TargetReachInstant
             | spe_RangeDamageOnReach | spe_UsesAmmo | spe_CanShoot),
         wspt_Flamer =
             (spe_PointToPoint | spe_TargetReachNeedTime | spe_UsesAmmo
-            | spe_CanShoot),
+            | spe_CanShoot | spe_Automatic),
         wspt_LongRange =
             (spe_PointToPoint | spe_TargetReachInstant | spe_UsesAmmo
             | spe_CanShoot),
@@ -178,10 +189,10 @@ public:
             (spe_Owner | spe_ChangeAttribute | spe_UsesAmmo),
     } WeaponShotPropertyType;
 
-    typedef enum {
-        stm_AllObjects = MapObject::mjt_Ped | MapObject::mjt_Vehicle
-        | MapObject::mjt_Static | MapObject::mjt_Weapon
-    } SearchTargetMask;
+    enum SearchTargetMask {
+        stm_AllObjects = MapObject::kNaturePed | MapObject::kNatureVehicle
+        | MapObject::kNatureStatic | MapObject::kNatureWeapon
+    };
 
     typedef struct {
         PathNode tpn;
@@ -192,28 +203,28 @@ public:
         ShootableMapObject *target_object;
     }ShotDesc;
 
-    typedef struct {
-        // when weapon hits something other then object, ground
-        int hit_anim;
-        int obj_hit_anim;
-        int trace_anim;
-        // if weapon can do range damage this is used for range definition
-        // with animation
-        int rd_anim;
-    }ad_HitAnims;
-
     // (WeaponShotPropertyType)
     unsigned int shotProperty() { return shot_property_; }
 
-    ad_HitAnims * anims() { return &anims_; }
+    ImpactAnims * impactAnims() { return &impactAnims_; }
     int rangeDmg() { return range_dmg_; }
     double shotAngle() { return shot_angle_; }
     double shotAcurracy() { return shot_accuracy_; }
     int ammoCost() { return ammo_cost_; }
     int shotSpeed() { return shot_speed_; }
     int shotsPerAmmo() { return shots_per_ammo_; }
+    //! Returns the fire rate expressed in time between two shots
+    int fireRate() { return fireRate_; }
     bool usesAmmo() {
         return (shotProperty() & Weapon::spe_UsesAmmo) != 0;
+    }
+    /*!
+     * Return true if weapon is automatic.
+     * With automatic weapon, player can keep mouse clicked
+     * to shoot continuously.
+     */
+    bool isAutomatic() {
+        return (shotProperty() & Weapon::spe_Automatic) != 0;
     }
 
 protected:
@@ -228,12 +239,9 @@ protected:
     /*! The price to reload the weapon.*/
     int ammo_cost_;
     int ammo_, range_, dmg_per_shot_;
-    int anim_;
     int rank_;  //!> weapon rank
     WeaponType type_;
     MapObject::DamageType dmg_type_;
-    WeaponAnimIndex idx_;
-    snd::InGameSample sample_;
     int ammo_per_shot_;
     //! time weapon uses to do a single shot
     int time_for_shot_;
@@ -243,7 +251,6 @@ protected:
     bool submittedToSearch_;
     //WeaponShotPropertyType
     uint32 shot_property_;
-    ad_HitAnims anims_;
     int range_dmg_;
     //! some weapons have wider shot
     double shot_angle_;
@@ -255,56 +262,39 @@ protected:
     int shots_per_ammo_;
     //! The weight of a weapon influences the agent's speed
     int weight_;
-};
-
-class PedInstance;
-
-class ShotClass {
-public:
-    static void rangeDamageAnim(toDefineXYZ &cp, double dmg_rng,
-        int rngdamg_anim);
-    static void createExplosion(ShootableMapObject *tobj, double dmg_rng, int dmg_value = 16, bool is_suicide = false);
-    //! This method is used for an agent to shoot himself
-    static void make_self_shot(PedInstance *p_ped);
-
-public:
-    ShotClass(ShootableMapObject *tobj = NULL) : owner_(NULL),
-        target_object_(tobj){}
-    ~ShotClass(){}
-    void setOwner(ShootableMapObject *owner) {
-        owner_ = owner;
-    }
-    ShootableMapObject *getOwner() { return owner_; }
-    bool hasOwner() { return owner_ != NULL; }
-
-    void shotTargetRandomizer(toDefineXYZ * cp, toDefineXYZ * tp, double angle,
-        double dist_new = -1, bool exclude_z = false);
-
-protected:
-    void makeShot(bool rangeChecked, toDefineXYZ &cp, int anim_hit,
-        std::vector <Weapon::ShotDesc> &all_shots, int anim_obj_hit,
-        WeaponInstance *w = NULL);
-
-protected:
-    ShootableMapObject *owner_;
-    ShootableMapObject *target_object_;
+    //! The fire rate expressed by time between two shots. Only for automatic weapons
+    int fireRate_;
+    //!
+    WeaponAnimIndex idx_;
+    int anim_;
+    //! Set of ids of impacts animation
+    ImpactAnims impactAnims_;
+    //! Sound of weapon
+    snd::InGameSample sample_;
 };
 
 /*!
  * Weapon instance class.
  */
-class WeaponInstance : public ShootableMapObject, public ShotClass{
+class WeaponInstance : public ShootableMapObject {
 public:
-    WeaponInstance(Weapon *w);
+    //! Creates a instance for the given weapon class
+    static WeaponInstance *createInstance(Weapon *pWeaponClass);
+
+    WeaponInstance(Weapon *w, uint16 id);
+
+    /*! Sets the owner of the weapon. */
+    void setOwner(PedInstance *owner) { pOwner_ = owner; }
+    /*! Return the owner of the weapon.*/
+    PedInstance *owner() { return pOwner_; }
+    /*! Return true if the weapon has an owner.*/
+    bool hasOwner() { return pOwner_ != NULL; }
 
     int ammoRemaining() { return ammo_remaining_; }
     void setAmmoRemaining(int n) {  ammo_remaining_ = n; }
 
     bool animate(int elapsed);
     void draw(int x, int y);
-    uint16 inflictDamage(ShootableMapObject * tobj, PathNode * tp,
-        int *elapsed = NULL, bool ignoreBlocker = false,
-        uint32 *make_shots = NULL);
 
     Weapon *getWeaponClass() { return pWeaponClass_; }
 
@@ -318,15 +308,15 @@ public:
     Weapon::WeaponType getWeaponType() { return pWeaponClass_->getWeaponType(); }
 
     bool operator==(WeaponInstance wi) {
-        return main_type_ == wi.getMainType();
+        return getWeaponType() == wi.getWeaponType();
     }
 
     //! Plays the weapon's sound.
     void playSound();
 
     void resetWeaponUsedTime() { weapon_used_time_ = 0; }
-
-    uint8 inRange(toDefineXYZ & cp, ShootableMapObject ** t,
+    //! Check if target is in range and if there's something blocking the shoot
+    uint8 checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject ** t,
         PathNode * pn = NULL, bool setBlocker = false,
         bool checkTileOnly = false, int maxr = -1);
     uint8 inRangeNoCP(ShootableMapObject ** t, PathNode * pn = NULL,
@@ -337,23 +327,13 @@ public:
     int getShots(int *elapsed = NULL, uint32 make_shots = 0);
     void getInRangeAll(toDefineXYZ & cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, int maxr = -1);
-    bool isReloading();
     void activate();
     void deactivate();
 
-    void getHostileInRange(toDefineXYZ * cp, ShootableMapObject * & target,
-        uint8 mask, bool checkTileOnly = true, int maxr = -1);
-    void getNonFriendInRange(toDefineXYZ * cp,
-        ShootableMapObject * & target, bool checkTileOnly = true,
-        int maxr = -1);
-    bool handleDamage(ShootableMapObject::DamageInflictType * d);
+    void handleHit(ShootableMapObject::DamageInflictType & d);
 
     bool canShoot() {
         return pWeaponClass_->canShoot();
-    }
-
-    bool doesMentalDmg() {
-        return pWeaponClass_->doesMentalDmg();
     }
 
     bool doesPhysicalDmg() {
@@ -380,49 +360,33 @@ public:
     int getWeight() { return pWeaponClass_->weight(); }
     void updtWeaponUsedTime(int elapsed);
 
+    //! Use weapon
+    void fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed);
+
 protected:
+    static uint16 weaponIdCnt;
     Weapon *pWeaponClass_;
+    /*! Owner of the weapon.*/
+    PedInstance *pOwner_;
     int ammo_remaining_;
-    /*! if this value is smaller time_for_shot_ shot cannot be done 
+    /*! if this value is smaller time_for_shot_ shot cannot be done
     * if is greater then time_for_shot_ reload is in execution
     * if is greater then time_for_shot_ + time_reload_ then full shot is done
     * */
     int weapon_used_time_;
     // used for timebomb sound effect
-    int processed_time_;
+    fs_utils::Timer bombSoundTimer;
+    /*! Timer used for bomb explosion.*/
+    fs_utils::Timer bombExplosionTimer;
+    /*! Timer used for rotating flamer direction.*/
+    fs_utils::Timer flamerTimer_;
     bool activated_;
     /*! used to avoid double consuming of same elapsed time,
     * if ped shoots, time is consumed and should not be reused by weapon,
     * NOTE: ped animate executed before weapon animate
     */
     bool time_consumed_;
+    FlamerShot *pFlamerShot_;
 };
 
-class ProjectileShot: public ShotClass {
-public:
-    ProjectileShot(toDefineXYZ &cp, Weapon::ShotDesc & sd, int d_range,
-        Weapon::ad_HitAnims *panims, ShootableMapObject * ignrd_obj = NULL,
-        int range_max = 1, int shot_speed = 0);
-    ~ProjectileShot() {}
-    bool animate(int elapsed, Mission *m);
-    bool prjsLifeOver() { return life_over_; }
-
-protected:
-    toDefineXYZ cur_pos_;
-    toDefineXYZ base_pos_;
-    Weapon::ShotDesc sd_prj_;
-    int dmg_range_;
-    double dist_max_;
-    double dist_passed_;
-    double last_anim_dist_;
-    double cur_dist_;
-    double speed_;
-    bool life_over_;
-    // owner should be ignored
-    ShootableMapObject * ignored_obj_;
-    double inc_x_;
-    double inc_y_;
-    double inc_z_;
-    Weapon::ad_HitAnims anims_;
-};
 #endif

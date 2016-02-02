@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -79,15 +80,20 @@ protected:
  */
 class Vehicle : public ShootableMovableMapObject{
 public:
-    Vehicle(int m, bool drivable) : ShootableMovableMapObject(m) {
+    Vehicle(uint16 id, int m, bool drivable) : ShootableMovableMapObject(id, m, MapObject::kNatureVehicle) {
         isDrivable_ = drivable;
     }
 
     //! Return true if vehicle can be driven by a ped
     bool isDrivable() { return isDrivable_; }
 
+    void setType(uint8 type) { type_ = type; }
+
     //! Adds the given ped to the list of passengers
     virtual void addPassenger(PedInstance *p);
+    //! Removes the passenger from the vehicle
+    virtual void dropPassenger(PedInstance *p);
+
     //! Returns true if given ped is in the vehicle
     bool isInsideVehicle(PedInstance *p) {
         return (passengers_.find(p) != passengers_.end());
@@ -103,6 +109,8 @@ protected:
 private:
     /*! A vehicle can be driven (car) or not (train).*/
     bool isDrivable_;
+    /*! Type of vehicle.*/
+    uint8 type_;
 };
 
 /*!
@@ -111,11 +119,14 @@ private:
 class VehicleInstance : public Vehicle
 {
 public:
-    VehicleInstance(VehicleAnimation *vehicle, int m);
+    VehicleInstance(VehicleAnimation *vehicle, uint16 id, int m);
     virtual ~VehicleInstance() { delete vehicle_;}
 
     bool animate(int elapsed);
     void draw(int x, int y);
+
+    //! Set the destination to reach at given speed (todo : replace setDestinationV())
+    bool setDestination(Mission *m, PathNode &node, int newSpeed = -1);
 
     void addDestinationV(int x, int y, int z, int ox = 128, int oy = 128,
             int new_speed = 160) {
@@ -127,6 +138,8 @@ public:
 
     //! Adds the given ped to the list of passengers
     void addPassenger(PedInstance *p);
+    //! Removes the passenger from the vehicle
+    void dropPassenger(PedInstance *p);
 
     PedInstance *getDriver(void) {
         return vehicle_driver_;
@@ -136,7 +149,6 @@ public:
             vehicle_driver_ = vehicleDriver;
         passengers_.insert(vehicleDriver);
     }
-    void removeDriver(PedInstance *vehicleDriver);
     void forceSetDriver(PedInstance *vehicleDriver);
     bool hasDriver() { return (vehicle_driver_ != NULL); }
     bool isDriver(PedInstance *vehicleDriver) {
@@ -145,7 +157,7 @@ public:
         return (vehicle_driver_ == vehicleDriver);
     }
 
-    bool handleDamage(ShootableMapObject::DamageInflictType *d);
+    void handleHit(ShootableMapObject::DamageInflictType &d);
 
 protected:
     bool move_vehicle(int elapsed);

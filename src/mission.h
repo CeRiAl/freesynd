@@ -43,34 +43,69 @@ class PedInstance;
 class Agent;
 class ObjectiveDesc;
 class Squad;
+class ProjectileShot;
+class GaussGunShot;
 
 /*!
- * A structure that holds mission statistics.
+ * A class that holds mission statistics.
  */
-typedef struct {
+class MissionStats {
+public:
+    void init(int nbAgents);
+
+    int nbOfShots() { return nbOfShots_; }
+    int precision() { return (nbOfHits_ * 100) / nbOfShots_; }
+    int enemyKilled() { return enemyKilled_;}
+    int criminalKilled() { return criminalKilled_;}
+    int civilKilled() { return civilKilled_;}
+    int policeKilled() { return policeKilled_;}
+    int guardKilled() { return guardKilled_;}
+    int convinced() { return convinced_;}
+    int missionDuration() { return missionDuration_; }
+    int agents() { return agents_; }
+    int agentCaptured() { return agentCaptured_; }
+
+    //! Increments the number of shots by the given amount
+    void incrShots(int shots) { nbOfShots_ += shots; }
+    //! Increments the number of hits by one
+    void incrHits() { nbOfHits_++; }
+    //! Increments the number of hits by the given amount
+    void incrHits(int hits) { nbOfHits_ += hits; }
+    void incrEnemyKilled() { enemyKilled_++; }
+    void incrCriminalKilled() { criminalKilled_++; }
+    void incrCivilKilled() { civilKilled_++; }
+    void incrGuardKilled() { guardKilled_++; }
+    void incrPoliceKilled() { policeKilled_++; }
+    //! 
+    void incrAgentCaptured() { agentCaptured_++; }
+    //! 
+    void incrConvinced() { convinced_++; }
+    //! 
+    void incrMissionDuration(int elapsed) { missionDuration_ += elapsed; }
+private:
     /*! How many agents participated in the mission. */
-    int agents;
+    int agents_;
     /*! How many time did the mission last. */
-    int mission_duration;
+    int missionDuration_;
     /*! How many opposing agents where captured.*/
-    int agentCaptured;
+    int agentCaptured_;
     /*! How many opposing agents where killed.*/
-    int enemyKilled;
+    int enemyKilled_;
     /*! How many criminal where killed.*/
-    int criminalKilled;
+    int criminalKilled_;
     /*! How many civilian where killed.*/
-    int civilKilled;
+    int civilKilled_;
     /*! How many policemen where killed.*/
-    int policeKilled;
+    int policeKilled_;
     /*! How many guards where killed.*/
-    int guardKilled;
+    int guardKilled_;
     /*! How many people where convinced.*/
-    int convinced;
+    int convinced_;
     /*! How many times did agents shoot.*/
-    int nbOfShots;
+    int nbOfShots_;
     /*! How many times did agents hit.*/
-    int nbOfHits;
-} MissionStats;
+    int nbOfHits_;
+};
 
 /*!
  * Contains information read from original mission data file.
@@ -136,30 +171,70 @@ public:
     size_t numSfxObjects() { return sfx_objects_.size(); }
     SFXObject *sfxObjects(size_t i) { return sfx_objects_[i]; }
 
-    size_t numPrjShots() { return prj_shots_.size(); }
-    ProjectileShot *prjShots(size_t i) { return prj_shots_[i]; }
-
     void addSfxObject(SFXObject *so) {
         sfx_objects_.push_back(so);
     }
+    /*!
+     * Removes SfxObject at given position in the list of sfxobjects.
+     * Object is freed only if not managed by another object.
+     * \param i position of object in the list.
+     */
     void delSfxObject(size_t i) {
-        delete sfx_objects_[i];
+        if (!sfx_objects_[i]->isManaged()) {
+            // object is not managed so delete it
+            delete sfx_objects_[i];
+        }
         sfx_objects_.erase((sfx_objects_.begin() + i));
     }
 
+    /*!
+     * Adds the given ProjectileShot to the list of animated shots.
+     * \param prj The projectile to add
+     */
     void addPrjShot(ProjectileShot *prj) {
         prj_shots_.push_back(prj);
     }
-    void delPrjShot(size_t i) {
-        delete prj_shots_[i];
-        prj_shots_.erase((prj_shots_.begin() + i));
+    /*!
+     * Returns the number of currently animated ProjectileShot.
+     */
+    size_t numPrjShots() { return prj_shots_.size(); }
+    /*!
+     * Return the projectile at the given index.
+     * \param i Index of the projectile
+     * \return The projectile found.
+     */
+    ProjectileShot *prjShots(size_t i) { return prj_shots_[i]; }
+    /*!
+     * Destroy the projectile at given index.
+     * \param i Index of the projectile
+     */
+    void delPrjShot(size_t i);
+
+    /*!
+     * Adds the given PedInstance to the list of armed peds.
+     * \param pPed The ped to add
+     */
+    void addArmedPed(PedInstance *pPed) {
+        armedPedsVec_.push_back(pPed);
     }
+    /*!
+     * Returns the number of currently armed peds.
+     */
+    size_t numArmedPeds() { return armedPedsVec_.size(); }
+    /*!
+     * Return the PedInstance at the given index.
+     * \param i Index of the projectile
+     * \return The ped found.
+     */
+    PedInstance *armedPedAtIndex(size_t i) { return armedPedsVec_[i]; }
+    /*!
+     * Removes given ped from the list of armed peds.
+     * \param pPed The ped to remove
+     */
+    void removeArmedPed(PedInstance *pPed);
 
     /*! Return the mission statistics. */
-    MissionStats *getStatistics() { return &stats_; }
-    void incStatisticsShots(int shots) { stats_.nbOfShots += shots; }
-    void incStatisticsHits() { stats_.nbOfHits++; }
-    void incStatisticsHits(int hits) { stats_.nbOfHits += hits; }
+    MissionStats *stats() { return &stats_; }
 
     void start();
     //! Returns mission status
@@ -178,7 +253,7 @@ public:
     void end();
 
     MapObject * findAt(int tilex, int tiley, int tilez,
-        MapObject::MajorTypeEnum *majorT, int *searchIndex, bool only);
+        MapObject::ObjectNature *nature, int *searchIndex, bool only);
     bool setSurfaces();
     void clrSurfaces();
     bool getWalkable(MapTilePoint &mtp);
@@ -188,6 +263,8 @@ public:
 
     //! TODO remove method
     void adjXYZ(int &x, int &y, int &z) { p_map_->adjXYZ(x, y, z); }
+    //! Check if a tile is blocking the path between originLoc and pTargetLoc
+    uint8 checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTargetLoc, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
 
     void blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         double *dist, MapObject** blockerObj);
@@ -196,7 +273,8 @@ public:
         bool checkTileOnly = false, double maxr = -1.0, double * distTo = NULL);
     void getInRangeAll(toDefineXYZ * cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, double maxr = -1.0);
-    uint32 playersGroupID() { return players_group_id_;}
+    //! Returns the distance between a ped and a object if a path exists between the two
+    uint8 getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double distanceMax, double *length);
 
     // map-tile surfaces
     // x + y * mmax_x_ + z * mmax_m_xy
@@ -231,6 +309,11 @@ protected:
     std::vector<Static *> statics_;
     std::vector<SFXObject *> sfx_objects_;
     std::vector<ProjectileShot *> prj_shots_;
+    /*!
+     * A vector constantly updated with the peds that hold a weapon.
+     * It's used for performance reasons.
+     */
+    std::vector<PedInstance *> armedPedsVec_;
 
     std::vector <ObjectiveDesc *> objectives_;
     //std::vector <ObjectiveDesc> sub_objectives_;
@@ -255,11 +338,11 @@ protected:
 
     /*! Statistics : time, shots, ...*/
     MissionStats stats_;
-    // minimap in colours, map z = 0 tiles transformed based on
-    // walkdata->minimap_colours_ in function createMinimap
+    /*!
+     * minimap in colours, map z = 0 tiles transformed based on
+     * walkdata->minimap_colours_ in function createMinimap
+     */
     MiniMap *p_minimap_;
-   
-    uint32 players_group_id_;
     /*!
      * The squad selected for the mission. It contains only active agents.
      */

@@ -25,8 +25,8 @@
  *                                                                      *
  ************************************************************************/
 
-#ifndef APP_H
-#define APP_H
+#ifndef EDITORAPP_H
+#define EDITORAPP_H
 
 #include <memory>
 #include <vector>
@@ -41,6 +41,7 @@
 #include "sound/soundmanager.h"
 #include "sound/musicmanager.h"
 #include "appcontext.h"
+#include "core/gamecontroller.h"
 
 /*!
  * Editor Application class.
@@ -97,6 +98,8 @@ class EditorApp : public Singleton < EditorApp > {
     void waitForKeyPress();
 
     static std::string defaultIniFolder();
+    //! Return the list of missions found in the search menu
+    std::list<int> & getMissionResultList() { return searchResLst_;}
 
 #ifdef _DEBUG
 public:
@@ -123,6 +126,8 @@ private:
     std::auto_ptr<System> system_;
     /*! A structure to hold general application informations.*/
     std::auto_ptr<AppContext> context_;
+    /*! Controls the game logic. */
+    std::auto_ptr<GameController> game_ctlr_;
 
     std::string iniPath_;
 
@@ -132,8 +137,12 @@ private:
     SoundManager intro_sounds_;
     SoundManager game_sounds_;
     MusicManager music_;
+    /*!
+     * Use to store id of missions that are found in the search menu.
+     */
+    std::list<int> searchResLst_;
 };
 
 #define g_App   EditorApp::singleton()
 
-#endif
+#endif // EDITORAPP_H

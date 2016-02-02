@@ -23,6 +23,8 @@
 #ifndef GAMEVENT_H
 #define GAMEVENT_H
 
+#include <stddef.h>
+
 /*!
  * An event is dispatched by the Game controller towards listener that
  * will handle it. There are several stream on which events are posted:
@@ -54,7 +56,13 @@ public:
         /*! Sent when an objective has failed.*/
         kObjFailed,
         /*! Send when an objective has been completed succesfuly.*/
-        kObjCompleted
+        kObjCompleted,
+        /*! Sent when a ped has shown his weapon.*/
+        kEvtShootingWeaponSelected,
+        /*! Sent when a ped cleared his selected shooting weapon.*/
+        kEvtShootingWeaponDeselected,
+        /*! Sent when a policeman warns a player agent.*/
+        kEvtWarnAgent
     };
     //! The stream on which the event is posted
     EEventStream stream;
@@ -62,6 +70,9 @@ public:
     EEventType type;
     //! An event may hold information for the listener
     void *pCtxt;
+
+    //! Convenient method to send game event
+    static void sendEvt(EEventStream stream, EEventType type, void *pCtx = NULL);
 };
 
 /*!

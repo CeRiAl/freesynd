@@ -1,9 +1,14 @@
+#ifndef SEARCHMISSIONMENU_H_
+#define SEARCHMISSIONMENU_H_
+
 /************************************************************************
  *                                                                      *
  *  FreeSynd - a remake of the classic Bullfrog game "Syndicate".       *
  *                                                                      *
- *   Copyright (C) 2013  Bohdan Stelmakh <chamel@users.sourceforge.net> *
- *   Copyright (C) 2013  Benoit Blancard <benblan@users.sourceforge.net>*
+ *   Copyright (C) 2005  Stuart Binge  <skbinge@gmail.com>              *
+ *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
+ *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
+ *   Copyright (C) 2015  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -21,28 +26,19 @@
  *                                                                      *
  ************************************************************************/
 
-#ifndef CORE_ACTIONS_H_
-#define CORE_ACTIONS_H_
+/*!
+ * Search mission menu.
+ */
+class SearchMissionMenu : public Menu {
+public:
+    SearchMissionMenu(MenuManager *m);
 
-namespace fs_actions {
+    void handleShow();
+    void handleLeave();
+    void handleAction(const int actionId, void *ctx, const int modKeys);
 
-    /*!
-     * List the different process by which action can be created.
-     */
-    enum CreatOrigin {
-        //! Origin unknown
-        kOrigUnknow = 0,
-        //! By script
-        kOrigScript = 1,
-        //! From default action list
-        kOrigDefault = 2,
-        //! By another action group
-        kOrigAction = 3,
-        //! From user input
-        kOrigUser = 4,
-        //! Something happened that generated this action
-        kOrigEvent = 5
-    };
-}
+protected:
+    int searchButId_;
+};
 
-#endif // CORE_ACTIONS_H_
+#endif // SEARCHMISSIONMENU_H_

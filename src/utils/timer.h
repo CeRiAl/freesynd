@@ -40,8 +40,7 @@ class Timer {
       * Contructor to set the max time.
       */
      Timer(uint32 i_max) {
-         i_counter_ = 0;
-         i_max_ = i_max;
+         reset(i_max);
      }
 
      /*!
@@ -49,6 +48,14 @@ class Timer {
       */
      void reset() {
          i_counter_ = 0;
+     }
+
+     /*!
+      * Reset the counter and sets a new max time.
+      */
+     void reset(uint32 i_max) {
+         i_counter_ = 0;
+         i_max_ = i_max;
      }
 
      /*!
@@ -64,6 +71,16 @@ class Timer {
          }
          return false;
      }
+
+     /*!
+      * Set the counter to max so next time update is called,
+      * it automatically returns true.
+      * Useful when you want to force the timer to pass next time update is called.
+      */
+     void setToMax() {
+         i_counter_ = i_max_;
+     }
+
  private:
     uint32 i_counter_;
     uint32 i_max_;
