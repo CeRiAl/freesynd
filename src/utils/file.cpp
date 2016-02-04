@@ -201,7 +201,7 @@ void File::processSaveFile(const std::string& filename, std::vector<std::string>
             // Read slot name
             if (v == 0x0100) {
                 files[index] = infile.read_string(25, true);
-            } else if (v == 0x0101) {
+            } else {
                 files[index] = infile.read_string(31, true);
             }
         }
@@ -210,7 +210,7 @@ void File::processSaveFile(const std::string& filename, std::vector<std::string>
 
 /*!
  * Returns the list of names to display in load/save menu.
- * \param files 
+ * \param files
  */
 void File::getGameSavedNames(std::vector<std::string> &files) {
     std::string savePath(homePath_);
@@ -227,7 +227,7 @@ void File::getGameSavedNames(std::vector<std::string> &files) {
     sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
-    
+
     if (CreateDirectory(savePath.c_str(), &sa) == ERROR_PATH_NOT_FOUND) {
         FSERR(Log::k_FLG_IO, "File", "getGameSavedNames", ("Cannot create save directory in %s", homePath_.c_str()))
         return;

@@ -8,9 +8,9 @@ Original Game Data Files
 files. You should have a copy of Syndicate or buy it. In order to run
 FreeSynd, either copy all files from the original Syndicate "DATA" directory
 into the FreeSynd "data" directory, or edit the FreeSynd configuration to
-indicate where the original game's "DATA" directory is. At first run
-Freesynd will test files located in your Syndicate "DATA" directory to
-verify that required files are present and are correct.
+indicate where the original game's "DATA" directory is (see "Configuring FreeSynd" below). 
+At first run Freesynd will test files located in your Syndicate "DATA" directory
+to verify that required files are present and are correct.
 
 ====> Attention: Please, be sure to have files from the first version of
 Syndicate as FreeSynd does not support files from Syndicate Plus or Syndicate
@@ -19,40 +19,53 @@ Wars.
 
 Required Libraries
 ==================
-  On Windows, all libraries are released with the game. You don't have to
-install anything.
-  
-  In order to run FreeSynd under Linux, you first need to install:
+  Freesynd needs the following libraries to build and run :
     - libSDL-1.2
     - libSDL_mixer
     - libSDL_image
     - libpng
-
+  
+  On Windows, all libraries are released with the game. You don't have to
+install anything.
+  
   Most popular Linux distributions already have packages for these libraries.
+Use your distribution's package manager to install those libraries.
 
   For other distributions, consult the appropriate documentation.
 
 
-Binary Installation
-===============================
-  * Windows Installation
-  ----------------------
-    Unzip the file in any directory you want. See chapter "Original Game Data
-  Files" to add original Syndicate resources that are not bundled with
-  FreeSynd.
+Install and Run Freesynd
+========================
 
-  * Mac Installation
-  ------------------
-    Unzip the application bundle and drag it to your "Applications" folder.
+  * From binary distribution file
+    =============================
+	
+	* Windows
+	---------
+        1/ Download and unzip the file in any directory you want.
+		2/ Install original game data files (see chapter "Original Game Data).
+		3/ Double-click on freesynd.exe.
+
+    * Mac Installation
+    ------------------
+        1/ Unzip the application bundle and drag it to your "Applications" folder.
+		
+	* Linux Installation
+    ------------------
+      See next chapter : Building from source
 
 
-Building From Source
-====================
-  * Windows - Visual C++
-  ----------------------
-    Install CMake from http://www.cmake.org/ .
+  * Building from packaged source
+    =============================
+	All : 
+	1/ To build Freesynd, you will need to install Cmake (http://www.cmake.org/) 
+	or use your distribution's package manager to install it.
+	2/ Download and unzip file containing source code in any directory you want
+	
+    * Windows - Visual C++
+    ----------------------
     Run cmake-gui.
-    Set "Source" to the main source folder.
+    Set "Source" to the root folder where you unzipped the file (it should contain a CMakeLists.txt file).
     Set "Build" to the folder where your project files should be located.
     Click "Configure" and select your version of Visual Studio.
     Click "Finish".
@@ -62,26 +75,36 @@ Building From Source
     From "Build | Configuration Manager...", choose the configuration you want.
     Select "Build | Clean Solution".
     Select "Build | Build Solution".
+	
+	To run the application, you need to copy all dll files in the directory of the feesynd.exe file.
 
-  * Windows - MinGW
-  -----------------
-    Install CMake from http://www.cmake.org/ .
-    Add the location of cmake.exe to your PATH environment variable.
-    Install libraries listed in the chapter "Required Libraries".
-    From the main source folder, run: cmake . -G "MinGW Makefiles"
-    Finally, run: make
-    The freesynd.exe file will be in the "src" folder.
+    * Windows - Code::Blocks with MinGW
+    -----------------------------------
+	Run cmake-gui.
+    Set "Source" to the root folder where you unzipped the file (it should contain a CMakeLists.txt file).
+    Set "Build" to the folder where your project files should be located.
+    Click "Configure" and select Code::Blocks-MinGW.
+    Click "Finish".
+    Click "Generate" to generate Code::Blocks project files.
+	Select "File | Open..." and select "FreeSynd.cbp" in the build folder.
+	Select "Build | Build"
+	The freesynd binary will be in the "src" folder.
+	
+	To run the application, you need to copy all dll files in the directory of the feesynd.exe file.
 
-  * Linux
-  -------
-    Use your distribution's package manager to install CMake and all of
+    * Linux
+    -------
+    Use your distribution's package manager to install all of
     the libraries listed in the chapter "Required Libraries".
     From the main source folder, run: cmake .
     Finally, run: make
     The freesynd binary will be in the "src" folder.
+	
+	type make install
+	Type "freesynd".
 
-  * Mac
-  -----
+    * Mac
+    -----
     Install CMake from http://www.cmake.org/ .
     Install SDL.framework from http://www.libsdl.org/download-1.2.php
     Install SDL_image.framework from http://www.libsdl.org/projects/SDL_image/
@@ -90,38 +113,9 @@ Building From Source
     From the main source folder, run: cmake .
     Finally, run: make
     The FreeSynd application will be in the "src" folder.
-
-
-Installation
-============
-  * Windows
-  ---------
-    On Windows, freesynd.exe needs to live in a folder with the "data" folder
-  and all of the .dll files from "libs/MSVC/lib". If you have built FreeSynd
-  from source, create a folder and copy these things into it.
-
-  * Linux
-  -------
-    make install
-
-  * Mac
-  -----
-    make install
-
-
-Running the Game
-================
-  * Windows
-  ---------
-    Double-click on freesynd.exe.
-
-  * Linux
-  -------
-    Type "freesynd".
-
-  * Mac
-  -----
-    Double-click on the FreeSynd application.
+	
+	type make install
+	Double-click on the FreeSynd application.
 
 
 Configuring FreeSynd

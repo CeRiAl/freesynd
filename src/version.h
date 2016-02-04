@@ -39,6 +39,22 @@ class FormatVersion
             return ((major_version_ << 8) | minor_version_);
         }
 
+        /*!
+         * Return true if this version is greater than the given
+         * major.minor version.
+         * \param vMaj Major version
+         * \param vMin Minor version
+         */
+        inline bool gt(unsigned char vMaj, unsigned char vMin) {
+            if (major_version_ > vMaj) {
+                return true;
+            } else if (major_version_ == vMaj) {
+                return minor_version_ > vMin;
+            } else {
+                return false;
+            }
+        }
+
         inline bool operator==(int value) const { return combined() == value; }
         inline bool operator!=(int value) const { return combined() != value; }
 

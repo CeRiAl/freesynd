@@ -60,7 +60,7 @@
 
 App::App(bool disable_sound):
 context_(new AppContext),
-session_(new GameSession()), game_ctlr_(new GameController), 
+session_(new GameSession()), game_ctlr_(new GameController),
     screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT))
 #ifdef SYSTEM_SDL
     , system_(new SystemSDL())
@@ -515,21 +515,21 @@ void App::cheatEquipFancyWeapons() {
 }
 
 /*!
- * Activate a cheat code with the given name. Possible 
+ * Activate a cheat code with the given name. Possible
  * cheat codes are :
  * - DO IT AGAIN : Possibility to replay a completed mission
  * - NUK THEM : Enable all missions and resurrect dead agents
  * - OWN THEM : All countries belong to the user
  * - ROB A BANK : Puts $100 000 000 in funds
  * - TO THE TOP : Puts $100 000 000 in funds and activates all missions
- * - COOPER TEAM : $100 000 000 in funds, select any mission, all weapons 
+ * - COOPER TEAM : $100 000 000 in funds, select any mission, all weapons
  *   and mods
  * - WATCH THE CLOCK : Accelerates time
  *
  * \param name The name of a cheat code.
  */
 void App::setCheatCode(const char *name) {
-    
+
     // Repeat mission with previously obtained items, press 'C' or 'Ctrl-C'
     // to instantly complete a mission
     if (!strcmp(name, "DO IT AGAIN"))
@@ -676,10 +676,10 @@ void App::run(int start_mission) {
 
 bool App::saveGameToFile(int fileSlot, std::string name) {
     LOG(Log::k_FLG_IO, "App", "saveGameToFile", ("Saving %s in slot %d", name.c_str(), fileSlot))
-    
+
     PortableFile outfile;
     std::string path;
-            
+
     File::getFullPathForSaveSlot(fileSlot, path);
     LOG(Log::k_FLG_IO, "App", "saveGameToFile", ("Saving to file %s", path.c_str()))
 
@@ -692,7 +692,7 @@ bool App::saveGameToFile(int fileSlot, std::string name) {
 
         // Slot name is 31 characters long, nul-padded
         outfile.write_string(name, 31);
-        
+
         // Session
         g_Session.saveToFile(outfile);
 
@@ -734,14 +734,8 @@ bool App::loadGameFromFile(int fileSlot) {
         FormatVersion v(vMaj, vMin);
 
         // validate that this is a supported version.
-        if (v.majorVersion() == 1) {
-            // versions 1.0 and 1.1 are supported.
-
-            if (v.minorVersion() > 1) {
-                // future version.
-                return false;
-            }
-        } else {
+        if (v.gt(1,2)) {
+            FSERR(Log::k_FLG_IO, "App", "loadGameFromFile", ("Cannot load file, unsupported version %d.%d", vMaj, vMin))
             return false;
         }
 

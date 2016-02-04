@@ -2,14 +2,17 @@ cmake_minimum_required (VERSION 2.6)
 project (FreeSynd)
 set (FREESYND_VERSION "0.7.5")
 
-if (WIN32 AND MSVC)
+if (WIN32)
 	# Search the bundled libs directory when using MSVC.
 	set (CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH}
-		${CMAKE_SOURCE_DIR}/../../libs/MSVC/lib
+		${CMAKE_SOURCE_DIR}/../libs/MSVC/lib
 	)
 	set (CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH}
-		${CMAKE_SOURCE_DIR}/../../libs/MSVC/include
+		${CMAKE_SOURCE_DIR}/../libs/MSVC/include
 	)
+endif ()
+	
+if (MSVC)
 	# Add extra definitions just for MSVC.
 	add_definitions (-D_CONSOLE -D_CRT_SECURE_NO_WARNINGS)
 	# Override default flags for release builds.
@@ -20,11 +23,12 @@ else ()
 	# Set extra warnings.
     if (APPLE)
         set (EXTRA_C_FLAGS "-Wall -Wshadow -Wimplicit -Wno-multichar")
-    endif ()
-    if (NOT APPLE)
+    else ()
         set (EXTRA_C_FLAGS "-Wall -Wshadow -Wno-multichar")
     endif ()
+	
 	set (EXTRA_CXX_FLAGS "${EXTRA_C_FLAGS} -Wreorder -Wnon-virtual-dtor")
+		
 	# Set debug flag.
 	set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
 	set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
