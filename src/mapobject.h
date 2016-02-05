@@ -30,6 +30,7 @@
 
 #include <math.h>
 #include <list>
+#include "model/position.h"
 #include "path.h"
 #include "pathsurfaces.h"
 
@@ -92,14 +93,20 @@ public:
         ddmg_WeaponBomb = dmg_Bullet | dmg_Laser | dmg_Explosion
     } DefDamageType;
 
+    const TilePoint & position() { return pos_; }
+
     void setPosition(int tile_x, int tile_y, int tile_z, int off_x = 0,
             int off_y = 0, int off_z = 0) {
-        tile_x_ = tile_x;
-        tile_y_ = tile_y;
-        tile_z_ = tile_z;
-        off_x_ = off_x;
-        off_y_ = off_y;
-        off_z_ = off_z;
+        pos_.tx = tile_x;
+        pos_.ty = tile_y;
+        pos_.tz = tile_z;
+        pos_.ox = off_x;
+        pos_.oy = off_y;
+        pos_.oz = off_z;
+    }
+
+    void setPosition(const TilePoint &pos) {
+        pos_.initFrom(pos);
     }
 
     /*!
@@ -107,12 +114,12 @@ public:
      * \param pos New object position
      */
     void setPosition(const PathNode &pos) {
-        tile_x_ = pos.tileX();
-        tile_y_ = pos.tileY();
-        tile_z_ = pos.tileZ();
-        off_x_ = pos.offX();
-        off_y_ = pos.offY();
-        off_z_ = pos.offZ();
+        pos_.tx = pos.tileX();
+        pos_.ty = pos.tileY();
+        pos_.tz = pos.tileZ();
+        pos_.ox = pos.offX();
+        pos_.oy = pos.offY();
+        pos_.oz = pos.offZ();
     }
 
     /*!
@@ -128,25 +135,25 @@ public:
      * Set the given position to the ped's position.
      */
     void getPosition(PathNode *pn) {
-        pn->setTileX(tile_x_);
-        pn->setTileY(tile_y_);
-        pn->setTileZ(tile_z_);
-        pn->setOffX(off_x_);
-        pn->setOffY(off_y_);
-        pn->setOffZ(off_z_);
+        pn->setTileX(pos_.tx);
+        pn->setTileY(pos_.ty);
+        pn->setTileZ(pos_.tz);
+        pn->setOffX(pos_.ox);
+        pn->setOffY(pos_.oy);
+        pn->setOffZ(pos_.oz);
     }
 
-    int tileX() const { return tile_x_; }
-    int tileY() const { return tile_y_; }
-    int tileZ() const { return tile_z_; }
+    int tileX() const { return pos_.tx; }
+    int tileY() const { return pos_.ty; }
+    int tileZ() const { return pos_.tz; }
 
-    void setTileX(int x) { tile_x_ = x; }
-    void setTileY(int y) { tile_y_ = y; }
-    void setTileZ(int z) { tile_z_ = z; }
+    void setTileX(int x) { pos_.tx = x; }
+    void setTileY(int y) { pos_.ty = y; }
+    void setTileZ(int z) { pos_.tz = z; }
 
-    int offX() const { return off_x_; }
-    int offY() const { return off_y_; }
-    int offZ() const { return off_z_; }
+    int offX() const { return pos_.ox; }
+    int offY() const { return pos_.oy; }
+    int offZ() const { return pos_.oz; }
 
     void setOffX(int n);
     void setOffY(int n);
@@ -167,11 +174,7 @@ public:
     void setMap(int new_map) { map_ = new_map; }
 
     bool samePosition(MapObject * other) {
-        return other->tile_x_ == tile_x_
-                && other->tile_y_ == tile_y_
-                && other->off_x_ == off_x_
-                && other->off_y_ == off_y_
-                && other->off_z_ == off_z_;
+        return pos_.equals(other->position());
     }
 
     /*!
@@ -181,11 +184,8 @@ public:
      * \param distance
      */
     bool isCloseTo(MapObject *pObject, int distance) {
-        int cx = tile_x_ * 256 + off_x_ - (pObject->tile_x_ * 256 + pObject->off_x_);
-        int cy = tile_y_ * 256 + off_y_ - (pObject->tile_y_ * 256 + pObject->off_y_);
-        int cz = tile_z_ * 128 + off_z_ - (pObject->tile_z_ * 128 + pObject->off_z_);
-
-        return (cx * cx + cy * cy + cz * cz) < (distance * distance);
+        WorldPoint wp(pObject->position());
+        return isCloseTo(wp, distance);
     }
 
     /*!
@@ -195,43 +195,48 @@ public:
      * \param distance
      */
     bool isCloseTo(const toDefineXYZ &loc, int32 distance) {
-        int cx = tile_x_ * 256 + off_x_ - (loc.x);
-        int cy = tile_y_ * 256 + off_y_ - (loc.y);
-        int cz = tile_z_ * 128 + off_z_ - (loc.z);
+        WorldPoint pt;
+        pt.x = loc.x;
+        pt.y = loc.y;
+        pt.z = loc.z;
+
+        return isCloseTo(pt, distance);
+    }
+
+    /*!
+     * Return true if the distance between this object and the given location
+     * is less than the given distance.
+     * \param loc The location.
+     * \param distance
+     */
+    bool isCloseTo(const WorldPoint &loc, int32 distance) {
+        int cx = pos_.tx * 256 + pos_.ox - (loc.x);
+        int cy = pos_.ty * 256 + pos_.oy - (loc.y);
+        int cz = pos_.tz * 128 + pos_.oz - (loc.z);
 
         return (cx * cx + cy * cy + cz * cz) < (distance * distance);
     }
 
-    double distanceTo(MapObject *t) {
-        int cx = tile_x_ * 256 + off_x_ - (t->tile_x_ * 256 + t->off_x_);
-        int cy = tile_y_ * 256 + off_y_ - (t->tile_y_ * 256 + t->off_y_);
-        int cz = tile_z_ * 128 + off_z_ - (t->tile_z_ * 128 + t->off_z_);
+    double distanceToPosition(const WorldPoint &pos) {
+        int cx = pos_.tx * 256 + pos_.ox - (pos.x);
+        int cy = pos_.ty * 256 + pos_.oy - (pos.y);
+        int cz = pos_.tz * 128 + pos_.oz - (pos.z);
+
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
     }
 
-    double distanceToPosXYZ(toDefineXYZ *xyz) {
-        int cx = tile_x_ * 256 + off_x_ - (xyz->x);
-        int cy = tile_y_ * 256 + off_y_ - (xyz->y);
-        int cz = tile_z_ * 128 + off_z_  - (xyz->z);
-        return sqrt((double) (cx * cx + cy * cy + cz * cz));
-    }
+    double distanceToPosSz(const WorldPoint &pos) {
+        int cx = pos_.tx * 256 + pos_.ox - (pos.x);
+        int cy = pos_.ty * 256 + pos_.oy - (pos.y);
+        int cz = pos_.tz * 128 + pos_.oz + (size_z_ >> 1) - (pos.z);
 
-    double distanceToPosSz(toDefineXYZ *xyz) {
-        int cx = tile_x_ * 256 + off_x_ - (xyz->x);
-        int cy = tile_y_ * 256 + off_y_ - (xyz->y);
-        int cz = tile_z_ * 128 + off_z_ + (size_z_ >> 1) - (xyz->z);
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
     }
 
     void convertPosToXYZ(toDefineXYZ *xyz) {
-        xyz->x = tile_x_ * 256 + off_x_;
-        xyz->y = tile_y_ * 256 + off_y_;
-        xyz->z = tile_z_ * 128 + off_z_;
-    }
-
-    void convertPosToXY(int *x, int *y) {
-        *x = tile_x_ * 256 + off_x_;
-        *y = tile_y_ * 256 + off_y_;
+        xyz->x = pos_.tx * 256 + pos_.ox;
+        xyz->y = pos_.ty * 256 + pos_.oy;
+        xyz->z = pos_.tz * 128 + pos_.oz;
     }
 
     virtual bool animate(int elapsed);
@@ -303,10 +308,9 @@ protected:
     //! Id of the object. Id is unique within a nature
     uint16 id_;
     /*!
-     * Tile based coordinates, tile_x_ and tile_y_ have 256
-     * tile_z_ has 128 base
+     * Tile based coordinates.
      */
-    int tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_;
+    TilePoint pos_;
     //! these are not true sizes, but halfs of full size by respective coord
     int size_x_, size_y_, size_z_;
     //! if equal -1 object is not on map and should not be drawn

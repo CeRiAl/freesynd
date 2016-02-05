@@ -25,14 +25,14 @@
 
 #include "core/squad.h"
 #include "agentmanager.h"
-#include "map.h"
+#include "model/position.h"
 
 class Vehicle;
 
 /*!
  * This class manages the agents selection during a gameplay session.
  * A selection always contains at least one element.
- * A selection has a leader : it the first selected agent. The leader 
+ * A selection has a leader : it the first selected agent. The leader
  * doesn't change if an agent is added to the current selection.
  */
 class SquadSelection {
@@ -176,7 +176,7 @@ class SquadSelection {
     //! Enter or leave the vehicle : do the same as leader
     void enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction);
     //! Move selected agents to the given point
-    void moveTo(MapTilePoint &mapPt, bool addAction);
+    void moveTo(TilePoint &mapPt, bool addAction);
     //! Every selected armed agent shoot at location
     void shootAt(PathNode &pn);
  private:
@@ -189,7 +189,7 @@ class SquadSelection {
     void checkLeader(size_t agentNo);
 
  private:
-    /*! 
+    /*!
      * This field is seen as a field of bits. Each bit tells if
      * a slot is selected.
      */

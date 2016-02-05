@@ -76,11 +76,11 @@ public:
     void incrCivilKilled() { civilKilled_++; }
     void incrGuardKilled() { guardKilled_++; }
     void incrPoliceKilled() { policeKilled_++; }
-    //! 
+    //!
     void incrAgentCaptured() { agentCaptured_++; }
-    //! 
+    //!
     void incrConvinced() { convinced_++; }
-    //! 
+    //!
     void incrMissionDuration(int elapsed) { missionDuration_ += elapsed; }
 private:
     /*! How many agents participated in the mission. */
@@ -113,7 +113,7 @@ private:
 class Mission {
 public:
     /*!
-     * List of all possible mission status. 
+     * List of all possible mission status.
      */
     enum Status {
         RUNNING = 0,
@@ -256,8 +256,8 @@ public:
         MapObject::ObjectNature *nature, int *searchIndex, bool only);
     bool setSurfaces();
     void clrSurfaces();
-    bool getWalkable(MapTilePoint &mtp);
-    bool getWalkableClosestByZ(MapTilePoint &mtp);
+    bool getWalkable(TilePoint &mtp);
+    bool getWalkableClosestByZ(TilePoint &mtp);
     bool getShootableTile(int &x, int &y, int &z, int &ox, int &oy, int &oz);
     bool isTileSolid(int x, int y, int z, int ox, int oy, int oz);
 
@@ -301,7 +301,7 @@ protected:
     bool isStairs(char thisTile);
 
 protected:
-    
+
     /*! List of all vehicles, cars and train.*/
     std::vector<Vehicle *> vehicles_;
     std::vector<PedInstance *> peds_;
@@ -319,7 +319,7 @@ protected:
     //std::vector <ObjectiveDesc> sub_objectives_;
     uint16 cur_objective_;
     /*!
-     * Mission status. 
+     * Mission status.
      * By default, a mission is running but it can be
      * aborted if user escapes the mission, failed if
      * missions objectives are not fullfilled or completed.

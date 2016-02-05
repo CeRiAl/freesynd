@@ -2255,7 +2255,7 @@ void Mission::clrSurfaces() {
  * \param mtp
  * \return True if walkable tile found
  */
-bool Mission::getWalkable(MapTilePoint &mtp) {
+bool Mission::getWalkable(TilePoint &mtp) {
     bool gotit = false;
     int bx, by, box, boy;
     int bz = mmax_z_;
@@ -2441,7 +2441,7 @@ bool Mission::getWalkable(MapTilePoint &mtp) {
     return gotit;
 }
 
-bool Mission::getWalkableClosestByZ(MapTilePoint &mtp) {
+bool Mission::getWalkableClosestByZ(TilePoint &mtp) {
     // NOTE: using z from mtp as start to find closest z
     int inc_z = mtp.tz;
     int dec_z = mtp.tz;

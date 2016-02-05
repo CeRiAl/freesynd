@@ -50,7 +50,7 @@ void BriefMinimapRenderer::init(MissionBriefing *p_briefing, EZoom zoom, bool dr
     b_draw_enemies_ = draw_enemies;
     mm_timer.reset();
     minimap_blink_ = 0;
-    
+
     // Initialize minimap origin by looking for the position
     // of the first found agent on the map
     initMinimapLocation();
@@ -214,7 +214,7 @@ void BriefMinimapRenderer::render(uint16 screen_x, uint16 screen_y) {
 /*!
  * Default constructor.
  */
-GamePlayMinimapRenderer::GamePlayMinimapRenderer() : 
+GamePlayMinimapRenderer::GamePlayMinimapRenderer() :
     mm_timer_weap(300, false), mm_timer_ped(260, false),
     mm_timer_signal(250) {
     p_mission_ = NULL;
@@ -292,7 +292,7 @@ void GamePlayMinimapRenderer::centerOn(uint16 tileX, uint16 tileY, int offX, int
     }
 
     // get the cross coordinate
-    // 
+    //
     // TODO : see if we can remove + 1
     cross_x_ = mapToMiniMapX(tileX + 1, offX);
     cross_y_ = mapToMiniMapY(tileY + 1, offY);
@@ -316,7 +316,7 @@ void GamePlayMinimapRenderer::handleGameEvent(GameEvent evt) {
         handleClearSignal();
         break;
     default:
-        
+
         break;
     }
 }
@@ -327,7 +327,7 @@ void GamePlayMinimapRenderer::handleEvacuationSet(GameEvent &evt) {
     signalSourceXYZ_.x = p_point->x;
     signalSourceXYZ_.y = p_point->y;
     signalSourceXYZ_.z = p_point->z;
-   
+
     signalType_ = kEvacuation;
 
     // Check if the evacuation point is already visible
@@ -337,7 +337,7 @@ void GamePlayMinimapRenderer::handleEvacuationSet(GameEvent &evt) {
     if (isEvacuationCircleOnMinimap(signal_px, signal_py)) {
         i_signalColor_ = fs_cmn::kColorDarkRed;
         i_signalRadius_ = kEvacuationRadius;
-    } 
+    }
 }
 
 void GamePlayMinimapRenderer::handleClearSignal() {
@@ -387,7 +387,7 @@ bool GamePlayMinimapRenderer::handleTick(int elapsed) {
             // Distance to the bottom left corner
             int dist4 = (maxPx - signal_px )* (maxPx - signal_px ) + (maxPx - signal_py )* (maxPx - signal_py );
             // All four corners of the minimap must be inside the circle to stop growing
-            if (signalRadius2 > dist1 && signalRadius2 > dist2 && 
+            if (signalRadius2 > dist1 && signalRadius2 > dist2 &&
                 signalRadius2 > dist3 && signalRadius2 > dist4) {
                 i_signalRadius_ = 0;
                 // Update signal position in case of a moving target
@@ -409,8 +409,8 @@ bool GamePlayMinimapRenderer::handleTick(int elapsed) {
  * \param mm_x coord on the minimap in pixels
  * \param mm_y coord on the minimap in pixels
  */
-MapTilePoint GamePlayMinimapRenderer::minimapToMapPoint(int mm_x, int mm_y) {
-    MapTilePoint pt;
+TilePoint GamePlayMinimapRenderer::minimapToMapPoint(int mm_x, int mm_y) {
+    TilePoint pt;
     // I'm not sure this code is correct
     int tx = (mm_x + offset_x_) / pixpertile_;
     int ty = (mm_y + offset_y_) / pixpertile_;
@@ -473,7 +473,7 @@ void GamePlayMinimapRenderer::render(uint16 screen_x, uint16 screen_y) {
     // Draw the minimap cross
     drawFillRect(minimap_layer, cross_x_, 0, 1, (mm_maxtile_ + 1) * pixpertile_, fs_cmn::kColorBlack);
     drawFillRect(minimap_layer, 0, cross_y_, (mm_maxtile_ + 1) * pixpertile_, 1, fs_cmn::kColorBlack);
-    
+
     // draw all visible elements on the minimap
     drawPedestrians(minimap_layer);
     drawWeapons(minimap_layer);
@@ -488,7 +488,7 @@ void GamePlayMinimapRenderer::render(uint16 screen_x, uint16 screen_y) {
     // Copy the temp buffer in the final minimap using the tile offset so the minimap movement
     // is smoother
     for (int j = 0; j < kMiniMapSizePx; j++) {
-        memcpy(minimap_final_layer + (kMiniMapSizePx * j), 
+        memcpy(minimap_final_layer + (kMiniMapSizePx * j),
             minimap_layer + (pixpertile_ * pixpertile_ * mm_layer_size) +
             (j + offset_y_) * pixpertile_ * mm_layer_size + pixpertile_ + offset_x_, kMiniMapSizePx);
     }
@@ -505,7 +505,7 @@ void GamePlayMinimapRenderer::drawVehicles(uint8 *a_minimap) {
 
         if (isVisible(tx, ty)) {
             // vehicle is on minimap and must be drawn.
-            // if a vehicle contains at least one of our agent 
+            // if a vehicle contains at least one of our agent
             // we only draw the yellow circle representing the agent
             if (p_vehicle->containsOurAgents()) {
                 int px = mapToMiniMapX(tx + 1, p_vehicle->offX());
@@ -583,7 +583,7 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
                         if (mm_timer_ped.state()) {
                             --px;
                             --py;
-                            
+
                             // draw the square
                             drawFillRect(a_minimap, px, py, ped_width, ped_height, fs_cmn::kColorWhite);
                         }
@@ -613,7 +613,7 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
                     break;
                 case PedInstance::kPedTypeGuard:
                     {
-                    // col_LightGrey circle with a black or white border (blinking) 
+                    // col_LightGrey circle with a black or white border (blinking)
                     uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorWhite : fs_cmn::kColorBlack;
                     drawPedCircle(a_minimap, px, py, fs_cmn::kColorLightGrey, borderColor);
                     }
@@ -655,7 +655,7 @@ void GamePlayMinimapRenderer::drawPedCircle(uint8 * a_buffer, int mm_x, int mm_y
     // centers the circle on the ped position and add pixels to skip the first row and column
     mm_x -= 3;
     mm_y -= 3;
-    
+
     for (uint8 j = 0; j < kCircleMaskSize; j++) {
         for (uint8 i = 0; i < kCircleMaskSize; i++) {
             // get the color at the current point

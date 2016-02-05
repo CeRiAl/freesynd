@@ -47,7 +47,7 @@ void MapRenderer::init(Mission *pMission) {
  */
 void MapRenderer::render(int worldX, int worldY, SquadSelection *pSelection) {
     // TODO: after a lot of attempts to fix this, map drawing remains buggy
-    MapTilePoint mtp = pMap_->screenToTilePoint(worldX, worldY);
+    TilePoint mtp = pMap_->screenToTilePoint(worldX, worldY);
     int sw = mtp.tx;
     int chk = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
         + g_Screen.gameScreenHeight() / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;

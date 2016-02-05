@@ -26,45 +26,13 @@
 #define MAP_H
 
 #include "common.h"
+#include "model/position.h"
 
 #define NUM_MAPS               59
 
 class Tile;
 class TileManager;
 class MapObject;
-
-/*!
- * This a convenient structure to store a position
- * in map tile coordinates.
- */
-struct MapTilePoint {
-    /*! The tile's X coord.*/
-    int tx;
-    /*! The tile's Y coord.*/
-    int ty;
-    /*! The tile's Z coord.*/
-    int tz;
-    /*! X Offset inside the tile. (varies between 0 and 256)*/
-    int ox;
-    /*! Y Offset inside the tile. (varies between 0 and 256)*/
-    int oy;
-
-    MapTilePoint() {
-        tx = 0;
-        ty = 0;
-        tz = 0;
-        ox = 0;
-        oy = 0;
-    }
-
-    MapTilePoint(const MapTilePoint &mtp) {
-        tx = mtp.tx;
-        ty = mtp.ty;
-        tz = mtp.tz;
-        ox = mtp.ox;
-        oy = mtp.oy;
-    }
-};
 
 /*!
  * This a convenient structure to store a position
@@ -99,7 +67,7 @@ public:
     //! Converts a Map tile position to a screen position
     MapScreenPoint tileToScreenPoint(int x, int y, int z, int pX, int pY);
     //! Converts a screen position in pixel into a Map tile position
-    MapTilePoint screenToTilePoint(int x, int y);
+    TilePoint screenToTilePoint(int x, int y);
 
     int maxX() { return max_x_; }
     int maxY() { return max_y_; }
@@ -111,7 +79,7 @@ public:
     void patchMap(int x, int y, int z, uint8 tileNum);
 
 protected:
-    /*!  Every map has a unique ID which is used to identify the 
+    /*!  Every map has a unique ID which is used to identify the
     name of the file containing map data.*/
     uint16 i_id_;
     int max_x_, max_y_, max_z_;

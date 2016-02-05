@@ -77,7 +77,7 @@ bool GameplayMenu::scrollOnX() {
 
     int newWorldX = world_x_ + scroll_x_;
 
-    MapTilePoint mpt = mission_->get_map()->screenToTilePoint(newWorldX, world_y_);
+    TilePoint mpt = mission_->get_map()->screenToTilePoint(newWorldX, world_y_);
 
     // Scroll to the right
     if (scroll_x_ > 0) {
@@ -166,7 +166,7 @@ bool GameplayMenu::scrollOnY() {
 
     int newWorldY = world_y_ + scroll_y_;
 
-    MapTilePoint mpt = mission_->get_map()->screenToTilePoint(world_x_, newWorldY);
+    TilePoint mpt = mission_->get_map()->screenToTilePoint(world_x_, newWorldY);
 
     // Scroll down
     if (scroll_y_ > 0) {
@@ -256,7 +256,7 @@ void GameplayMenu::initWorldCoords()
         start.y = 0;
 
     // Check if the position is within map borders
-    MapTilePoint mpt = mission_->get_map()->screenToTilePoint(start.x, start.y);
+    TilePoint mpt = mission_->get_map()->screenToTilePoint(start.x, start.y);
 
     if (mpt.tx < mission_->minX())
         mpt.tx = mission_->minX();
@@ -772,7 +772,7 @@ void GameplayMenu::updateIPALevelMeters(int elapsed)
 }
 
 void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys) {
-    MapTilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
+    TilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
                     world_y_ + y);
 #ifdef _DEBUG
     if ((modKeys & KMD_ALT) != 0) {
@@ -823,7 +823,7 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
  */
 void GameplayMenu::handleClickOnMinimap(int x, int y) {
     // convert minimap coordinate in map coordinate
-    MapTilePoint pt = mm_renderer_.minimapToMapPoint(x - kMiniMapScreenX, y - kMiniMapScreenY);
+    TilePoint pt = mm_renderer_.minimapToMapPoint(x - kMiniMapScreenX, y - kMiniMapScreenY);
     // As minimap is flat, we can't see the height. So take the Z coordinate
     // of the leader as a reference
     pt.tz = selection_.leader()->tileZ();
@@ -860,7 +860,7 @@ bool GameplayMenu::getAimedAt(int x, int y, PathNode &locToSet) {
         locToSet.setOffY(target_->offY());
         locToSet.setOffZ(offz);
     } else {
-        MapTilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
+        TilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
                     world_y_ + y);
         mapPt.tz = 0;
         int oz = 0;

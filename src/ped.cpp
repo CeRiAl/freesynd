@@ -643,7 +643,7 @@ bool getOnScreen(int scrollX, int scrollY, int &x, int &y, int tx, int ty) {
 
 void PedInstance::showPath(int scrollX, int scrollY) {
     int px = screenX();
-    int py = screenY() - tile_z_ * TILE_HEIGHT/3 + TILE_HEIGHT/3;
+    int py = screenY() - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
     for (std::list<PathNode>::iterator it = dest_path_.begin();
             it != dest_path_.end(); ++it) {
@@ -869,7 +869,7 @@ void PedInstance::drawSelectorAnim(int x, int y) {
 
 bool PedInstance::inSightRange(MapObject *t) {
 
-    return this->distanceTo(t) < sight_range_;
+    return this->isCloseTo(t, sight_range_);
 }
 
 /*!
@@ -965,7 +965,7 @@ WeaponInstance * PedInstance::dropWeapon(uint8 index) {
     if(pWeapon) {
         pWeapon->setMap(map_);
         pWeapon->setIsIgnored();
-        pWeapon->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+        pWeapon->setPosition(pos_);
     }
 
     return pWeapon;
@@ -978,8 +978,8 @@ WeaponInstance * PedInstance::dropWeapon(uint8 index) {
  */
 void PedInstance::dropAllWeapons() {
     Mission *m = g_Session.getMission();
-    uint8 twd = m->mtsurfaces_[tile_x_ + m->mmax_x_ * tile_y_
-        + m->mmax_m_xy * tile_z_].twd;
+    uint8 twd = m->mtsurfaces_[pos_.tx + m->mmax_x_ * pos_.ty
+        + m->mmax_m_xy * pos_.tz].twd;
 
     while (weapons_.size()) {
         WeaponInstance *w = dropWeapon(0);
@@ -987,7 +987,7 @@ void PedInstance::dropAllWeapons() {
         // randomizing location for drop
         int ox = rand() % 256;
         int oy = rand() % 256;
-        w->setPosition(tile_x_, tile_y_, tile_z_, ox, oy);
+        w->setPosition(pos_.tx, pos_.ty, pos_.tz, ox, oy);
         w->offzOnStairs(twd);
     }
 }

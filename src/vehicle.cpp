@@ -72,8 +72,7 @@ void Vehicle::dropPassenger(PedInstance *pPed) {
     if(isInsideVehicle(pPed)) {
         pPed->leaveVehicle();
         passengers_.erase(passengers_.find(pPed));
-        pPed->setPosition(tile_x_, tile_y_, tile_z_,
-        off_x_, off_y_, off_z_);
+        pPed->setPosition(pos_);
     }
 }
 
@@ -408,14 +407,14 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
     std::map < PathNode, uint16 > open;
     std::set < PathNode > closed;
     std::map < PathNode, PathNode > parent;
-    int basex = tile_x_, basey = tile_y_;
+    int basex = pos_.tx, basey = pos_.ty;
     std::vector < PathNode > path2add;
     path2add.reserve(16);
     Map *pMap = g_App.maps().map(map_);
 
     pMap->adjXYZ(x, y, z);
     // NOTE: we will be using lower tiles, later will restore Z coord
-    z = tile_z_ - 1;
+    z = pos_.tz - 1;
 
     dest_path_.clear();
     setSpeed(0);
@@ -434,81 +433,81 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         return;
     }
 
-    if (!walkable(tile_x_, tile_y_, z)) {
+    if (!walkable(pos_.tx, pos_.ty, z)) {
         int dBest = 100000, dCur;
         std::vector < PathNode > path2wtile;
         path2wtile.reserve(16);
         // we got somewhere we shouldn't, we need to find somewhere that is walkable
-        PathNode pntile(tile_x_ , tile_y_, z, off_x_, off_y_);
+        PathNode pntile(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = 1; i < 16; i++) {
-            if (tile_x_ + i >= pMap->maxX())
+            if (pos_.tx + i >= pMap->maxX())
                 break;
-            pntile.setTileX(tile_x_ + i);
+            pntile.setTileX(pos_.tx + i);
             path2wtile.push_back(pntile);
-            if (walkable(tile_x_ + i, tile_y_, z)) {
+            if (walkable(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
                     path2add = path2wtile;
-                    basex = tile_x_ + i;
-                    basey = tile_y_;
+                    basex = pos_.tx + i;
+                    basey = pos_.ty;
                     break;
                 }
             }
         }
 
         path2wtile.clear();
-        pntile = PathNode(tile_x_ , tile_y_, z, off_x_, off_y_);
+        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = -1; i > -16; --i) {
-            if (tile_x_ + i < 0)
+            if (pos_.tx + i < 0)
                 break;
-            pntile.setTileX(tile_x_ + i);
+            pntile.setTileX(pos_.tx + i);
             path2wtile.push_back(pntile);
-            if (walkable(tile_x_ + i, tile_y_, z)) {
+            if (walkable(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
                     path2add = path2wtile;
-                    basex = tile_x_ + i;
-                    basey = tile_y_;
+                    basex = pos_.tx + i;
+                    basey = pos_.ty;
                     break;
                 }
             }
         }
 
         path2wtile.clear();
-        pntile = PathNode(tile_x_ , tile_y_, z, off_x_, off_y_);
+        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = -1; i > -16; --i) {
-            if (tile_y_ + i < 0)
+            if (pos_.ty + i < 0)
                 break;
-            pntile.setTileY(tile_y_ + i);
+            pntile.setTileY(pos_.ty + i);
             path2wtile.push_back(pntile);
-            if (walkable(tile_x_, tile_y_ + i, z)) {
+            if (walkable(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
                     path2add = path2wtile;
-                    basex = tile_x_;
-                    basey = tile_y_ + i;
+                    basex = pos_.tx;
+                    basey = pos_.ty + i;
                     break;
                 }
             }
         }
 
         path2wtile.clear();
-        pntile = PathNode(tile_x_ , tile_y_, z, off_x_, off_y_);
+        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = 1; i < 16; i++) {
-            if (tile_y_ + i >= pMap->maxY())
+            if (pos_.ty + i >= pMap->maxY())
                 break;
-            pntile.setTileY(tile_y_ + i);
+            pntile.setTileY(pos_.ty + i);
             path2wtile.push_back(pntile);
-            if (walkable(tile_x_, tile_y_ + i, z)) {
+            if (walkable(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
                     path2add = path2wtile;
-                    basex = tile_x_;
-                    basey = tile_y_ + i;
+                    basex = pos_.tx;
+                    basey = pos_.ty + i;
                     break;
                 }
             }
@@ -529,7 +528,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         wrong_dir = 0x0;
     else if(wrong_dir == 0x3)
         wrong_dir = 0x0020;
-    open.insert(std::pair< PathNode, uint16 >(PathNode(basex, basey, z, off_x_, off_y_),
+    open.insert(std::pair< PathNode, uint16 >(PathNode(basex, basey, z, pos_.ox, pos_.oy),
         wrong_dir));
     int watchDog = 1000;
 
@@ -571,7 +570,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                 dest_path_.push_front(PathNode(x, y, z, ox, oy));
             while (parent.find(p) != parent.end()) {
                 p = parent[p];
-                if (p.tileX() == tile_x_ && p.tileY() == tile_y_
+                if (p.tileX() == pos_.tx && p.tileY() == pos_.ty
                     && p.tileZ() == z)
                     break;
                 dest_path_.push_front(p);
@@ -619,8 +618,8 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
     if(!dest_path_.empty()) {
         // Adjusting offsets for correct positioning
         speed_ = new_speed;
-        int curox = off_x_;
-        int curoy = off_y_;
+        int curox = pos_.ox;
+        int curoy = pos_.oy;
         for(std::list < PathNode >::iterator it = dest_path_.begin();
             it != dest_path_.end(); it++)
         {
@@ -675,14 +674,14 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                     it->setOffY(curoy);
                     break;
             }
-            it->setTileZ(tile_z_);
+            it->setTileZ(pos_.tz);
         }
     }
     if((!path2add.empty()) && (!dest_path_.empty())) {
         for (std::vector < PathNode >::reverse_iterator it = path2add.rbegin();
             it != path2add.rend(); it++)
         {
-            it->setTileZ(tile_z_);
+            it->setTileZ(pos_.tz);
             dest_path_.push_front(*it);
         }
     }
@@ -711,16 +710,16 @@ bool VehicleInstance::move_vehicle(int elapsed)
             dest_path_.front().tileX() * 256 + dest_path_.front().offX();
         int ady =
             dest_path_.front().tileY() * 256 + dest_path_.front().offY();
-        int atx = tile_x_ * 256 + off_x_;
-        int aty = tile_y_ * 256 + off_y_;
+        int atx = pos_.tx * 256 + pos_.ox;
+        int aty = pos_.ty * 256 + pos_.oy;
         int diffx = adx - atx, diffy = ady - aty;
 
         if (abs(diffx) < 16 && abs(diffy) < 16) {
             // We reached the next point : remove it from path
-            off_y_ = dest_path_.front().offY();
-            off_x_ = dest_path_.front().offX();
-            tile_y_ = dest_path_.front().tileY();
-            tile_x_ = dest_path_.front().tileX();
+            pos_.oy = dest_path_.front().offY();
+            pos_.ox = dest_path_.front().offX();
+            pos_.ty = dest_path_.front().tileY();
+            pos_.tx = dest_path_.front().tileX();
             dest_path_.pop_front();
             // There's no following point so stop moving
             if (dest_path_.size() == 0)
@@ -761,19 +760,19 @@ bool VehicleInstance::move_vehicle(int elapsed)
                 used_time = 0;
 
             // Moves vehicle
-            updatePlacement(off_x_ + dx, off_y_ + dy);
+            updatePlacement(pos_.ox + dx, pos_.oy + dy);
 #if 0
-            if (updatePlacement(off_x_ + dx, off_y_ + dy)) {
+            if (updatePlacement(pos_.ox + dx, pos_.oy + dy)) {
                 ;
             } else {
                 // TODO: avoid obstacles.
                 speed_ = 0;
             }
 #endif
-            if(dest_path_.front().tileX() == tile_x_
-                && dest_path_.front().tileY() == tile_y_
-                && dest_path_.front().offX() == off_x_
-                && dest_path_.front().offY() == off_y_)
+            if(dest_path_.front().tileX() == pos_.tx
+                && dest_path_.front().tileY() == pos_.ty
+                && dest_path_.front().offX() == pos_.ox
+                && dest_path_.front().offY() == pos_.oy)
                 dest_path_.pop_front();
             if (dest_path_.size() == 0)
                 speed_ = 0;
@@ -791,7 +790,7 @@ bool VehicleInstance::move_vehicle(int elapsed)
         for (std::set<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++
         ) {
-            (*it)->setPosition(tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+            (*it)->setPosition(pos_);
         }
     }
 

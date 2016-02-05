@@ -20,7 +20,7 @@ set (SOURCES
 	core/missionbriefing.cpp
 	core/research.cpp
 	core/researchmanager.cpp
-	ia/action.cpp
+	ia/actions.cpp
 	ia/behaviour.cpp
 	default_ini.h
 	freesynd.cpp
@@ -137,6 +137,7 @@ set(HEADERS
 	gfx/spritemanager.h
 	gfx/tile.h
 	gfx/tilemanager.h
+	model/position.h
 	model/objectivedesc.h
 	model/leveldata.h
 	model/shot.h
@@ -264,7 +265,7 @@ if (BUILD_DEV_TOOLS)
 		model/objectivedesc.cpp
 		model/shot.cpp
 		model/weaponholder.cpp
-		ia/action.cpp
+		ia/actions.cpp
 		ia/behaviour.cpp
 		mission.cpp
 		utils/dernc.cpp

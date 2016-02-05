@@ -71,8 +71,8 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
 
     floodPointDesc *targetd = &(m->mdpoints_[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
 
-    floodPointDesc *based = &(m->mdpoints_[tile_x_
-        + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy]);
+    floodPointDesc *based = &(m->mdpoints_[pos_.tx
+        + pos_.ty * m->mmax_x_ + pos_.tz * m->mmax_m_xy]);
 
 #if 0
 #if _DEBUG
@@ -86,7 +86,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
         x, y, z, ox, oy);
     //printf("tileAt %x\n", g_App.maps().map(map())->tileAt(x,y,z));
     printf("base pos: x %i; y %i; z %i, ox %i, oy %i, oz %i\n",
-        tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+        pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy, pos_.oz);
     printf("zmax %x\n", m->mmax_z_);
     if ((z - 1)>= 0) {
         printf("lower twd %i\n", m->mtsurfaces_[x + y * m->mmax_x_
@@ -105,12 +105,12 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
 
     if(based->t == m_fdNonWalkable) {
         printf("==== unwalk pos: x %i; y %i; z %i, ox %i, oy %i, oz %i\n",
-            tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+            pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy, pos_.oz);
         printf("setDestinationP, Movement from nonwalkable postion\n");
         return;
     }
 
-    if (tile_x_ == x && tile_y_ == y && tile_z_ == z) {
+    if (pos_.tx == x && pos_.ty == y && pos_.tz == z) {
         dest_path_.push_back(PathNode(x, y, z, ox, oy));
         return;
     }
@@ -136,11 +136,11 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     toSetDesc sadd;
     floodPointDesc *pfdp;
     // setup
-    pfdp = &(mdpmirror[tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy]);
+    pfdp = &(mdpmirror[pos_.tx + pos_.ty * m->mmax_x_ + pos_.tz * m->mmax_m_xy]);
     pfdp->t |= m_fdBasePoint;
-    sadd.coords.x = tile_x_;
-    sadd.coords.y = tile_y_;
-    sadd.coords.z = tile_z_;
+    sadd.coords.x = pos_.tx;
+    sadd.coords.y = pos_.ty;
+    sadd.coords.z = pos_.tz;
     sadd.p = pfdp;
     bv.push_back(sadd);
     pfdp = &(mdpmirror[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
@@ -1252,9 +1252,9 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
 
     // path is created here
     toDefineXYZ ctile;
-    ctile.x = tile_x_;
-    ctile.y = tile_y_;
-    ctile.z = tile_z_;
+    ctile.x = pos_.tx;
+    ctile.y = pos_.ty;
+    ctile.z = pos_.tz;
     unsigned char ct = m_fdBasePoint;
     bool tnr = true, np = true;
     std::vector<PathNode> cdestpath;
@@ -1761,7 +1761,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     // TODO: smoother path
     // stairs to surface, surface to stairs correction
     if (!cdestpath.empty()) {
-        PathNode prvpn = PathNode(tile_x_, tile_y_, tile_z_, off_x_, off_y_);
+        PathNode prvpn = PathNode(pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy);
         for (std::vector <PathNode>::iterator it = cdestpath.begin();
             it != cdestpath.end(); ++it) {
             std::vector <PathNode>::iterator fit = it + 1;
@@ -2260,18 +2260,18 @@ bool PedInstance::movementP(Mission *m, int elapsed)
              nxtTileX * 256 + dest_path_.front().offX();
         int ady =
              nxtTileY * 256 + dest_path_.front().offY();
-        int atx = tile_x_ * 256 + off_x_;
-        int aty = tile_y_ * 256 + off_y_;
+        int atx = pos_.tx * 256 + pos_.ox;
+        int aty = pos_.ty * 256 + pos_.oy;
         int diffx = adx - atx, diffy = ady - aty;
 
         if (abs(diffx) < 16 && abs(diffy) < 16) {
             // TODO: maybe something better? then using diffx/diffy?
             // for this check
-            off_y_ = dest_path_.front().offY();
-            off_x_ = dest_path_.front().offX();
-            tile_z_ = nxtTileZ;
-            tile_y_ = nxtTileY;
-            tile_x_ = nxtTileX;
+            pos_.oy = dest_path_.front().offY();
+            pos_.ox = dest_path_.front().offX();
+            pos_.tz = nxtTileZ;
+            pos_.ty = nxtTileY;
+            pos_.tx = nxtTileX;
             dest_path_.pop_front();
             if (dest_path_.empty())
                 speed_ = 0;
@@ -2310,24 +2310,24 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             } else
                 used_time = 0;
 
-            updatePlacement(off_x_ + dx, off_y_ + dy);
+            updatePlacement(pos_.ox + dx, pos_.oy + dy);
             // TODO : what obstacles? cars? doors are already
             // setting stop signal, reuse it?
 #if 0
-            if (updatePlacement(off_x_ + dx, off_y_ + dy)) {
+            if (updatePlacement(pos_.ox + dx, pos_.oy + dy)) {
                 ;
             } else {
                 // TODO: avoid obstacles.
                 speed_ = 0;
             }
 #endif
-            if(nxtTileX == tile_x_ && nxtTileY == tile_y_)
-                tile_z_ = nxtTileZ;
+            if(nxtTileX == pos_.tx && nxtTileY == pos_.ty)
+                pos_.tz = nxtTileZ;
 
-            if(nxtTileX == tile_x_ && nxtTileY == tile_y_
-                && nxtTileZ == tile_z_ 
-                && dest_path_.front().offX() == off_x_
-                && dest_path_.front().offY() == off_y_)
+            if(nxtTileX == pos_.tx && nxtTileY == pos_.ty
+                && nxtTileZ == pos_.tz
+                && dest_path_.front().offX() == pos_.ox
+                && dest_path_.front().offY() == pos_.oy)
             {
                 dest_path_.pop_front();
             }
@@ -2338,14 +2338,18 @@ bool PedInstance::movementP(Mission *m, int elapsed)
         }
 
         if ((state_ & pa_smFollowing) != 0) {
-            toDefineXYZ xyz;
             // TODO: too big elapsed makes ped move to close to target
             // possible solution will be to use movedir like movement
             // and calculate distance at every step, but it is
             // a high cpu consuming
             if (!dest_path_.empty()) {
-                dest_path_.back().convertPosToXYZ(&xyz);
-                double dist_cur = distanceToPosXYZ(&xyz);
+                toDefineXYZ tmp;
+                dest_path_.back().convertPosToXYZ(&tmp);
+                WorldPoint wpt;
+                wpt.x = tmp.x;
+                wpt.y = tmp.y;
+                wpt.z = tmp.z;
+                double dist_cur = distanceToPosition(wpt);
                 if (dist_cur < (double)dist_to_pos_) {
                     dest_path_.clear();
                     speed_ = 0;
@@ -2353,8 +2357,8 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             }
         }
 
-        offzOnStairs(m->mtsurfaces_[tile_x_ + tile_y_ * m->mmax_x_
-            + tile_z_ * m->mmax_m_xy].twd);
+        offzOnStairs(m->mtsurfaces_[pos_.tx + pos_.ty * m->mmax_x_
+            + pos_.tz * m->mmax_m_xy].twd);
     }
 #ifdef _DEBUG
     if (dest_path_.empty() && speed_) {
@@ -2376,11 +2380,11 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
     int dir, int t_posx, int t_posy, int* dist, bool set_dist)
 {
     // TODO: better non-posiotional random walking
-    floodPointDesc *based = &(m->mdpoints_[tile_x_
-        + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy]);
+    floodPointDesc *based = &(m->mdpoints_[pos_.tx
+        + pos_.ty * m->mmax_x_ + pos_.tz * m->mmax_m_xy]);
     if (based->t == m_fdNonWalkable) {
         printf("==== unwalk pos: x %i; y %i; z %i, ox %i, oy %i, oz %i\n",
-            tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_);
+            pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy, pos_.oz);
         printf("moveToDir, Movement from nonwalkable postion\n");
         return 8;
     }
@@ -2395,8 +2399,8 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
     bool move_to_pos = false;
     if (dir == -1) {
         if (t_posx != -1 && t_posy != -1) {
-            setDirection(t_posx - tile_x_ * 256 - off_x_,
-                t_posy - tile_y_ * 256 - off_y_, &dir);
+            setDirection(t_posx - pos_.tx * 256 - pos_.ox,
+                t_posy - pos_.ty * 256 - pos_.oy, &dir);
             if (dir == -1)
                 return 16;
             move_to_pos = true;
@@ -2450,10 +2454,10 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
             diffx = -cos((dirn / 128.0) * PI);
         }
 
-        double posx = (double)(tile_x_ * 256 + off_x_);
-        double posy = (double)(tile_y_ * 256 + off_y_);
-        floodPointDesc *fpd = &(m->mdpoints_[tile_x_ + tile_y_ * m->mmax_x_ +
-            tile_z_ * m->mmax_m_xy]);
+        double posx = (double)(pos_.tx * 256 + pos_.ox);
+        double posy = (double)(pos_.ty * 256 + pos_.oy);
+        floodPointDesc *fpd = &(m->mdpoints_[pos_.tx + pos_.ty * m->mmax_x_ +
+            pos_.tz * m->mmax_m_xy]);
         double dist_passsed = 0;
         double dist_inc = sqrt(diffx * diffx + diffy * diffy);
 
@@ -2470,17 +2474,17 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
                 need_bounce = true;
                 break;
             }
-            if (tile_x_ != tilenx || tile_y_ != tileny) {
+            if (pos_.tx != tilenx || pos_.ty != tileny) {
                 // TODO: check for stairs and offset should be correct,
                 // to avoid jumping on top of stairs
                 int32 dec_z = 0;
-                if (tilenx - tile_x_ == 0) {
-                    if (tileny - tile_y_ > 0) {
+                if (tilenx - pos_.tx == 0) {
+                    if (tileny - pos_.ty > 0) {
                         if ((fpd->dirh & 0x01) == 0x01) {
-                            ++tile_z_;
+                            ++pos_.tz;
                             --dec_z;
                         } else if ((fpd->dirl & 0x01) == 0x01) {
-                            --tile_z_;
+                            --pos_.tz;
                             ++dec_z;
                         } else if ((fpd->dirm & 0x01) != 0x01) {
                             need_bounce = true;
@@ -2488,23 +2492,23 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
                         }
                     } else {
                         if ((fpd->dirh & 0x10) == 0x10) {
-                            ++tile_z_;
+                            ++pos_.tz;
                             --dec_z;
                         } else if ((fpd->dirl & 0x10) == 0x10) {
-                            --tile_z_;
+                            --pos_.tz;
                             ++dec_z;
                         } else if ((fpd->dirm & 0x10) != 0x10) {
                             need_bounce = true;
                             break;
                         }
                     }
-                } else if (tileny - tile_y_ == 0) {
-                    if (tilenx - tile_x_ > 0) {
+                } else if (tileny - pos_.ty == 0) {
+                    if (tilenx - pos_.tx > 0) {
                         if ((fpd->dirh & 0x04) == 0x04) {
-                            ++tile_z_;
+                            ++pos_.tz;
                             --dec_z;
                         } else if ((fpd->dirl & 0x04) == 0x04) {
-                            --tile_z_;
+                            --pos_.tz;
                             ++dec_z;
                         } else if ((fpd->dirm & 0x04) != 0x04) {
                             need_bounce = true;
@@ -2512,18 +2516,18 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
                         }
                     } else {
                         if ((fpd->dirh & 0x40) == 0x40) {
-                            ++tile_z_;
+                            ++pos_.tz;
                             --dec_z;
                         } else if ((fpd->dirl & 0x40) == 0x40) {
-                            --tile_z_;
+                            --pos_.tz;
                             ++dec_z;
                         } else if ((fpd->dirm & 0x40) != 0x40) {
                             need_bounce = true;
                             break;
                         }
                     }
-                } else if (tileny - tile_y_ > 0) {
-                    if (tilenx - tile_x_ > 0) {
+                } else if (tileny - pos_.ty > 0) {
+                    if (tilenx - pos_.tx > 0) {
                         if ((fpd->dirm & 0x02) != 0x02) {
                             need_bounce = true;
                             break;
@@ -2534,8 +2538,8 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
                         }
                     }
                 } else {
-                    // (tileny - tile_y_ < 0)
-                    if (tilenx - tile_x_ > 0) {
+                    // (tileny - pos_.ty < 0)
+                    if (tilenx - pos_.tx > 0) {
                         if ((fpd->dirm & 0x08) != 0x08) {
                             need_bounce = true;
                             break;
@@ -2550,23 +2554,23 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
 #if 0
 #ifdef _DEBUG
                 if (getDebugID() == 8) {
-                    printf("x %i, y %i, z %i\n", tile_x_, tile_y_, tile_z_ + dec_z);
-                    printf("nx %i, ny %i, nz %i\n", tilenx, tileny, tile_z_);
+                    printf("x %i, y %i, z %i\n", pos_.tx, pos_.ty, pos_.tz + dec_z);
+                    printf("nx %i, ny %i, nz %i\n", tilenx, tileny, pos_.tz);
                 }
 #endif
 #endif
 
                 floodPointDesc *fpd_prv = fpd;
                 fpd = &(m->mdpoints_[tilenx + tileny * m->mmax_x_
-                    + tile_z_ * m->mmax_m_xy]);
+                    + pos_.tz * m->mmax_m_xy]);
                 if (check_safe_walk && (fpd->t & m_fdSafeWalk) == 0) {
-                    tile_z_ += dec_z;
+                    pos_.tz += dec_z;
                     need_bounce = true;
                     break;
                 }
 
-                tile_x_ = tilenx;
-                tile_y_ = tileny;
+                pos_.tx = tilenx;
+                pos_.ty = tileny;
                 if (dir_move.dir_modifier != 0) {
                     dist_passsed += dist_inc;
                     posx = px;
@@ -2609,13 +2613,13 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
 
         if (diffx >= 0.0)
             // & 0x00FF = % 256
-            off_x_ = ((int)ceil(posx)) & 0x00FF;
+            pos_.ox = ((int)ceil(posx)) & 0x00FF;
         else
-            off_x_ = ((int)floor(posx)) & 0x00FF;
+            pos_.ox = ((int)floor(posx)) & 0x00FF;
         if (diffy >= 0.0)
-            off_y_ = ((int)ceil(posy)) & 0x00FF;
+            pos_.oy = ((int)ceil(posy)) & 0x00FF;
         else
-            off_y_ = ((int)floor(posy)) & 0x00FF;
+            pos_.oy = ((int)floor(posy)) & 0x00FF;
 
         dist_curr -= dist_passsed;
         if (set_dist)
@@ -2725,8 +2729,8 @@ uint8 PedInstance::moveToDir(Mission* m, int elapsed, DirMoveType &dir_move,
             }
         }
     }
-    offzOnStairs(m->mtsurfaces_[tile_x_ + tile_y_ * m->mmax_x_
-        + tile_z_ * m->mmax_m_xy].twd);
+    offzOnStairs(m->mtsurfaces_[pos_.tx + pos_.ty * m->mmax_x_
+        + pos_.tz * m->mmax_m_xy].twd);
     if (set_dist && dist != NULL)
         *dist = (int)dist_total;
 

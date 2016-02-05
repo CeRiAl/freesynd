@@ -126,7 +126,7 @@ class BriefMinimapRenderer : public MinimapRenderer {
     /*! Helps controling blinking.*/
     int minimap_blink_;
     /*!
-     * Total number of tiles displayed in the minimap. 
+     * Total number of tiles displayed in the minimap.
      * same for width and height.
      */
     uint16 mm_maxtile_;
@@ -164,7 +164,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     void render(uint16 screen_x, uint16 screen_y);
 
     //! Returns the map coordinates of the point on the minimap.
-    MapTilePoint minimapToMapPoint(int mm_x, int mm_y);
+    TilePoint minimapToMapPoint(int mm_x, int mm_y);
 
     //! Handles game events
     void handleGameEvent(GameEvent evt);
@@ -189,7 +189,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     void drawWeapons(uint8 * a_minimap);
     //! Draw visible peds
     void drawPedestrians(uint8 * a_minimap);
-    /*! 
+    /*!
      * Returns true if coords is visible on the map
      * \param tx tile coord in world coord.
      * \param ty tile coord in world coord.
@@ -290,7 +290,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     /*! The minimap to display.*/
     MiniMap *p_minimap_;
     /*!
-     * Total number of tiles displayed in the minimap. 
+     * Total number of tiles displayed in the minimap.
      * same for width and height.
      */
     uint16 mm_maxtile_;
@@ -303,7 +303,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     /*! Coords in pixels of the cross.*/
     int cross_y_;
     /*! Coords on the world map of the signal source.*/
-    //MapTilePoint signalSource_;
+    //TilePoint signalSource_;
     toDefineXYZ signalSourceXYZ_;
     /*! Type of emitted signal. If NONE, no signal is emitted.*/
     ESignalType signalType_;

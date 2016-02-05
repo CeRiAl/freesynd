@@ -374,9 +374,9 @@ uint8 WeaponInstance::inRangeNoCP(ShootableMapObject ** t, PathNode * pn,
         cxyz.y = pOwner_->tileY() * 256 + pOwner_->offY();
         cxyz.z = pOwner_->tileZ() * 128 + pOwner_->offZ() + (pOwner_->sizeZ() >> 1);
     } else {
-        cxyz.x = tile_x_ * 256 + off_x_;
-        cxyz.y = tile_y_ * 256 + off_y_;
-        cxyz.z = tile_z_ * 128 + off_z_ + Z_SHIFT_TO_AIR;
+        cxyz.x = pos_.tx * 256 + pos_.ox;
+        cxyz.y = pos_.ty * 256 + pos_.oy;
+        cxyz.z = pos_.tz * 128 + pos_.oz + Z_SHIFT_TO_AIR;
     }
 
     return checkRangeAndBlocker(cxyz, t, pn, setBlocker, checkTileOnly, maxr);

@@ -25,6 +25,7 @@
 #include "vehicle.h"
 #include "core/gameevent.h"
 
+
 /*!
  * Default constructor.
  */
@@ -282,7 +283,7 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
  * \param addAction True to add the action at the end of the list of action,
  * false to set as the only action.
  */
-void SquadSelection::moveTo(MapTilePoint &mapPt, bool addAction) {
+void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
     int i=0;
     for (SquadSelection::Iterator it = begin(); it != end(); ++it, i++)
     {

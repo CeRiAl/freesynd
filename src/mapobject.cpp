@@ -65,60 +65,60 @@ const char* MapObject::natureName() {
 
 int MapObject::screenX()
 {
-    return g_App.maps().map(map())->tileToScreenX(tile_x_, tile_y_,
-                                                  tile_z_, off_x_, off_y_);
+    return g_App.maps().map(map())->tileToScreenX(pos_.tx, pos_.ty,
+                                                  pos_.tz, pos_.ox, pos_.oy);
 }
 
 int MapObject::screenY()
 {
-    return g_App.maps().map(map())->tileToScreenY(tile_x_, tile_y_,
-                                                  tile_z_, off_x_, off_y_);
+    return g_App.maps().map(map())->tileToScreenY(pos_.tx, pos_.ty,
+                                                  pos_.tz, pos_.ox, pos_.oy);
 }
 
 void MapObject::setOffX(int n)
 {
-    off_x_ = n;
-    while (off_x_ < 0) {
-        off_x_ += 256;
-        tile_x_--;
+    pos_.ox = n;
+    while (pos_.ox < 0) {
+        pos_.ox += 256;
+        pos_.tx--;
     }
-    while (off_x_ > 255) {
-        off_x_ -= 256;
-        tile_x_++;
+    while (pos_.ox > 255) {
+        pos_.ox -= 256;
+        pos_.tx++;
     }
 }
 
 void MapObject::setOffY(int n)
 {
-    off_y_ = n;
-    while (off_y_ < 0) {
-        off_y_ += 256;
-        tile_y_--;
+    pos_.oy = n;
+    while (pos_.oy < 0) {
+        pos_.oy += 256;
+        pos_.ty--;
     }
-    while (off_y_ > 255) {
-        off_y_ -= 256;
-        tile_y_++;
+    while (pos_.oy > 255) {
+        pos_.oy -= 256;
+        pos_.ty++;
     }
 }
 
 void MapObject::setOffZ(int n)
 {
-    off_z_ = n;
-    while (off_z_ < 0) {
-        off_z_ += 128;
-        tile_z_--;
+    pos_.oz = n;
+    while (pos_.oz < 0) {
+        pos_.oz += 128;
+        pos_.tz--;
     }
-    while (off_z_ > 127) {
-        off_z_ -= 128;
-        tile_z_++;
+    while (pos_.oz > 127) {
+        pos_.oz -= 128;
+        pos_.tz++;
     }
 }
 
 void MapObject::addOffs(int &x, int &y)
 {
-    x += ((off_x_ - off_y_) * (TILE_WIDTH / 2)) / 256;
-    y += ((off_x_ + off_y_) * (TILE_HEIGHT / 3)) / 256;
-    y -= (off_z_ * (TILE_HEIGHT / 3)) / 128;
+    x += ((pos_.ox - pos_.oy) * (TILE_WIDTH / 2)) / 256;
+    y += ((pos_.ox + pos_.oy) * (TILE_HEIGHT / 3)) / 256;
+    y -= (pos_.oz * (TILE_HEIGHT / 3)) / 128;
 }
 
 bool MapObject::animate(int elapsed)
@@ -243,7 +243,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
      */
 
     // range_x check
-    int range_x_h = tile_x_ * 256 + off_x_;
+    int range_x_h = pos_.tx * 256 + pos_.ox;
     int range_x_l = range_x_h - size_x_;
     range_x_h += size_x_;
     range_x_h--;
@@ -259,7 +259,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         return false;
 
     // range_y check
-    int range_y_h = tile_y_ * 256 + off_y_;
+    int range_y_h = pos_.ty * 256 + pos_.oy;
     int range_y_l = range_y_h - size_y_;
     range_y_h += size_y_;
     range_y_h--;
@@ -276,7 +276,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         return false;
 
     // range_z check
-    int range_z_l = tile_z_ * 128 + off_z_;
+    int range_z_l = pos_.tz * 128 + pos_.oz;
     int range_z_h = range_z_l + size_z_;
     range_z_h--;
     bool flipped_z = false;
@@ -434,19 +434,19 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
 void MapObject::offzOnStairs(uint8 twd) {
     switch (twd) {
         case 0x01:
-            off_z_ = 127 - (off_y_ >> 1);
+            pos_.oz = 127 - (pos_.oy >> 1);
             break;
         case 0x02:
-            off_z_ = off_y_ >> 1;
+            pos_.oz = pos_.oy >> 1;
             break;
         case 0x03:
-            off_z_ = off_x_ >> 1;
+            pos_.oz = pos_.ox >> 1;
             break;
         case 0x04:
-            off_z_ = 127 - (off_x_ >> 1);
+            pos_.oz = 127 - (pos_.ox >> 1);
             break;
         default:
-            off_z_ = 0;
+            pos_.oz = 0;
             break;
     }
 }
@@ -534,14 +534,14 @@ bool SFXObject::animate(int elapsed) {
     if (is_frame_drawn_) {
         bool changed = draw_all_frames_ ? MapObject::animate(elapsed) : false;
         if (type_ == SFXObject::sfxt_ExplosionBall) {
-            int z = tile_z_ * 128 + off_z_;
+            int z = pos_.tz * 128 + pos_.oz;
             // 250 per sec
             z += ((elapsed + elapsed_left_) >> 2);
             elapsed_left_ = elapsed &3;
             if (z > (g_Session.getMission()->mmax_z_ - 1) * 128)
                 z = (g_Session.getMission()->mmax_z_ - 1) * 128;
-            tile_z_ = z / 128;
-            off_z_ = z % 128;
+            pos_.tz = z / 128;
+            pos_.oz = z % 128;
         }
         if (frame_ > g_App.gameSprites().lastFrame(anim_)
             && !leftTimeShowAnim(elapsed))
@@ -560,12 +560,12 @@ bool SFXObject::animate(int elapsed) {
 
 void SFXObject::correctZ() {
     if (type_ == SFXObject::sfxt_ExplosionBall) {
-        int z = tile_z_ * 128 + off_z_;
+        int z = pos_.tz * 128 + pos_.oz;
         z += 512;
         if (z > (g_Session.getMission()->mmax_z_ - 1) * 128)
             z = (g_Session.getMission()->mmax_z_ - 1) * 128;
-        tile_z_ = z / 128;
-        off_z_ = z % 128;
+        pos_.tz = z / 128;
+        pos_.oz = z % 128;
     }
 }
 
@@ -595,28 +595,28 @@ ShootableMovableMapObject::ShootableMovableMapObject(uint16 id, int m, ObjectNat
 bool ShootableMovableMapObject::updatePlacement(int nOffX, int nOffY)
 {
 
-    off_x_ = nOffX;
-    off_y_ = nOffY;
+    pos_.ox = nOffX;
+    pos_.oy = nOffY;
     bool changed = false;
 
-    while (off_x_ < 0) {
-        off_x_ += 256;
-        tile_x_--;
+    while (pos_.ox < 0) {
+        pos_.ox += 256;
+        pos_.tx--;
         changed = true;
     }
-    while (off_x_ > 255) {
-        off_x_ -= 256;
-        tile_x_++;
+    while (pos_.ox > 255) {
+        pos_.ox -= 256;
+        pos_.tx++;
         changed = true;
     }
-    while (off_y_ < 0) {
-        off_y_ += 256;
-        tile_y_--;
+    while (pos_.oy < 0) {
+        pos_.oy += 256;
+        pos_.ty--;
         changed = true;
     }
-    while (off_y_ > 255) {
-        off_y_ -= 256;
-        tile_y_++;
+    while (pos_.oy > 255) {
+        pos_.oy -= 256;
+        pos_.ty++;
         changed = true;
     }
 
@@ -636,18 +636,18 @@ bool ShootableMovableMapObject::checkFinalDest(PathNode &pn) {
 }
 
 bool ShootableMovableMapObject::checkCurrPos(PathNode &pn) {
-    return pn.tileX() == tile_x_
-        && pn.tileY() == tile_y_
-        && pn.tileZ() == tile_z_
-        && pn.offX() == off_x_
-        && pn.offY() == off_y_
-        && pn.offZ() == off_z_;
+    return pn.tileX() == pos_.tx
+        && pn.tileY() == pos_.ty
+        && pn.tileZ() == pos_.tz
+        && pn.offX() == pos_.ox
+        && pn.offY() == pos_.oy
+        && pn.offZ() == pos_.oz;
 }
 
 bool ShootableMovableMapObject::checkCurrPosTileOnly(PathNode &pn) {
-    return pn.tileX() == tile_x_
-        && pn.tileY() == tile_y_
-        && pn.tileZ() == tile_z_;
+    return pn.tileX() == pos_.tx
+        && pn.tileY() == pos_.ty
+        && pn.tileZ() == pos_.tz;
 }
 
 Static *Static::loadInstance(uint8 * data, uint16 id, int m)
@@ -1590,16 +1590,16 @@ bool Semaphore::animate(int elapsed, Mission *obj) {
             chng += elapsed_left_bigger_;
             elapsed_left_bigger_ = 0;
         }
-        int z = tile_z_ * 128 + off_z_ - chng;
-        tile_z_ = z / 128;
-        off_z_ = z % 128;
+        int z = pos_.tz * 128 + pos_.oz - chng;
+        pos_.tz = z / 128;
+        pos_.oz = z % 128;
         return true;
     }
 
     int chng = (elapsed + elapsed_left_smaller_) >> 2;
     elapsed_left_smaller_ = elapsed & 4;
     if (chng) {
-        int oz = off_z_ + chng * up_down_;
+        int oz = pos_.oz + chng * up_down_;
         if (oz > 127) {
             oz = 127 - (oz & 0x7F);
             up_down_ -= 2;
@@ -1607,7 +1607,7 @@ bool Semaphore::animate(int elapsed, Mission *obj) {
             oz = 64 + (64 - oz);
             up_down_ += 2;
         }
-        off_z_ = oz;
+        pos_.oz = oz;
     }
 
     chng = (elapsed + elapsed_left_bigger_) >> 6;
@@ -1637,15 +1637,15 @@ void Semaphore::handleHit(DamageInflictType &d) {
             state_ = Static::sttsem_Damaged;
             // To make this thing reach the ground need to get solid surface 0x0F
             Mission * m = g_Session.getMission();
-            int z = tile_z_;
-            int indx = tile_x_ + tile_y_ * m->mmax_x_ + tile_z_ * m->mmax_m_xy;
+            int z = pos_.tz;
+            int indx = pos_.tx + pos_.ty * m->mmax_x_ + pos_.tz * m->mmax_m_xy;
             elapsed_left_bigger_ = 0;
             while (z != 0) {
                 z--;
                 indx -= m->mmax_m_xy;
                 int twd = m->mtsurfaces_[indx].twd;
                 if (twd == 0x0F) {
-                    elapsed_left_bigger_ = (tile_z_ - z) * 128 + off_z_;
+                    elapsed_left_bigger_ = (pos_.tz - z) * 128 + pos_.oz;
                     break;
                 }
             }

@@ -55,13 +55,13 @@ bool Map::loadMap(uint8 * mapData)
     max_y_ = READ_LE_UINT32(mapData + 4);
     max_z_ = READ_LE_UINT32(mapData + 8);
 
-    LOG(Log::k_FLG_GFX, "Map", "loadMap", 
+    LOG(Log::k_FLG_GFX, "Map", "loadMap",
         ("Map size in tiles: max_x = %d, max_y = %d, max_z = %d.", max_x_, max_y_, max_z_));
 
     uint32 *lookup = new uint32[max_x_ * max_y_];
     // NOTE : increased map height by 1 to enable range check on higher tiles
     a_tiles_ = new Tile*[max_x_ * max_y_ * (max_z_ + 1)];
-    
+
     for (int i = 0; i < max_x_ * max_y_; i++)
         lookup[i] = READ_LE_UINT32(mapData + 12 + i * 4);
     for (int h = 0, z_real = max_z_ + 1; h < max_y_; h++)
@@ -71,7 +71,7 @@ bool Map::loadMap(uint8 * mapData)
             for (int z = 0; z < max_z_; z++) {
                 uint8 tileNum = *(mapData + 12 + lookup[idx] + z);
                 a_tiles_[idx * z_real + z] = tile_manager_->getTile(tileNum);
-                
+
             }
         }
     delete[] lookup;
@@ -85,7 +85,7 @@ bool Map::loadMap(uint8 * mapData)
 
     map_width_ = (max_x_ + max_y_) * (TILE_WIDTH / 2);
     map_height_ = (max_x_ + max_y_ + max_z_) * TILE_HEIGHT / 3;
-    LOG(Log::k_FLG_GFX, "Map", "loadMap", 
+    LOG(Log::k_FLG_GFX, "Map", "loadMap",
         ("Map size in pixels: width = %d, height = %d.", map_width_, map_height_));
 
     LOG(Log::k_FLG_GFX, "Map", "loadMap", ("Loading finished"));
@@ -157,9 +157,9 @@ MapScreenPoint Map::tileToScreenPoint(int x, int y, int z, int pX, int pY)
  * \param x The x position on the screen (in pixel).
  * \param y The y position on the screen (in pixel).
  */
-MapTilePoint Map::screenToTilePoint(int x, int y)
+TilePoint Map::screenToTilePoint(int x, int y)
 {
-    MapTilePoint mtp;
+    TilePoint mtp;
 
     x -= (max_x_ + 1) * (TILE_WIDTH / 2);
     // x now equals fx * TILE_WIDTH / 2 - fy * TILE_WIDTH / 2
@@ -207,7 +207,7 @@ Tile * Map::getTileAt(int x, int y, int z)
     if (x < 0 || x >= max_x_ || y < 0 || y >= max_y_) {
         return tile_manager_->getTile(z < 2 ? 6 : 0);
     }
-    
+
     if (z < 0 || z >= max_z_) {
         return tile_manager_->getTile(0);
     }

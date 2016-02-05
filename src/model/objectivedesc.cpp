@@ -259,7 +259,7 @@ void ObjEvacuate::evaluate(Mission *pMission) {
             endObjective(false);
         }
 
-        if ((*it_p)->distanceToPosXYZ(&pos_xyz) > 512) {
+        if (!(*it_p)->isCloseTo(pos_xyz, 512)) {
             // one of the peds is not yet in the evacuation perimeter
             return;
         }
@@ -268,7 +268,7 @@ void ObjEvacuate::evaluate(Mission *pMission) {
     for (size_t indx = AgentManager::kSlot1; indx < AgentManager::kMaxSlot; indx++) {
         PedInstance *pAgent = pMission->getSquad()->member(indx);
         if (pAgent && pAgent->isAlive()) {
-            if (pAgent->distanceToPosXYZ(&pos_xyz) > 512) {
+            if (!pAgent->isCloseTo(pos_xyz, 512)) {
                 // one of the peds is not yet in the evacuation perimeter
                 return;
             }
