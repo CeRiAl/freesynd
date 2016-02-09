@@ -695,8 +695,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                 (sc.tilex & 0x01) << 7, (sc.tiley & 0x01) << 7);
             if (sc.type == LevelData::kScenarioTypeTrigger) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Trigger at (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
-                toDefineXYZ locW;
-                pn.convertPosToXYZ(&locW);
+                WorldPoint locW(pn);
                 pPed->addToDefaultActions(new TriggerAction(6 * 256, locW));
             }
             if (v) {

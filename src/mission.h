@@ -264,14 +264,14 @@ public:
     //! TODO remove method
     void adjXYZ(int &x, int &y, int &z) { p_map_->adjXYZ(x, y, z); }
     //! Check if a tile is blocking the path between originLoc and pTargetLoc
-    uint8 checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTargetLoc, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
+    uint8 checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTargetLoc, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
 
     void blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
         double *dist, MapObject** blockerObj);
-    uint8 inRangeCPos(toDefineXYZ * cp, ShootableMapObject ** t,
+    uint8 inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
         PathNode * pn = NULL, bool setBlocker = false,
         bool checkTileOnly = false, double maxr = -1.0, double * distTo = NULL);
-    void getInRangeAll(toDefineXYZ * cp, std::vector<ShootableMapObject *> & targets,
+    void getInRangeAll(const WorldPoint & cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, double maxr = -1.0);
     //! Returns the distance between a ped and a object if a path exists between the two
     uint8 getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double distanceMax, double *length);

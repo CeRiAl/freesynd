@@ -308,12 +308,12 @@ protected:
  */
 class TriggerAction : public MovementAction {
 public:
-    TriggerAction(int32 range, const toDefineXYZ &loc);
+    TriggerAction(int32 range, const WorldPoint &loc);
 protected:
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 protected:
     /*! Center of trigger zone.*/
-    toDefineXYZ centerLoc_;
+    WorldPoint centerLoc_;
     /*! The range of trigger zone.*/
     int32 range_;
 };

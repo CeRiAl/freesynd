@@ -132,6 +132,15 @@ public:
     }
 
     /*!
+     * Set the position of the object to be the given one.
+     * \param pos New object position
+     */
+    void setPosition(const WorldPoint &pos) {
+        setPosition(pos.x / 256, pos.y / 256, pos.z / 128, pos.x % 256,
+                    pos.y % 256, pos.z % 128 );
+    }
+
+    /*!
      * Set the given position to the ped's position.
      */
     void getPosition(PathNode *pn) {
@@ -421,7 +430,7 @@ public:
         //! Location of aimed point
         PathNode aimedLoc;
         //! Location of origin of shot
-        toDefineXYZ originLocW;
+        WorldPoint originLocW;
         //! The object that inflicted the damage
         ShootableMapObject * d_owner;
         //! The weapon that generated this damage

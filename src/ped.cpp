@@ -1379,8 +1379,7 @@ bool PedInstance::isFriendWith(PedInstance *p) {
 
 void PedInstance::verifyHostilesFound(Mission *m) {
     std::vector <ShootableMapObject *> rm_set;
-    toDefineXYZ cur_xyz;
-    convertPosToXYZ(&cur_xyz);
+    WorldPoint cur_xyz(pos_);
     int check_rng = sight_range_;
 
     WeaponInstance *wi = selectedWeapon();
@@ -1397,7 +1396,7 @@ void PedInstance::verifyHostilesFound(Mission *m) {
             && isFriendWith((PedInstance *)(smo)))
             || (smo->nature() == MapObject::kNatureVehicle
             && ((VehicleInstance *)smo)->containsHostilesForPed(this, hostile_desc_))
-            || (m->inRangeCPos(&cur_xyz, &smo, NULL, false, false,
+            || (m->inRangeCPos(cur_xyz, &smo, NULL, false, false,
             check_rng, &distTo) != 1))
         {
             rm_set.push_back(smo);

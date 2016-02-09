@@ -2588,7 +2588,7 @@ void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
  *      - 4b(16): blocker tile, "pTargetLoc" is set
  *      - 5b(32): out of visible reach
  */
-uint8 Mission::checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTargetLoc,
+uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTargetLoc,
                                   bool updateLoc, double distanceMax, double *pInitialDistance) {
     // TODO: some objects mid point is higher then map z
     assert(distanceMax >= 0);
@@ -2734,7 +2734,7 @@ uint8 Mission::checkBlockedByTile(const toDefineXYZ & originLoc, PathNode *pTarg
  * NOTE: only if "pn" or "t" are not null, variables are set
 
 */
-uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
+uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
     PathNode * pn, bool setBlocker, bool checkTileOnly, double maxr,
     double * distTo)
 {
@@ -2751,7 +2751,8 @@ uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
     } else {
         tmp = *pn;
     }
-    uint8 block_mask = checkBlockedByTile(*originLoc, &tmp, true, maxr, distTo);
+
+    uint8 block_mask = checkBlockedByTile(originLoc, &tmp, true, maxr, distTo);
     if (block_mask == 32) {
         // coords are out of map limits
         return block_mask;
@@ -2765,7 +2766,10 @@ uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
     if (checkTileOnly)
         return block_mask;
 
-    toDefineXYZ startXYZ = *originLoc;
+    toDefineXYZ startXYZ;
+    startXYZ.x = originLoc.x;
+    startXYZ.y = originLoc.y;
+    startXYZ.z = originLoc.z;
     toDefineXYZ endXYZ;
     tmp.convertPosToXYZ(&endXYZ);
     MapObject *blockerObj = NULL;
@@ -2775,9 +2779,9 @@ uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
     int tx = tmp.tileX() * 256 + tmp.offX();
     int ty = tmp.tileY() * 256 + tmp.offY();
     int tz = tmp.tileZ() * 128 + tmp.offZ();
-    double dist_blocker = sqrt((double)((tx - originLoc->x) *
-        (tx - originLoc->x) + (ty - originLoc->y) * (ty - originLoc->y)
-        + (tz - originLoc->z) * (tz - originLoc->z)));
+    double dist_blocker = sqrt((double)((tx - originLoc.x) *
+        (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
+        + (tz - originLoc.z) * (tz - originLoc.z)));
     blockerExists(&startXYZ, &endXYZ, &dist_blocker, &blockerObj);
 
     if (blockerObj) {
@@ -2828,7 +2832,7 @@ uint8 Mission::inRangeCPos(toDefineXYZ * originLoc, ShootableMapObject ** t,
  * \param checkTileOnly
  * \param maxr The range
  */
-void Mission::getInRangeAll(toDefineXYZ * cp,
+void Mission::getInRangeAll(const WorldPoint & cp,
    std::vector<ShootableMapObject *> & targets, uint8 mask,
    bool checkTileOnly, double maxr)
 {
@@ -2888,10 +2892,9 @@ void Mission::getInRangeAll(toDefineXYZ * cp,
  * \return 0 if a path exists, else path does not exist so length is not set.
  */
 uint8 Mission::getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double maxLength, double *length) {
-    toDefineXYZ cur_xyz;
-    pPed->convertPosToXYZ(&cur_xyz);
+    WorldPoint cur_xyz(pPed->position());
     cur_xyz.z += (pPed->sizeZ() >> 1);
-    uint8 res = inRangeCPos(&cur_xyz, &objectToReach, NULL, false, true, maxLength, length);
+    uint8 res = inRangeCPos(cur_xyz, &objectToReach, NULL, false, true, maxLength, length);
     return res == 1 ? 0 : 1;
 }
 

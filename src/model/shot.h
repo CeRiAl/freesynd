@@ -93,18 +93,18 @@ class Explosion : public Shot {
                                 double range, int dmgValue = 16);
     //! Creates an explosion at the given location
     static void createExplosion(Mission *pMission, ShootableMapObject *pOwner,
-                                const toDefineXYZ &location, double range,
+                                const WorldPoint &location, double range,
                                 int dmgValue);
 
     explicit Explosion(const ShootableMapObject::DamageInflictType &dmg);
 
     void inflictDamage(Mission *pMission);
  private:
-    void generateFlameWaves(Mission *pMission, toDefineXYZ *origin, double dmg_rng);
+    void generateFlameWaves(Mission *pMission, WorldPoint *pOrigin, double dmg_rng);
     //!
     void getAllShootablesWithinRange(
         Mission *pMission,
-        toDefineXYZ &originLocW,
+        const WorldPoint &originLocW,
         std::vector<ShootableMapObject *> &objInRangeLst);
 
  private:
@@ -129,7 +129,7 @@ class ProjectileShot: public Shot {
  protected:
     //! Update projectile position
     virtual bool moveProjectile(int elapsed, Mission *pMission);
-    virtual void drawTrace(Mission *pMission, toDefineXYZ currentPos) = 0;
+    virtual void drawTrace(Mission *pMission, const WorldPoint & currentPos) = 0;
  protected:
     /*! This tells if the shot object shot be destroyed.*/
     bool lifeOver_;
@@ -138,7 +138,7 @@ class ProjectileShot: public Shot {
     double speed_;
 
     /*! Current position of projectile.*/
-    toDefineXYZ curPos_;
+    WorldPoint curPos_;
     /*! Position of the target.*/
     toDefineXYZ targetLocW_;
 
@@ -175,7 +175,7 @@ class GaussGunShot: public ProjectileShot {
     void inflictDamage(Mission *pMission);
  protected:
     //! Update projectile position
-    void drawTrace(Mission *pMission, toDefineXYZ currentPos);
+    void drawTrace(Mission *pMission, const WorldPoint & currentPos);
  protected:
     /*! Position of the last trace animation.*/
     double lastAnimDist_;
@@ -194,7 +194,7 @@ class FlamerShot: public ProjectileShot {
     void inflictDamage(Mission *pMission);
 
  protected:
-    void drawTrace(Mission *pMission, toDefineXYZ currentPos);
+    void drawTrace(Mission *pMission, const WorldPoint & currentPos);
  protected:
     //! The flame that represents the shot
     SFXObject *pFlame_;

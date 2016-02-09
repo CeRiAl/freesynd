@@ -206,8 +206,8 @@ ShootableMapObject *InstantImpactShot::checkHitTarget(toDefineXYZ &originLocW, P
  * Some weapons can have no animations for an impact.
  */
 void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObject * pTargetHit, PathNode &impactLocT) {
-    SFXObject::SfxTypeEnum impactAnimId = 
-        (pTargetHit != NULL ? 
+    SFXObject::SfxTypeEnum impactAnimId =
+        (pTargetHit != NULL ?
             dmg_.pWeapon->getWeaponClass()->impactAnims()->objectHit :
             dmg_.pWeapon->getWeaponClass()->impactAnims()->groundHit);
 
@@ -223,17 +223,16 @@ void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObj
  * Convenient method to create explosions.
  * \param pMission Mission data
  * \param pOwner What's at the origin of the explosion
- * \param The range for damage 
+ * \param The range for damage
  * \param The value of the damage
  */
 void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, double range, int dmgValue) {
-    toDefineXYZ location;
-    pOwner->convertPosToXYZ(&location);
-    
+    WorldPoint location(pOwner->position());
+
     createExplosion(pMission, pOwner, location, range, dmgValue);
 }
 
-void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, const toDefineXYZ &location, double range, int dmgValue) {
+void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, const WorldPoint &location, double range, int dmgValue) {
     ShootableMapObject::DamageInflictType dmg;
     if (pOwner && pOwner->nature() == MapObject::kNatureWeapon) {
         // It's a bomb that exploded (other waepons do not explode)
@@ -241,7 +240,7 @@ void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, c
     } else {
         dmg.pWeapon = NULL;
     }
-    
+
     dmg.d_owner = pOwner;
     dmg.dtype = MapObject::dmg_Explosion;
     dmg.range = range;
@@ -263,7 +262,7 @@ Explosion::Explosion(const ShootableMapObject::DamageInflictType &dmg) : Shot(dm
 };
 
 /*!
- * 
+ *
  */
 void Explosion::inflictDamage(Mission *pMission) {
     std::vector<ShootableMapObject *> objInRangeLst;
@@ -285,20 +284,21 @@ void Explosion::inflictDamage(Mission *pMission) {
     }
     // create the ring of fire around the origin of explosion
     generateFlameWaves(pMission, &(dmg_.originLocW), dmg_.range);
+
     g_App.gameSounds().play(snd::EXPLOSION_BIG);
 }
 
 /*! Draws animation of impact/explosion
  * \param pMission Mission data
- * \param origin center of explosion
+ * \param pOrigin center of explosion
  * \param dmg_rng effective range for drawing
  */
-void Explosion::generateFlameWaves(Mission *pMission, toDefineXYZ *origin, double dmg_rng)
+void Explosion::generateFlameWaves(Mission *pMission, WorldPoint *pOrigin, double dmg_rng)
 {
-    toDefineXYZ base_pos = *origin;
-    origin->z += 4;
-    if (origin->z > (pMission->mmax_z_ - 1) * 128)
-        origin->z = (pMission->mmax_z_ - 1) * 128;
+    WorldPoint base_pos = *pOrigin;
+    pOrigin->z += 4;
+    if (pOrigin->z > (pMission->mmax_z_ - 1) * 128)
+        pOrigin->z = (pMission->mmax_z_ - 1) * 128;
     // TODO: exclude flames on water, put these flames to the ground,
     // don't draw in air(, stairs problem?)
     double angle_inc = PI;
@@ -318,7 +318,7 @@ void Explosion::generateFlameWaves(Mission *pMission, toDefineXYZ *origin, doubl
                 base_pos.z / 128, (base_pos.x + (int)x) % 256,
                 (base_pos.y + (int)y) % 256, base_pos.z % 128);
 
-            uint8 block_mask = pMission->checkBlockedByTile(*origin, &flamePos, true, dmg_rng);
+            uint8 block_mask = pMission->checkBlockedByTile(*pOrigin, &flamePos, true, dmg_rng);
             if (block_mask != 32) {
                 SFXObject *so = new SFXObject(pMission->map(), rngDmgAnim_,
                                 100 * (rand() % 16));
@@ -340,13 +340,13 @@ void Explosion::generateFlameWaves(Mission *pMission, toDefineXYZ *origin, doubl
  * \param includeShooter if true, owner of the shot will be include in the result list
  */
 void Explosion::getAllShootablesWithinRange(Mission *pMission,
-                                       toDefineXYZ &originLocW,
+                                       const WorldPoint &originLocW,
                                        std::vector<ShootableMapObject *> &objInRangeVec) {
     // Look at all peds
     for (size_t i = 0; i < pMission->numPeds(); ++i) {
         ShootableMapObject *p = pMission->ped(i);
         if (p->isAlive()) {
-            if (pMission->inRangeCPos(&originLocW, &p, NULL, false, true, dmg_.range) == 1) {
+            if (pMission->inRangeCPos(originLocW, &p, NULL, false, true, dmg_.range) == 1) {
                 objInRangeVec.push_back(p);
             }
         }
@@ -355,7 +355,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     for (size_t i = 0; i < pMission->numStatics(); ++i) {
         ShootableMapObject *st = pMission->statics(i);
         if (st->isAlive())
-            if (pMission->inRangeCPos(&originLocW, &st, NULL, false, true, dmg_.range) == 1) {
+            if (pMission->inRangeCPos(originLocW, &st, NULL, false, true, dmg_.range) == 1) {
                 objInRangeVec.push_back(st);
             }
     }
@@ -364,7 +364,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     for (size_t i = 0; i < pMission->numVehicles(); ++i) {
         ShootableMapObject *v = pMission->vehicle(i);
         if (v->isAlive()) {
-            if (pMission->inRangeCPos(&originLocW, &v, NULL, false, true, dmg_.range) == 1) {
+            if (pMission->inRangeCPos(originLocW, &v, NULL, false, true, dmg_.range) == 1) {
                     objInRangeVec.push_back(v);
             }
         }
@@ -374,7 +374,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     for (size_t i = 0; i < pMission->numWeapons(); ++i) {
         WeaponInstance *w = pMission->weapon(i);
         if (w != dmg_.pWeapon && w->map() != -1 &&
-            pMission->inRangeCPos(&originLocW, (ShootableMapObject **)w, NULL, false, true, dmg_.range) == 1) {
+            pMission->inRangeCPos(originLocW, (ShootableMapObject **)w, NULL, false, true, dmg_.range) == 1) {
                 objInRangeVec.push_back(w);
         }
     }
@@ -391,7 +391,7 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
     speed_ = dmg.pWeapon->getWeaponClass()->shotSpeed();
     // distance from origin of shoot to target on each axis
     dmg.aimedLoc.convertPosToXYZ(&targetLocW_);
-    
+
     double diffx = (double)(targetLocW_.x - curPos_.x);
     double diffy = (double)(targetLocW_.y - curPos_.y);
     double diffz = (double)(targetLocW_.z - curPos_.z);
@@ -420,7 +420,7 @@ bool ProjectileShot::animate(int elapsed, Mission *pMission) {
     if (moveProjectile(elapsed, pMission)) {
         inflictDamage(pMission);
     }
-    
+
     return true;
 }
 
@@ -445,7 +445,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
 
     double was_dist = currentDistance_;
     currentDistance_ += inc_dist;
-    toDefineXYZ reached_pos;
+    WorldPoint reached_pos;
     bool do_recalc = false;
 
     reached_pos.x = dmg_.originLocW.x + (int)(incX_ * currentDistance_);
@@ -504,7 +504,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     PathNode pn(reached_pos.x / 256, reached_pos.y / 256,
         reached_pos.z / 128, reached_pos.x % 256, reached_pos.y % 256,
         reached_pos.z % 128);
-    
+
     // force shooter to be ignored when searching for blockers
     bool previousIgnoreState = dmg_.d_owner->isIgnored();
     dmg_.d_owner->setIsIgnored(true);
@@ -512,7 +512,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     // maxr here is set to maximum that projectile can fly from its
     // current position
     uint8 block_mask = pMission->inRangeCPos(
-        &curPos_, &pShootableHit_, &pn, true, false, distanceMax_ - was_dist);
+        curPos_, &pShootableHit_, &pn, true, false, distanceMax_ - was_dist);
 
     if (block_mask == 1) {
         // ??
@@ -520,7 +520,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
             && reached_pos.y == targetLocW_.y
             && reached_pos.z == targetLocW_.z)
         {
-            
+
             drawImpact_ = true;
             endMove = true;
         }
@@ -563,7 +563,7 @@ void GaussGunShot::inflictDamage(Mission *pMission) {
  * \param pMission Mission data
  * \param currentPos Current position of projectile.
  */
-void GaussGunShot::drawTrace(Mission *pMission, toDefineXYZ currentPos) {
+void GaussGunShot::drawTrace(Mission *pMission, const WorldPoint &currentPos) {
     // distance between 2 animations
     double anim_d = 64;
 
@@ -582,7 +582,7 @@ void GaussGunShot::drawTrace(Mission *pMission, toDefineXYZ currentPos) {
                 t.x = dmg_.originLocW.x + (int)(lastAnimDist_ * incX_);
                 t.y = dmg_.originLocW.y + (int)(lastAnimDist_ * incY_);
                 t.z = dmg_.originLocW.z + (int)(lastAnimDist_ * incZ_);
-                
+
                 t.z += 128;
                 if (t.z > (pMission->mmax_z_ - 1) * 128)
                     t.z = (pMission->mmax_z_ - 1) * 128;
@@ -619,7 +619,7 @@ FlamerShot::~FlamerShot() {
  * \param pMission Mission data
  * \param currentPos Current position of projectile.
  */
-void FlamerShot::drawTrace(Mission *pMission, toDefineXYZ currentPos) {
+void FlamerShot::drawTrace(Mission *pMission, const WorldPoint & currentPos) {
 
     pFlame_->setPosition(currentPos);
 }

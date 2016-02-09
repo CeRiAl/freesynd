@@ -351,7 +351,7 @@ bool WalkToDirectionAction::doExecute(int elapsed, Mission *pMission, PedInstanc
  * \param range Radius of the trigger zone
  * \param loc Center of the trigger zone
  */
-TriggerAction::TriggerAction(int32 range, const toDefineXYZ &loc) :
+TriggerAction::TriggerAction(int32 range, const WorldPoint &loc) :
         MovementAction(kActTypeUndefined, false, true) {
     range_ = range;
     centerLoc_ = loc;
@@ -505,8 +505,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             }
         }
 
-        toDefineXYZ policeLoc;
-        pPed->convertPosToXYZ(&policeLoc);
+        WorldPoint policeLoc(pPed->position());
         // police stops walking if the target is in range of fire (ie close enough and not
         // hiding behing something)
         if (pPed->isCloseTo(pTarget_, followDistance_) &&
@@ -914,7 +913,7 @@ void ShootAction::setAimedAt(const PathNode &aimedAt) {
 void ShootAction::updateShootingDirection(Mission *pMission, PedInstance *pPed, const PathNode &shootPt) {
     int xb = pPed->tileX() * 256 + pPed->offX();
     int yb = pPed->tileY() * 256 + pPed->offY();
-    int cz = pPed->tileZ() * 128 + pPed->offZ() + (pPed->sizeZ() >> 1);
+    /*int cz = pPed->tileZ() * 128 + pPed->offZ() + (pPed->sizeZ() >> 1); Unused variable */
     int txb = shootPt.tileX() * 256 + shootPt.offX();
     int tyb = shootPt.tileY() * 256 + shootPt.offY();
 
@@ -981,10 +980,9 @@ void ShootAction::fillDamageDesc(Mission *pMission,
     dmg.range = pWeapon->getWeaponClass()->range();
     dmg.d_owner = pShooter;
     dmg.aimedLoc = aimedAt_;
-    pShooter->convertPosToXYZ(&(dmg.originLocW));
+    dmg.originLocW.convertFromTilePoint(pShooter->position());
 
     if (pWeapon->getWeaponType() == Weapon::Flamer) {
-        toDefineXYZ *initPos = new toDefineXYZ();
         // the weapon is located at half the size of the shooter
         dmg.originLocW.z += pShooter->sizeZ() >> 1;
 

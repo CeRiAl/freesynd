@@ -350,8 +350,12 @@ uint8 WeaponInstance::checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject 
         vehicleState = pOwner_->setVehicleIgnore(true);
     }
 
+    WorldPoint origin;
+    origin.x = cp.x;
+    origin.y = cp.y;
+    origin.z = cp.z;
     uint8 block_mask = g_Session.getMission()->inRangeCPos(
-        &cp, t, pn, setBlocker, checkTileOnly, maxr);
+        origin, t, pn, setBlocker, checkTileOnly, maxr);
 
     setIsIgnored(selfState);
     if (pOwner_) {
@@ -464,7 +468,11 @@ void WeaponInstance::getInRangeAll(toDefineXYZ & cp,
     bool selfState = isIgnored();
     setIsIgnored(true);
 
-    g_Session.getMission()->getInRangeAll(&cp, targets, mask,
+    WorldPoint origin;
+    origin.x = cp.x;
+    origin.y = cp.y;
+    origin.z = cp.z;
+    g_Session.getMission()->getInRangeAll(origin, targets, mask,
         checkTileOnly, maxr);
 
     setIsIgnored(selfState);

@@ -24,17 +24,12 @@
 #define PATHSURFACES_H
 
 #include "common.h"
+#include "model/position.h"
 
     typedef struct {
         // tile walkable data from g_App.walkdata_p_[]
         unsigned char twd;
     }surfaceDesc;
-
-    typedef struct {
-        int x;
-        int y;
-        int z;
-    }toDefineXYZ;
 
     typedef struct {
         // mapFloodDesc
