@@ -192,13 +192,15 @@ void MapObject::setDirection(int posx, int posy, int * dir) {
 }
 
 void MapObject::setDirectionTowardObject(const MapObject &object) {
-    int xb = this->tileX() * 256 + this->offX();
-    int yb = this->tileY() * 256 + this->offY();
+    WorldPoint objectPos(object.position());
 
-    int txb = object.tileX() * 256 + object.offX();
-    int tyb = object.tileY() * 256 + object.offY();
+    this->setDirectionTowardPosition(objectPos);
+}
 
-    this->setDirection(txb - xb, tyb - yb);
+void MapObject::setDirectionTowardPosition(const WorldPoint &pos) {
+    WorldPoint thisPedPos(position());
+
+    this->setDirection(pos.x - thisPedPos.x, pos.y - thisPedPos.y);
 }
 
 /*!
@@ -228,7 +230,7 @@ int MapObject::getDirection(int snum) {
 * NOTE: inc_xyz should point to array of three elements of type
 * double for x,y,z
 */
-bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
+bool MapObject::isBlocker(WorldPoint * pStartPt, WorldPoint * pEndPt,
                double * inc_xyz)
 {
     // TODO: better set values of size for object, use to values
@@ -238,7 +240,7 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
 
     /* NOTE: algorithm, checks whether object is located within range
      * defined by "start" and "end", then we calculate distances from x, y, z
-     * to their respective startXYZ, choose shortest, then longest between
+     * to their respective pStartPt, choose shortest, then longest between
      * them and recalculate position of entering of shot and exit point
      */
 
@@ -247,12 +249,12 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     int range_x_l = range_x_h - size_x_;
     range_x_h += size_x_;
     range_x_h--;
-    int low_num = startXYZ->x;
-    int high_num = endXYZ->x;
+    int low_num = pStartPt->x;
+    int high_num = pEndPt->x;
     bool flipped_x = false;
-    if (startXYZ->x > endXYZ->x) {
-        high_num = startXYZ->x;
-        low_num = endXYZ->x;
+    if (pStartPt->x > pEndPt->x) {
+        high_num = pStartPt->x;
+        low_num = pEndPt->x;
         flipped_x = true;
     }
     if (range_x_l > high_num || range_x_h < low_num)
@@ -264,13 +266,13 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     range_y_h += size_y_;
     range_y_h--;
     bool flipped_y = false;
-    if (startXYZ->y > endXYZ->y) {
-        high_num = startXYZ->y;
-        low_num = endXYZ->y;
+    if (pStartPt->y > pEndPt->y) {
+        high_num = pStartPt->y;
+        low_num = pEndPt->y;
         flipped_y = true;
     } else {
-        low_num = startXYZ->y;
-        high_num = endXYZ->y;
+        low_num = pStartPt->y;
+        high_num = pEndPt->y;
     }
     if (range_y_l > high_num || range_y_h < low_num)
         return false;
@@ -280,13 +282,13 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     int range_z_h = range_z_l + size_z_;
     range_z_h--;
     bool flipped_z = false;
-    if (startXYZ->z > endXYZ->z) {
-        high_num = startXYZ->z;
-        low_num = endXYZ->z;
+    if (pStartPt->z > pEndPt->z) {
+        high_num = pStartPt->z;
+        low_num = pEndPt->z;
         flipped_z = true;
     } else {
-        low_num = startXYZ->z;
-        high_num = endXYZ->z;
+        low_num = pStartPt->z;
+        high_num = pEndPt->z;
     }
     if (range_z_l > high_num || range_z_h < low_num)
         return false;
@@ -294,22 +296,22 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     double d_l[3];
     double d_h[3];
     if (inc_xyz[0] != 0) {
-        d_l[0] = ((double)(range_x_l - startXYZ->x)) / inc_xyz[0];
-        d_h[0] = ((double)(range_x_h - startXYZ->x)) / inc_xyz[0];
+        d_l[0] = ((double)(range_x_l - pStartPt->x)) / inc_xyz[0];
+        d_h[0] = ((double)(range_x_h - pStartPt->x)) / inc_xyz[0];
     } else {
         d_l[0] = 0.0;
         d_h[0] = 0.0;
     }
     if (inc_xyz[1] != 0) {
-        d_l[1] = ((double)(range_y_l - startXYZ->y)) / inc_xyz[1];
-        d_h[1] = ((double)(range_y_h - startXYZ->y)) / inc_xyz[1];
+        d_l[1] = ((double)(range_y_l - pStartPt->y)) / inc_xyz[1];
+        d_h[1] = ((double)(range_y_h - pStartPt->y)) / inc_xyz[1];
     } else {
         d_l[1] = 0.0;
         d_h[1] = 0.0;
     }
     if (inc_xyz[0] != 0) {
-        d_l[2] = ((double)(range_z_l - startXYZ->z)) / inc_xyz[2];
-        d_h[2] = ((double)(range_z_h - startXYZ->z)) / inc_xyz[2];
+        d_l[2] = ((double)(range_z_l - pStartPt->z)) / inc_xyz[2];
+        d_h[2] = ((double)(range_z_h - pStartPt->z)) / inc_xyz[2];
     } else {
         d_l[2] = 0.0;
         d_h[2] = 0.0;
@@ -355,8 +357,8 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     } else
         indx = 2;
 
-    int range_g_l = (int)(d_l[indx] * inc_xyz[0] + startXYZ->x);
-    int range_g_h = (int)(d_h[indx] * inc_xyz[0] + startXYZ->x);
+    int range_g_l = (int)(d_l[indx] * inc_xyz[0] + pStartPt->x);
+    int range_g_h = (int)(d_h[indx] * inc_xyz[0] + pStartPt->x);
     if (range_g_h < range_g_l) {
         low_num = range_g_h;
         high_num = range_g_l;
@@ -371,8 +373,8 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     if (range_x_h > high_num)
         range_x_h = high_num;
 
-    range_g_l = (int)(d_l[indx] * inc_xyz[1] + startXYZ->y);
-    range_g_h = (int)(d_h[indx] * inc_xyz[1] + startXYZ->y);
+    range_g_l = (int)(d_l[indx] * inc_xyz[1] + pStartPt->y);
+    range_g_h = (int)(d_h[indx] * inc_xyz[1] + pStartPt->y);
     if (range_g_h < range_g_l) {
         low_num = range_g_h;
         high_num = range_g_l;
@@ -387,8 +389,8 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
     if (range_y_h > high_num)
         range_y_h = high_num;
 
-    range_g_l = (int)(d_l[indx] * inc_xyz[2] + startXYZ->z);
-    range_g_h = (int)(d_h[indx] * inc_xyz[2] + startXYZ->z);
+    range_g_l = (int)(d_l[indx] * inc_xyz[2] + pStartPt->z);
+    range_g_h = (int)(d_h[indx] * inc_xyz[2] + pStartPt->z);
     if (range_g_h < range_g_l) {
         low_num = range_g_h;
         high_num = range_g_l;
@@ -405,27 +407,27 @@ bool MapObject::isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
 
     // restoring coordinates to their respective low/high values
     if (flipped_x) {
-        startXYZ->x = range_x_h;
-        endXYZ->x = range_x_l;
+        pStartPt->x = range_x_h;
+        pEndPt->x = range_x_l;
     } else {
-        startXYZ->x = range_x_l;
-        endXYZ->x = range_x_h;
+        pStartPt->x = range_x_l;
+        pEndPt->x = range_x_h;
     }
 
     if (flipped_y) {
-        startXYZ->y = range_y_h;
-        endXYZ->y = range_y_l;
+        pStartPt->y = range_y_h;
+        pEndPt->y = range_y_l;
     } else {
-        startXYZ->y = range_y_l;
-        endXYZ->y = range_y_h;
+        pStartPt->y = range_y_l;
+        pEndPt->y = range_y_h;
     }
 
     if (flipped_z) {
-        startXYZ->z = range_z_h;
-        endXYZ->z = range_z_l;
+        pStartPt->z = range_z_h;
+        pEndPt->z = range_z_l;
     } else {
-        startXYZ->z = range_z_l;
-        endXYZ->z = range_z_h;
+        pStartPt->z = range_z_l;
+        pEndPt->z = range_z_h;
     }
 
     return true;

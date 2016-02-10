@@ -343,11 +343,13 @@ uint8 PedInstance::addActionShootAt(const PathNode &aimedPt) {
         PathNode adjAimedPt = aimedPt;
         WeaponInstance *pWeapon = selectedWeapon();
         adjustAimedPtWithRangeAndAccuracy(pWeapon->getWeaponClass(), adjAimedPt);
+        // TODO : change PathNode to WorldPoint
+        WorldPoint adjAimedWpt(adjAimedPt);
         if (pWeapon->getWeaponClass()->isAutomatic()) {
-            pUseWeaponAction_ = new AutomaticShootAction(adjAimedPt, pWeapon);
+            pUseWeaponAction_ = new AutomaticShootAction(adjAimedWpt, pWeapon);
             res = ShootAction::kShootActionAutomaticShoot;
         } else {
-            pUseWeaponAction_ = new ShootAction(adjAimedPt, pWeapon);
+            pUseWeaponAction_ = new ShootAction(adjAimedWpt, pWeapon);
             res = ShootAction::kShootActionSingleShoot;
         }
 

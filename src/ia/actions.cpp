@@ -737,7 +737,7 @@ bool FireWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *pP
 
 HitAction::HitAction(ShootableMapObject::DamageInflictType &d) :
 MovementAction(kActTypeHit) {
-    damage_.aimedLoc = d.aimedLoc;
+    damage_.aimedLocW = d.aimedLocW;
     damage_.dtype = d.dtype;
     damage_.dvalue = d.dvalue;
     damage_.d_owner = d.d_owner;
@@ -776,9 +776,7 @@ HitAction(d) {
  */
 void RecoilHitAction::doStart(Mission *pMission, PedInstance *pPed) {
     // Change direction due to impact
-    toDefineXYZ locW;
-    pPed->convertPosToXYZ(&locW);
-    pPed->setDirection(damage_.originLocW.x - locW.x, damage_.originLocW.y - locW.y);
+    pPed->setDirectionTowardPosition(damage_.originLocW);
     status_ = kActStatusWaitForAnim;
 }
 
@@ -810,9 +808,7 @@ HitAction(d) {
  */
 void LaserHitAction::doStart(Mission *pMission, PedInstance *pPed) {
     // Change direction due to impact
-    toDefineXYZ locW;
-    pPed->convertPosToXYZ(&locW);
-    pPed->setDirection(damage_.originLocW.x - locW.x, damage_.originLocW.y - locW.y);
+    pPed->setDirectionTowardPosition(damage_.originLocW);
     status_ = kActStatusWaitForAnim;
 }
 
@@ -901,23 +897,13 @@ bool PersuadedHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-ShootAction::ShootAction(PathNode &aimedAt, WeaponInstance *pWeapon) :
+ShootAction::ShootAction(const WorldPoint &aimedAt, WeaponInstance *pWeapon) :
     UseWeaponAction(kActTypeShoot, pWeapon) {
         aimedAt_ = aimedAt;
 }
 
-void ShootAction::setAimedAt(const PathNode &aimedAt) {
+void ShootAction::setAimedAt(const WorldPoint &aimedAt) {
     aimedAt_ = aimedAt;
-}
-
-void ShootAction::updateShootingDirection(Mission *pMission, PedInstance *pPed, const PathNode &shootPt) {
-    int xb = pPed->tileX() * 256 + pPed->offX();
-    int yb = pPed->tileY() * 256 + pPed->offY();
-    /*int cz = pPed->tileZ() * 128 + pPed->offZ() + (pPed->sizeZ() >> 1); Unused variable */
-    int txb = shootPt.tileX() * 256 + shootPt.offX();
-    int tyb = shootPt.tileY() * 256 + shootPt.offY();
-
-    pPed->setDirection(txb - xb, tyb - yb);
 }
 
 /*!
@@ -934,7 +920,7 @@ void ShootAction::updateShootingDirection(Mission *pMission, PedInstance *pPed, 
 bool ShootAction::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
     if (status_ == kActStatusNotStarted) {
         // Turn to target
-        updateShootingDirection(pMission, pPed, aimedAt_);
+        pPed->setDirectionTowardPosition(aimedAt_);
         // Shoot
         ShootableMapObject::DamageInflictType dmg;
         fillDamageDesc(pMission, pPed, pWeapon_, dmg);
@@ -979,7 +965,7 @@ void ShootAction::fillDamageDesc(Mission *pMission,
     dmg.dvalue =  pWeapon->getWeaponClass()->damagePerShot();
     dmg.range = pWeapon->getWeaponClass()->range();
     dmg.d_owner = pShooter;
-    dmg.aimedLoc = aimedAt_;
+    dmg.aimedLocW = aimedAt_;
     dmg.originLocW.convertFromTilePoint(pShooter->position());
 
     if (pWeapon->getWeaponType() == Weapon::Flamer) {
@@ -1019,7 +1005,7 @@ void ShootAction::fillDamageDesc(Mission *pMission,
     }
 }
 
-AutomaticShootAction::AutomaticShootAction(PathNode &aimedAt, WeaponInstance *pWeapon) :
+AutomaticShootAction::AutomaticShootAction(const WorldPoint &aimedAt, WeaponInstance *pWeapon) :
         ShootAction(aimedAt, pWeapon),
         fireRateTimer_(pWeapon->getWeaponClass()->fireRate())
 {
@@ -1039,7 +1025,7 @@ bool AutomaticShootAction::execute(int elapsed, Mission *pMission, PedInstance *
         if (pPed->isDead() || pWeapon_->ammoRemaining() == 0) {
             stop();
         } else if (firstTime || fireRateTimer_.update(elapsed)) {
-            updateShootingDirection(pMission, pPed, aimedAt_);
+            pPed->setDirectionTowardPosition(aimedAt_);
             ShootableMapObject::DamageInflictType dmg;
             fillDamageDesc(pMission, pPed, pWeapon_, dmg);
             pWeapon_->playSound();

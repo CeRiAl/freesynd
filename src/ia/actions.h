@@ -684,20 +684,18 @@ public:
     static const uint8 kShootActionSingleShoot;
 
 public:
-    ShootAction(PathNode &aimedAt, WeaponInstance *pWeapon);
+    ShootAction(const WorldPoint &aimedAt, WeaponInstance *pWeapon);
 
     //! Entry point to execute the action
     bool execute(int elapsed, Mission *pMission, PedInstance *pPed);
     //! Update target position
-    void setAimedAt(const PathNode &aimedAt);
+    void setAimedAt(const WorldPoint &aimedAt);
 protected:
-    //! Update the ped's direction
-    void updateShootingDirection(Mission *pMission, PedInstance *pPed, const PathNode &shootPt);
     //! Fills the ShotAttributes with values
     void fillDamageDesc(Mission *pMission, PedInstance *pShooter, WeaponInstance *pWeapon, ShootableMapObject::DamageInflictType &dmg);
 protected:
     //! Where the player aimed with the mouse
-    PathNode aimedAt_;
+    WorldPoint aimedAt_;
     //! Time to wait between two shoot actions
     int timeToWait_;
 };
@@ -707,7 +705,7 @@ protected:
  */
 class AutomaticShootAction : public ShootAction {
 public:
-    AutomaticShootAction(PathNode &dest, WeaponInstance *pWeapon);
+    AutomaticShootAction(const WorldPoint &aimedAt, WeaponInstance *pWeapon);
 
     bool execute(int elapsed, Mission *pMission, PedInstance *pPed);
     void stop();

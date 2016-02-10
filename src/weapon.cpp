@@ -508,43 +508,36 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         // circles around the target.
         // We use the weapon's direction field to store a logical direction
         // which will give the current moving point of impact
-        toDefineXYZ xyz;
-        dmg.aimedLoc.convertPosToXYZ(&xyz);
-
         switch(direction()) {
         case 0:
-            xyz.y += 160;
+            dmg.aimedLocW.y += 160;
             break;
         case 1:
-            xyz.x += 96;
-            xyz.y += 96;
+            dmg.aimedLocW.x += 96;
+            dmg.aimedLocW.y += 96;
             break;
         case 2:
-            xyz.x += 160;
+            dmg.aimedLocW.x += 160;
             break;
         case 3:
-            xyz.x += 96;
-            xyz.y -= 96;
+            dmg.aimedLocW.x += 96;
+            dmg.aimedLocW.y -= 96;
             break;
         case 4:
-            xyz.y -= 160;
+            dmg.aimedLocW.y -= 160;
             break;
         case 5:
-            xyz.x -= 96;
-            xyz.y -= 96;
+            dmg.aimedLocW.x -= 96;
+            dmg.aimedLocW.y -= 96;
             break;
         case 6:
-            xyz.x -= 160;
+            dmg.aimedLocW.x -= 160;
             break;
         case 7:
-            xyz.x -= 96;
-            xyz.y += 96;
+            dmg.aimedLocW.x -= 96;
+            dmg.aimedLocW.y += 96;
             break;
         }
-
-        dmg.aimedLoc.setTileX(xyz.x / 256);
-        dmg.aimedLoc.setTileY(xyz.y / 256);
-        dmg.aimedLoc.setOffXY(xyz.x % 256, xyz.y % 256);
 
         FlamerShot *pFlamerShot = new FlamerShot(pMission, dmg);
         pMission->addPrjShot(pFlamerShot);

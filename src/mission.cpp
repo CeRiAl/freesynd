@@ -2476,99 +2476,99 @@ bool Mission::getWalkableClosestByZ(TilePoint &mtp) {
 /*!
 * This function looks for blockers - statics, vehicles, peds, weapons
 */
-void Mission::blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
+void Mission::blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
                             double *dist, MapObject** blockerObj)
 {
     // TODO: calculating closest blocker first? (start point can be closer though)
     double inc_xyz[3];
-    inc_xyz[0] = (endXYZ->x - startXYZ->x) / (*dist);
-    inc_xyz[1] = (endXYZ->y - startXYZ->y) / (*dist);
-    inc_xyz[2] = (endXYZ->z - startXYZ->z) / (*dist);
-    toDefineXYZ copyStartXYZ = *startXYZ;
-    toDefineXYZ copyEndXYZ = *endXYZ;
-    toDefineXYZ blockStartXYZ;
-    toDefineXYZ blockEndXYZ;
+    inc_xyz[0] = (pEndPt->x - pStartPt->x) / (*dist);
+    inc_xyz[1] = (pEndPt->y - pStartPt->y) / (*dist);
+    inc_xyz[2] = (pEndPt->z - pStartPt->z) / (*dist);
+    WorldPoint copyStartPt = *pStartPt;
+    WorldPoint copyEndPt = *pEndPt;
+    WorldPoint blockStartPt;
+    WorldPoint blockEndPt;
     double closest = *dist;
 
     for (unsigned int i = 0; i < statics_.size(); ++i) {
         MapObject * s_blocker = statics_[i];
         if (s_blocker->isIgnored())
             continue;
-        if (s_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
+        if (s_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+            int cx = pStartPt->x - copyStartPt.x;
+            int cy = pStartPt->y - copyStartPt.y;
+            int cz = pStartPt->z - copyStartPt.z;
             double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
             if (closest == -1 || dist_blocker < closest) {
                 closest = dist_blocker;
                 *blockerObj = s_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+                blockStartPt = copyStartPt;
+                blockEndPt = copyEndPt;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
+            copyStartPt = *pStartPt;
+            copyEndPt = *pEndPt;
         }
     }
     for (unsigned int i = 0; i < vehicles_.size(); ++i) {
         MapObject * v_blocker = vehicles_[i];
         if (v_blocker->isIgnored())
             continue;
-        if (v_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
+        if (v_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+            int cx = pStartPt->x - copyStartPt.x;
+            int cy = pStartPt->y - copyStartPt.y;
+            int cz = pStartPt->z - copyStartPt.z;
             double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
             if (closest == -1 || dist_blocker < closest) {
                 closest = dist_blocker;
                 *blockerObj = v_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+                blockStartPt = copyStartPt;
+                blockEndPt = copyEndPt;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
+            copyStartPt = *pStartPt;
+            copyEndPt = *pEndPt;
         }
     }
     for (unsigned int i = 0; i < peds_.size(); ++i) {
         PedInstance * p_blocker = peds_[i];
         if (p_blocker->isDead() || p_blocker->isIgnored())
             continue;
-        if (p_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
+        if (p_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+            int cx = pStartPt->x - copyStartPt.x;
+            int cy = pStartPt->y - copyStartPt.y;
+            int cz = pStartPt->z - copyStartPt.z;
             double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
             if (closest == -1 || dist_blocker < closest) {
                 closest = dist_blocker;
                 *blockerObj = p_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+                blockStartPt = copyStartPt;
+                blockEndPt = copyEndPt;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
+            copyStartPt = *pStartPt;
+            copyEndPt = *pEndPt;
         }
     }
     for (unsigned int i = 0; i < weapons_.size(); ++i) {
         MapObject * w_blocker = weapons_[i];
         if (w_blocker->isIgnored())
             continue;
-        if (w_blocker->isBlocker(&copyStartXYZ, &copyEndXYZ, inc_xyz)) {
-            int cx = startXYZ->x - copyStartXYZ.x;
-            int cy = startXYZ->y - copyStartXYZ.y;
-            int cz = startXYZ->z - copyStartXYZ.z;
+        if (w_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+            int cx = pStartPt->x - copyStartPt.x;
+            int cy = pStartPt->y - copyStartPt.y;
+            int cz = pStartPt->z - copyStartPt.z;
             double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
             if (closest == -1 || dist_blocker < closest) {
                 closest = dist_blocker;
                 *blockerObj = w_blocker;
-                blockStartXYZ = copyStartXYZ;
-                blockEndXYZ = copyEndXYZ;
+                blockStartPt = copyStartPt;
+                blockEndPt = copyEndPt;
             }
-            copyStartXYZ = *startXYZ;
-            copyEndXYZ = *endXYZ;
+            copyStartPt = *pStartPt;
+            copyEndPt = *pEndPt;
         }
     }
     if (*blockerObj != NULL) {
-        *startXYZ = blockStartXYZ;
-        *endXYZ = blockEndXYZ;
+        *pStartPt = blockStartPt;
+        *pEndPt = blockEndPt;
         *dist = closest;
     }
 }
@@ -2766,12 +2766,8 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t
     if (checkTileOnly)
         return block_mask;
 
-    toDefineXYZ startXYZ;
-    startXYZ.x = originLoc.x;
-    startXYZ.y = originLoc.y;
-    startXYZ.z = originLoc.z;
-    toDefineXYZ endXYZ;
-    tmp.convertPosToXYZ(&endXYZ);
+    WorldPoint tmpOrigin = originLoc;
+    WorldPoint tmpEnd(tmp);
     MapObject *blockerObj = NULL;
 
     // We search for a possible object blocking the way on the path
@@ -2782,7 +2778,7 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t
     double dist_blocker = sqrt((double)((tx - originLoc.x) *
         (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
         + (tz - originLoc.z) * (tz - originLoc.z)));
-    blockerExists(&startXYZ, &endXYZ, &dist_blocker, &blockerObj);
+    blockerExists(&tmpOrigin, &tmpEnd, &dist_blocker, &blockerObj);
 
     if (blockerObj) {
         if (block_mask == 1)
@@ -2790,10 +2786,10 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t
 
         if (setBlocker) {
             if (pn) {
-                pn->setTileXYZ(startXYZ.x / 256, startXYZ.y / 256,
-                    startXYZ.z / 128);
-                pn->setOffXYZ(startXYZ.x % 256, startXYZ.y % 256,
-                    startXYZ.z % 128);
+                pn->setTileXYZ(tmpOrigin.x / 256, tmpOrigin.y / 256,
+                    tmpOrigin.z / 128);
+                pn->setOffXYZ(tmpOrigin.x % 256, tmpOrigin.y % 256,
+                    tmpOrigin.z % 128);
                 block_mask |= 4;
             }
             if (t) {

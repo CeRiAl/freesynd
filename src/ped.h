@@ -376,7 +376,7 @@ public:
     //! Make the ped stop using weapon (mainly for automatic weapon)
     void stopUsingWeapon();
     //! Update the ped's shooting target
-    void updateShootingTarget(const PathNode &aimedPt);
+    void updateShootingTarget(const WorldPoint &aimedPt);
     //! Adjust aimed point with user accuracy and weapon max range
     void adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, PathNode &aimedPt);
     //! Gets the time before a ped can shoot again

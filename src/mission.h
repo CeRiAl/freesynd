@@ -266,7 +266,7 @@ public:
     //! Check if a tile is blocking the path between originLoc and pTargetLoc
     uint8 checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTargetLoc, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
 
-    void blockerExists(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
+    void blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
         double *dist, MapObject** blockerObj);
     uint8 inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
         PathNode * pn = NULL, bool setBlocker = false,

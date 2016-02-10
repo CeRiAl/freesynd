@@ -93,7 +93,7 @@ public:
         ddmg_WeaponBomb = dmg_Bullet | dmg_Laser | dmg_Explosion
     } DefDamageType;
 
-    const TilePoint & position() { return pos_; }
+    const TilePoint & position()const { return pos_; }
 
     void setPosition(int tile_x, int tile_y, int tile_z, int off_x = 0,
             int off_y = 0, int off_z = 0) {
@@ -282,6 +282,8 @@ public:
     void setDirection(int posx, int posy, int * dir = NULL);
     //! Set this ped's direction so that he looks at the given object.
     void setDirectionTowardObject(const MapObject &object);
+    //! Set this ped's direction so that he looks at the given position.
+    void setDirectionTowardPosition(const WorldPoint &pos);
 
     int direction() { return dir_;}
     int getDirection(int snum = 8);
@@ -301,7 +303,7 @@ public:
     bool isIgnored() { return is_ignored_; }
     void setIsIgnored(bool is_ignored = false) { is_ignored_ = is_ignored; }
 
-    bool isBlocker(toDefineXYZ * startXYZ, toDefineXYZ * endXYZ,
+    bool isBlocker(WorldPoint * pStartPt, WorldPoint * pEndPt,
                double * inc_xyz);
 
     void setStateMasks(unsigned int state) {
@@ -428,7 +430,7 @@ public:
         //! direction damage comes from, should be angle 256 degree based
         int ddir;
         //! Location of aimed point
-        PathNode aimedLoc;
+        WorldPoint aimedLocW;
         //! Location of origin of shot
         WorldPoint originLocW;
         //! The object that inflicted the damage

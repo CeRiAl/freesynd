@@ -44,7 +44,10 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
     std::map<ShootableMapObject *, int> hitsByObject;
 
     for (int i = 0; i < nbImpacts; ++i) {
-        PathNode impactLocT = dmg_.aimedLoc;
+        PathNode impactLocT;
+        impactLocT.setTileXYZ(dmg_.aimedLocW.x / 256, dmg_.aimedLocW.y / 256, dmg_.aimedLocW.z / 128);
+        impactLocT.setOffXYZ(dmg_.aimedLocW.x % 256, dmg_.aimedLocW.y % 256, dmg_.aimedLocW.z % 128);
+
         if (nbImpacts > 1) {
             // When multiple impacts, they're spread
             diffuseImpact(pMission, originLocW, &impactLocT);
@@ -390,7 +393,9 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
 
     speed_ = dmg.pWeapon->getWeaponClass()->shotSpeed();
     // distance from origin of shoot to target on each axis
-    dmg.aimedLoc.convertPosToXYZ(&targetLocW_);
+    targetLocW_.x = dmg.aimedLocW.x;
+    targetLocW_.y = dmg.aimedLocW.y;
+    targetLocW_.z = dmg.aimedLocW.z;
 
     double diffx = (double)(targetLocW_.x - curPos_.x);
     double diffy = (double)(targetLocW_.y - curPos_.y);

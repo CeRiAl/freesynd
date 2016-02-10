@@ -652,12 +652,13 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
         // update direction for each shooting player
         PathNode dest;
         if (getAimedAt(x, y, dest)) {
+            WorldPoint aimedAtPt(dest);
             for (SquadSelection::Iterator it = selection_.begin(); it != selection_.end(); ++it) {
                 PedInstance *pAgent = *it;
                 if (pAgent->isUsingWeapon()) {
                     // If ped is currently shooting
                     // then update the action with new shooting target
-                    pAgent->updateShootingTarget(dest);
+                    pAgent->updateShootingTarget(aimedAtPt);
                 }
             }
         }

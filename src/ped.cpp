@@ -575,7 +575,7 @@ void PedInstance::stopUsingWeapon() {
  * Update the ped's shooting target.
  * \param aimedPt New target position
  */
-void PedInstance::updateShootingTarget(const PathNode &aimedPt) {
+void PedInstance::updateShootingTarget(const WorldPoint &aimedPt) {
     if (pUseWeaponAction_->type() == Action::kActTypeShoot) {
         ShootAction *pShoot = dynamic_cast<ShootAction *>(pUseWeaponAction_);
         pShoot->setAimedAt(aimedPt);
