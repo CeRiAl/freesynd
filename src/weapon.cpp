@@ -332,7 +332,7 @@ void WeaponInstance::playSound() {
     g_App.gameSounds().play(pWeaponClass_->getSound());
 }
 
-uint8 WeaponInstance::checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject ** t,
+uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & origin, ShootableMapObject ** t,
     PathNode * pn, bool setBlocker, bool checkTileOnly, int maxr)
 {
     // NOTE: too many calculations of type tile*tilesize + off,
@@ -350,10 +350,6 @@ uint8 WeaponInstance::checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject 
         vehicleState = pOwner_->setVehicleIgnore(true);
     }
 
-    WorldPoint origin;
-    origin.x = cp.x;
-    origin.y = cp.y;
-    origin.z = cp.z;
     uint8 block_mask = g_Session.getMission()->inRangeCPos(
         origin, t, pn, setBlocker, checkTileOnly, maxr);
 
@@ -370,20 +366,20 @@ uint8 WeaponInstance::checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject 
 uint8 WeaponInstance::inRangeNoCP(ShootableMapObject ** t, PathNode * pn,
                          bool setBlocker, bool checkTileOnly, int maxr)
 {
-    toDefineXYZ cxyz;
+    WorldPoint origin;
 
     // NOTE: calculations for Z should be the same as in inflictDamage for cp
     if (pOwner_) {
-        cxyz.x = pOwner_->tileX() * 256 + pOwner_->offX();
-        cxyz.y = pOwner_->tileY() * 256 + pOwner_->offY();
-        cxyz.z = pOwner_->tileZ() * 128 + pOwner_->offZ() + (pOwner_->sizeZ() >> 1);
+        origin.x = pOwner_->tileX() * 256 + pOwner_->offX();
+        origin.y = pOwner_->tileY() * 256 + pOwner_->offY();
+        origin.z = pOwner_->tileZ() * 128 + pOwner_->offZ() + (pOwner_->sizeZ() >> 1);
     } else {
-        cxyz.x = pos_.tx * 256 + pos_.ox;
-        cxyz.y = pos_.ty * 256 + pos_.oy;
-        cxyz.z = pos_.tz * 128 + pos_.oz + Z_SHIFT_TO_AIR;
+        origin.x = pos_.tx * 256 + pos_.ox;
+        origin.y = pos_.ty * 256 + pos_.oy;
+        origin.z = pos_.tz * 128 + pos_.oz + Z_SHIFT_TO_AIR;
     }
 
-    return checkRangeAndBlocker(cxyz, t, pn, setBlocker, checkTileOnly, maxr);
+    return checkRangeAndBlocker(origin, t, pn, setBlocker, checkTileOnly, maxr);
 }
 
 int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {
@@ -459,7 +455,7 @@ int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {
     return shots;
 }
 
-void WeaponInstance::getInRangeAll(toDefineXYZ & cp,
+void WeaponInstance::getInRangeAll(const WorldPoint & originLocW,
    std::vector<ShootableMapObject *> & targets, uint8 mask,
    bool checkTileOnly, int maxr)
 {
@@ -468,11 +464,7 @@ void WeaponInstance::getInRangeAll(toDefineXYZ & cp,
     bool selfState = isIgnored();
     setIsIgnored(true);
 
-    WorldPoint origin;
-    origin.x = cp.x;
-    origin.y = cp.y;
-    origin.z = cp.z;
-    g_Session.getMission()->getInRangeAll(origin, targets, mask,
+    g_Session.getMission()->getInRangeAll(originLocW, targets, mask,
         checkTileOnly, maxr);
 
     setIsIgnored(selfState);

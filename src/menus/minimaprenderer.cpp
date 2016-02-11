@@ -323,10 +323,10 @@ void GamePlayMinimapRenderer::handleGameEvent(GameEvent evt) {
 
 void GamePlayMinimapRenderer::handleEvacuationSet(GameEvent &evt) {
     handleClearSignal();
-    toDefineXYZ * p_point = static_cast<toDefineXYZ *>(evt.pCtxt);
-    signalSourceXYZ_.x = p_point->x;
-    signalSourceXYZ_.y = p_point->y;
-    signalSourceXYZ_.z = p_point->z;
+    WorldPoint * pPoint = static_cast<WorldPoint *>(evt.pCtxt);
+    signalSourceLocW_.x = pPoint->x;
+    signalSourceLocW_.y = pPoint->y;
+    signalSourceLocW_.z = pPoint->z;
 
     signalType_ = kEvacuation;
 
@@ -344,9 +344,9 @@ void GamePlayMinimapRenderer::handleClearSignal() {
     i_signalRadius_ = 0;
     i_signalColor_ = fs_cmn::kColorWhite;
     signalType_ = kNone;
-    signalSourceXYZ_.x = 0;
-    signalSourceXYZ_.y = 0;
-    signalSourceXYZ_.z = 0;
+    signalSourceLocW_.x = 0;
+    signalSourceLocW_.y = 0;
+    signalSourceLocW_.z = 0;
 }
 
 /*!
@@ -355,9 +355,9 @@ void GamePlayMinimapRenderer::handleClearSignal() {
 void GamePlayMinimapRenderer::handleTargetSet(GameEvent &evt) {
     handleClearSignal();
     // get the target current position
-    MapObject *p_target = static_cast<MapObject *>(evt.pCtxt);
-    p_minimap_->setTarget(p_target);
-    p_target->convertPosToXYZ(&signalSourceXYZ_);
+    MapObject *pTarget = static_cast<MapObject *>(evt.pCtxt);
+    p_minimap_->setTarget(pTarget);
+    signalSourceLocW_.convertFromTilePoint(pTarget->position());
     signalType_ = kTarget;
 }
 
@@ -392,7 +392,7 @@ bool GamePlayMinimapRenderer::handleTick(int elapsed) {
                 i_signalRadius_ = 0;
                 // Update signal position in case of a moving target
                 if (signalType_ == kTarget) {
-                    p_minimap_->target()->convertPosToXYZ(&signalSourceXYZ_);
+                    signalSourceLocW_.convertFromTilePoint(p_minimap_->target()->position());
                 }
                 // TODO : uncomment when assassinate.ogg doesn't have the pong sound in it
                 //g_App.gameSounds().play(snd::TRACKING_PONG);

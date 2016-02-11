@@ -194,15 +194,6 @@ public:
         | MapObject::kNatureStatic | MapObject::kNatureWeapon
     };
 
-    typedef struct {
-        PathNode tpn;
-        toDefineXYZ tp;
-        ShootableMapObject::DamageInflictType d;
-        ShootableMapObject *smo;
-        // Actual target of shooting, because smo might be blocker object
-        ShootableMapObject *target_object;
-    }ShotDesc;
-
     // (WeaponShotPropertyType)
     unsigned int shotProperty() { return shot_property_; }
 
@@ -284,7 +275,7 @@ public:
     WeaponInstance(Weapon *w, uint16 id);
 
     /*! Sets the owner of the weapon. */
-    void setOwner(PedInstance *owner) { pOwner_ = owner; }
+    void setOwner(PedInstance *pOwner) { pOwner_ = pOwner; }
     /*! Return the owner of the weapon.*/
     PedInstance *owner() { return pOwner_; }
     /*! Return true if the weapon has an owner.*/
@@ -316,7 +307,7 @@ public:
 
     void resetWeaponUsedTime() { weapon_used_time_ = 0; }
     //! Check if target is in range and if there's something blocking the shoot
-    uint8 checkRangeAndBlocker(toDefineXYZ & cp, ShootableMapObject ** t,
+    uint8 checkRangeAndBlocker(const WorldPoint &cp, ShootableMapObject ** t,
         PathNode * pn = NULL, bool setBlocker = false,
         bool checkTileOnly = false, int maxr = -1);
     uint8 inRangeNoCP(ShootableMapObject ** t, PathNode * pn = NULL,
@@ -325,7 +316,7 @@ public:
 
 
     int getShots(int *elapsed = NULL, uint32 make_shots = 0);
-    void getInRangeAll(toDefineXYZ & cp, std::vector<ShootableMapObject *> & targets,
+    void getInRangeAll(const WorldPoint & originLocW, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, int maxr = -1);
     void activate();
     void deactivate();

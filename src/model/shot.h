@@ -70,12 +70,9 @@ class InstantImpactShot : public Shot {
     void inflictDamage(Mission *pMission);
  private:
     //! Spread the impact on the ground
-    void diffuseImpact(Mission *m, const toDefineXYZ &originLocW,
+    void diffuseImpact(Mission *m, const WorldPoint &originLocW,
                        PathNode *impactLocT);
-    //!
-    ShootableMapObject *checkHitTarget(
-        toDefineXYZ &originLocW,
-        PathNode *impactLocT);
+
     //!
     void createImpactAnimation(Mission *pMission,
                                ShootableMapObject * pTargetHit,
@@ -138,9 +135,9 @@ class ProjectileShot: public Shot {
     double speed_;
 
     /*! Current position of projectile.*/
-    WorldPoint curPos_;
+    WorldPoint curLocW_;
     /*! Position of the target.*/
-    toDefineXYZ targetLocW_;
+    WorldPoint targetLocW_;
 
     /*! Projectile position incrementation on X axis.*/
     double incX_;

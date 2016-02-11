@@ -89,12 +89,6 @@ public:
     }
 };
 
-struct toDefineXYZ {
-        int x;
-        int y;
-        int z;
-    };
-
 /*!
  * Path node class.
  */
@@ -138,12 +132,6 @@ public:
         tile_x_ = x;
         tile_y_ = y;
         tile_z_ = z;
-    }
-
-    void convertPosToXYZ(toDefineXYZ *xyz) const {
-        xyz->x = tile_x_ * 256 + off_x_;
-        xyz->y = tile_y_ * 256 + off_y_;
-        xyz->z = tile_z_ * 128 + off_z_;
     }
 
     void convertPosToXY(int *x, int *y) {

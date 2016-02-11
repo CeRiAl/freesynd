@@ -280,7 +280,7 @@ protected:
 class WalkToDirectionAction : public MovementAction {
 public:
     //! Walk to direction given by point
-    WalkToDirectionAction(const PathNode &pn);
+    WalkToDirectionAction(const WorldPoint &destLocW);
     //! Walk following ped's direction
     WalkToDirectionAction(int speed = -1);
 
@@ -292,7 +292,7 @@ protected:
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 protected:
     /*! Where to walk to.*/
-    toDefineXYZ dest_;
+    WorldPoint destLocW_;
     /*! Structure to hold information while walking.*/
     DirMoveType moveDirdesc_;
     /*! Count the distance the ped has walked since starting the action.*/

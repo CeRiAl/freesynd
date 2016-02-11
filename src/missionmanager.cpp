@@ -693,9 +693,9 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             // This scenario defines something that uses a location
             PathNode pn(sc.tilex >> 1, sc.tiley >> 1, sc.tilez,
                 (sc.tilex & 0x01) << 7, (sc.tiley & 0x01) << 7);
+            WorldPoint locW(pn);
             if (sc.type == LevelData::kScenarioTypeTrigger) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Trigger at (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
-                WorldPoint locW(pn);
                 pPed->addToDefaultActions(new TriggerAction(6 * 256, locW));
             }
             if (v) {
@@ -704,7 +704,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                 pPed->addToDefaultActions(new DriveVehicleAction(pCar, pn));
             } else {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Walk toward location (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
-                pPed->addToDefaultActions(new WalkToDirectionAction(pn));
+                pPed->addToDefaultActions(new WalkToDirectionAction(locW));
             }
             if (isInVehicle && offset_nxt == 0) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Repeat driving scenario"))

@@ -221,7 +221,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
      * to the top letf corner of the minimap in pixel.
      */
     int signalXYZToMiniMapX() {
-        return signalSourceXYZ_.x * pixpertile_ / 256 - world_tx_ * pixpertile_ + pixpertile_;
+        return signalSourceLocW_.x * pixpertile_ / 256 - world_tx_ * pixpertile_ + pixpertile_;
     }
 
     /*!
@@ -229,7 +229,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
      * to the top letf corner of the minimap in pixel.
      */
     int signalXYZToMiniMapY() {
-        return signalSourceXYZ_.y * pixpertile_ / 256 - world_ty_ * pixpertile_ + pixpertile_;
+        return signalSourceLocW_.y * pixpertile_ / 256 - world_ty_ * pixpertile_ + pixpertile_;
     }
 
     /*!
@@ -303,8 +303,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     /*! Coords in pixels of the cross.*/
     int cross_y_;
     /*! Coords on the world map of the signal source.*/
-    //TilePoint signalSource_;
-    toDefineXYZ signalSourceXYZ_;
+    WorldPoint signalSourceLocW_;
     /*! Type of emitted signal. If NONE, no signal is emitted.*/
     ESignalType signalType_;
     /*! Radius for the signal circle.*/

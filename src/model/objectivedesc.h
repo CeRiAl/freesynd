@@ -60,7 +60,7 @@ public:
     }
 
     virtual ~ObjectiveDesc() {};
-    
+
     union {
         // index within vector of data
         uint16 targetindx;
@@ -72,7 +72,7 @@ public:
 
     // indx for sub objective
     uint16 subobjindx;
-    
+
     //! This message should be set during objective definition
     std::string msg;
     uint16 nxtobjindx;
@@ -216,14 +216,14 @@ public:
 class LocationObjective : public ObjectiveDesc {
 public:
     LocationObjective(int x, int y, int z) : ObjectiveDesc() {
-        pos_xyz.x = x;
-        pos_xyz.y = y;
-        pos_xyz.z = z;
+        objectiveLocw_.x = x;
+        objectiveLocw_.y = y;
+        objectiveLocw_.z = z;
     }
 
-    toDefineXYZ posXYZ() { return pos_xyz; }
+    const WorldPoint & location() { return objectiveLocw_; }
 protected:
-    toDefineXYZ pos_xyz;
+    WorldPoint objectiveLocw_;
 };
 
 /*!

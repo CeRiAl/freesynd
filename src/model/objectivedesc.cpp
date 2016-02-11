@@ -239,7 +239,7 @@ void ObjEvacuate::handleStart(Mission *p_mission) {
     GameEvent evt;
     evt.stream = GameEvent::kMission;
     evt.type = GameEvent::kObjEvacuate;
-    evt.pCtxt = &pos_xyz;
+    evt.pCtxt = &objectiveLocw_;
     g_gameCtrl.fireGameEvent(evt);
 }
 
@@ -259,7 +259,7 @@ void ObjEvacuate::evaluate(Mission *pMission) {
             endObjective(false);
         }
 
-        if (!(*it_p)->isCloseTo(pos_xyz, 512)) {
+        if (!(*it_p)->isCloseTo(objectiveLocw_, 512)) {
             // one of the peds is not yet in the evacuation perimeter
             return;
         }
@@ -268,7 +268,7 @@ void ObjEvacuate::evaluate(Mission *pMission) {
     for (size_t indx = AgentManager::kSlot1; indx < AgentManager::kMaxSlot; indx++) {
         PedInstance *pAgent = pMission->getSquad()->member(indx);
         if (pAgent && pAgent->isAlive()) {
-            if (!pAgent->isCloseTo(pos_xyz, 512)) {
+            if (!pAgent->isCloseTo(objectiveLocw_, 512)) {
                 // one of the peds is not yet in the evacuation perimeter
                 return;
             }

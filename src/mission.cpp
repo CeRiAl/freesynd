@@ -515,8 +515,8 @@ bool Mission::setSurfaces() {
             continue;
         }
         if (mdpoints_[x + y * mmax_x_ + z * mmax_m_xy].t == m_fdNotDefined) {
-            toDefineXYZ stodef;
-            std::vector<toDefineXYZ> vtodefine;
+            WorldPoint stodef;
+            std::vector<WorldPoint> vtodefine;
             mdpoints_[x + y * mmax_x_ + z * mmax_m_xy].t = m_fdDefReq;
             stodef.x = x;
             stodef.y = y * mmax_x_;
@@ -2598,17 +2598,18 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
     int cz = originLoc.z;
     if (cz > (mmax_z_ - 1) * 128)
         return 32;
-    // These are target coords
-    toDefineXYZ targetWLoc;
-    pTargetLoc->convertPosToXYZ(&targetWLoc);
 
-    if (targetWLoc.z > (mmax_z_ - 1) * 128)
+    // This variable will store the target location as it may moves if
+    // a tile blocks the path.
+    WorldPoint tmpTargetWLoc(*pTargetLoc);
+
+    if (tmpTargetWLoc.z > (mmax_z_ - 1) * 128)
         return 32;
 
     // d is the distance between the origin and the target
     double d = 0;
-    d = sqrt((double)((targetWLoc.x - cx) * (targetWLoc.x - cx) + (targetWLoc.y - cy) * (targetWLoc.y - cy)
-        + (targetWLoc.z - cz) * (targetWLoc.z - cz)));
+    d = sqrt((double)((tmpTargetWLoc.x - cx) * (tmpTargetWLoc.x - cx) + (tmpTargetWLoc.y - cy) * (tmpTargetWLoc.y - cy)
+        + (tmpTargetWLoc.z - cz) * (tmpTargetWLoc.z - cz)));
     uint8 block_mask = 1;
 
     if (pInitialDistance)
@@ -2626,14 +2627,14 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
 
         // update target position according to distanceMax
         double dist_k = (double)distanceMax / d;
-        targetWLoc.x = cx + (int)((targetWLoc.x - cx) * dist_k);
-        targetWLoc.y = cy + (int)((targetWLoc.y - cy) * dist_k);
-        targetWLoc.z = cz + (int)((targetWLoc.z - cz) * dist_k);
+        tmpTargetWLoc.x = cx + (int)((tmpTargetWLoc.x - cx) * dist_k);
+        tmpTargetWLoc.y = cy + (int)((tmpTargetWLoc.y - cy) * dist_k);
+        tmpTargetWLoc.z = cz + (int)((tmpTargetWLoc.z - cz) * dist_k);
         // set mask to indicate distanceMax is reached
         block_mask = 8;
         if (updateLoc) {
-            pTargetLoc->setTileXYZ(targetWLoc.x / 256, targetWLoc.y / 256, targetWLoc.z / 128);
-            pTargetLoc->setOffXYZ(targetWLoc.x % 256, targetWLoc.y % 256, targetWLoc.z % 128);
+            pTargetLoc->setTileXYZ(tmpTargetWLoc.x / 256, tmpTargetWLoc.y / 256, tmpTargetWLoc.z / 128);
+            pTargetLoc->setOffXYZ(tmpTargetWLoc.x % 256, tmpTargetWLoc.y % 256, tmpTargetWLoc.z % 128);
         }
         d = distanceMax;
     }
@@ -2641,9 +2642,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
     // NOTE: these values are less then 1, if they are incremented time
     // required to check range will be shorter less precise check, if
     // decremented longer more precise. Increment is (n * 8)
-    double inc_x = ((targetWLoc.x - cx) * 8) / d;
-    double inc_y = ((targetWLoc.y - cy) * 8) / d;
-    double inc_z = ((targetWLoc.z - cz) * 8) / d;
+    double inc_x = ((tmpTargetWLoc.x - cx) * 8) / d;
+    double inc_y = ((tmpTargetWLoc.y - cy) * 8) / d;
+    double inc_z = ((tmpTargetWLoc.z - cz) * 8) / d;
 
     int oldx = cx / 256;
     int oldy = cy / 256;
@@ -2691,9 +2692,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
                     double dsx = sx - (double)cx;
                     double dsy = sy - (double)cy;
                     double dsz = sz - (double)cz;
-                    targetWLoc.x = (int)sx;
-                    targetWLoc.y = (int)sy;
-                    targetWLoc.z = (int)sz;
+                    tmpTargetWLoc.x = (int)sx;
+                    tmpTargetWLoc.y = (int)sy;
+                    tmpTargetWLoc.z = (int)sz;
                     dist_close = sqrt(dsx * dsx + dsy * dsy + dsz * dsz);
                     // set mask to indicate path is blocked by a tile
                     if (block_mask == 1)

@@ -360,13 +360,11 @@ PedInstance * PanicComponent::findNearbyArmedPed(Mission *pMission, PedInstance 
  */
 void  PanicComponent::runAway(PedInstance *pPed) {
     // setting opposite direction for movement
-    toDefineXYZ thisPedLoc;
-    toDefineXYZ otherLoc;
-    pPed->convertPosToXYZ(&thisPedLoc);
-    pArmedPed_->convertPosToXYZ(&otherLoc);
+    WorldPoint thisPedLocW(pPed->position());
+    WorldPoint otherLocW(pArmedPed_->position());
 
-    pPed->setDirection(otherLoc.x - thisPedLoc.x,
-        otherLoc.y - thisPedLoc.y);
+    pPed->setDirection(otherLocW.x - thisPedLocW.x,
+        otherLocW.y - thisPedLocW.y);
     if (pPed->altAction() == NULL) {
         // Adds the action of running away
         WalkToDirectionAction *pAction =

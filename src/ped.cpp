@@ -680,8 +680,8 @@ void PedInstance::showPath(int scrollX, int scrollY) {
     }
 }
 
-PedInstance::PedInstance(Ped *ped, uint16 id, int m, bool isOur) :
-    ShootableMovableMapObject(id, m, MapObject::kNaturePed),
+PedInstance::PedInstance(Ped *ped, uint16 anId, int m, bool isOur) :
+    ShootableMovableMapObject(anId, m, MapObject::kNaturePed),
     ped_(ped),
     desc_state_(PedInstance::pd_smUndefined),
     hostile_desc_(PedInstance::pd_smUndefined),
@@ -1573,12 +1573,12 @@ bool PedInstance::hasAccessCard()
 /*!
  * Returns the number of points an agent must have to persuade
  * a ped of given type. Civilians or criminals are always persuaded.
- * \param type The type of the ped to persuade.
+ * \param aType The type of the ped to persuade.
  */
-uint16 PedInstance::getRequiredPointsToPersuade(PedType type) {
+uint16 PedInstance::getRequiredPointsToPersuade(PedType aType) {
     Mod *pMod = slots_[Mod::MOD_BRAIN];
     uint16 points = 0;
-    if (type == kPedTypeGuard) {
+    if (aType == kPedTypeGuard) {
         if (!pMod) {
             points = 4;
         } else if (pMod->getVersion() == Mod::MOD_V1) {
@@ -1586,7 +1586,7 @@ uint16 PedInstance::getRequiredPointsToPersuade(PedType type) {
         } else {
             points = 1;
         }
-    } else if (type == kPedTypePolice) {
+    } else if (aType == kPedTypePolice) {
         if (!pMod) {
             points = 8;
         } else if (pMod->getVersion() == Mod::MOD_V1) {
@@ -1596,7 +1596,7 @@ uint16 PedInstance::getRequiredPointsToPersuade(PedType type) {
         } else if (pMod->getVersion() == Mod::MOD_V3) {
             points = 2;
         }
-    } else if (type == kPedTypeAgent) {
+    } else if (aType == kPedTypeAgent) {
         if (!pMod) {
             points = 32;
         } else if (pMod->getVersion() == Mod::MOD_V1) {

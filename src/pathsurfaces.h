@@ -64,10 +64,10 @@
         m_fdSafeWalk      = 64
     } mapFloodDesc;
 
-    typedef struct {
-        toDefineXYZ coords;
+    struct toSetDesc {
+        WorldPoint coords;
         floodPointDesc *p;
-    } toSetDesc;
+    };
     typedef struct {
         uint16 indxs;
         uint16 n;

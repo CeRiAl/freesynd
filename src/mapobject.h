@@ -126,15 +126,6 @@ public:
      * Set the position of the object to be the given one.
      * \param pos New object position
      */
-    void setPosition(const toDefineXYZ &pos) {
-        setPosition(pos.x / 256, pos.y / 256, pos.z / 128, pos.x % 256,
-                    pos.y % 256, pos.z % 128 );
-    }
-
-    /*!
-     * Set the position of the object to be the given one.
-     * \param pos New object position
-     */
     void setPosition(const WorldPoint &pos) {
         setPosition(pos.x / 256, pos.y / 256, pos.z / 128, pos.x % 256,
                     pos.y % 256, pos.z % 128 );
@@ -203,21 +194,6 @@ public:
      * \param loc The location.
      * \param distance
      */
-    bool isCloseTo(const toDefineXYZ &loc, int32 distance) {
-        WorldPoint pt;
-        pt.x = loc.x;
-        pt.y = loc.y;
-        pt.z = loc.z;
-
-        return isCloseTo(pt, distance);
-    }
-
-    /*!
-     * Return true if the distance between this object and the given location
-     * is less than the given distance.
-     * \param loc The location.
-     * \param distance
-     */
     bool isCloseTo(const WorldPoint &loc, int32 distance) {
         int cx = pos_.tx * 256 + pos_.ox - (loc.x);
         int cy = pos_.ty * 256 + pos_.oy - (loc.y);
@@ -240,12 +216,6 @@ public:
         int cz = pos_.tz * 128 + pos_.oz + (size_z_ >> 1) - (pos.z);
 
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
-    }
-
-    void convertPosToXYZ(toDefineXYZ *xyz) {
-        xyz->x = pos_.tx * 256 + pos_.ox;
-        xyz->y = pos_.ty * 256 + pos_.oy;
-        xyz->z = pos_.tz * 128 + pos_.oz;
     }
 
     virtual bool animate(int elapsed);

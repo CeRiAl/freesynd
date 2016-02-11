@@ -257,10 +257,10 @@ bool WalkAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
     return updated;
 }
 
-WalkToDirectionAction::WalkToDirectionAction(const PathNode &dest) :
+WalkToDirectionAction::WalkToDirectionAction(const WorldPoint &destLocW) :
 MovementAction(kActTypeWalk) {
     maxDistanceToWalk_ = 0;
-    dest.convertPosToXYZ(&dest_);
+    destLocW_ = destLocW;
     targetState_ = PedInstance::pa_smWalking;
     newSpeed_ = -1;
 }
@@ -268,9 +268,9 @@ MovementAction(kActTypeWalk) {
 WalkToDirectionAction::WalkToDirectionAction(int speed) :
 MovementAction(kActTypeWalk) {
     maxDistanceToWalk_ = 0;
-    dest_.x = -1;
-    dest_.y = -1;
-    dest_.z = -1;
+    destLocW_.x = -1;
+    destLocW_.y = -1;
+    destLocW_.z = -1;
     targetState_ = PedInstance::pa_smWalking;
     newSpeed_ = speed;
 }
@@ -296,9 +296,9 @@ void WalkToDirectionAction::doStart(Mission *pMission, PedInstance *pPed) {
 bool WalkToDirectionAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
     bool endAction = false;
     int distanceToWalk = 0;
-    if (dest_.x != -1) {
-        int diffx = dest_.x - pPed->tileX() * 256 - pPed->offX();
-        int diffy = dest_.y - pPed->tileY() * 256 - pPed->offY();
+    if (destLocW_.x != -1) {
+        int diffx = destLocW_.x - pPed->tileX() * 256 - pPed->offX();
+        int diffy = destLocW_.y - pPed->tileY() * 256 - pPed->offY();
 
         // In this case, distance is the distance between ped and destination location
         distanceToWalk = (int)sqrt((double)(diffx * diffx + diffy * diffy));
@@ -308,11 +308,11 @@ bool WalkToDirectionAction::doExecute(int elapsed, Mission *pMission, PedInstanc
                             elapsed,
                             moveDirdesc_,
                             -1,
-                            dest_.x, dest_.y,
+                            destLocW_.x, destLocW_.y,
                             &distanceToWalk);
 
-            if (pPed->tileX() * 256 - pPed->offX() == dest_.x
-                && pPed->tileY() * 256 - pPed->offY() == dest_.y)
+            if (pPed->tileX() * 256 - pPed->offX() == destLocW_.x
+                && pPed->tileY() * 256 - pPed->offY() == destLocW_.y)
                 // TODO: add correct z or ignore it?
             {
                 endAction = true;

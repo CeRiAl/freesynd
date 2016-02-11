@@ -34,8 +34,8 @@
 #include "vehicle.h"
 
 void InstantImpactShot::inflictDamage(Mission *pMission) {
-    toDefineXYZ originLocW; // origin of shooting
-    dmg_.d_owner->convertPosToXYZ(&originLocW);
+    WorldPoint originLocW(dmg_.d_owner->position()); // origin of shooting
+    //dmg_.d_owner->convertPosToXYZ(&originLocW);
     // get how much impacts does the weapon generate
     int nbImpacts = dmg_.pWeapon->getWeaponClass()->shotsPerAmmo();
 
@@ -54,7 +54,9 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
         }
 
         // Verify if shot hit something or was blocked by a tile
-        ShootableMapObject *pTargetHit = checkHitTarget(originLocW, &impactLocT);
+        ShootableMapObject *pTargetHit = NULL;
+        dmg_.pWeapon->checkRangeAndBlocker(originLocW, &pTargetHit, &impactLocT, true);
+
         if (pTargetHit != NULL) {
             hitsByObject[pTargetHit] = hitsByObject[pTargetHit] + 1;
         }
@@ -70,7 +72,7 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
     }
 }
 
-void InstantImpactShot::diffuseImpact(Mission *pMission, const toDefineXYZ &originLocW, PathNode *impactLocT) {
+void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &originLocW, PathNode *impactLocT) {
     double angle = dmg_.pWeapon->getWeaponClass()->shotAngle();
     if (angle == 0)
         return;
@@ -80,8 +82,8 @@ void InstantImpactShot::diffuseImpact(Mission *pMission, const toDefineXYZ &orig
     int cy = originLocW.y;
     int cz = originLocW.z;
 
-    toDefineXYZ impactLocW;
-    impactLocT->convertPosToXYZ(&impactLocW);
+    WorldPoint impactLocW(*impactLocT);
+
     int tx = impactLocW.x;
     int ty = impactLocW.y;
     int tz = impactLocW.z;
@@ -190,18 +192,6 @@ void InstantImpactShot::diffuseImpact(Mission *pMission, const toDefineXYZ &orig
 
     impactLocT->setTileXYZ(gtx / 256, gty / 256, gtz / 128);
     impactLocT->setOffXYZ(gtx % 256, gtx % 256, gtz % 128);
-}
-
-/*!
- * Look in the given list of reachable object if an object is hit by an impact.
- * If there's something between the origin and the estimated impact, impactLocT
- * is updated.
- * \return Return the found object or NULL if no object was hit
- */
-ShootableMapObject *InstantImpactShot::checkHitTarget(toDefineXYZ &originLocW, PathNode *pImpactLocT) {
-    ShootableMapObject *pTarget = NULL;
-    uint8 has_blocker = dmg_.pWeapon->checkRangeAndBlocker(originLocW, &pTarget, pImpactLocT, true);
-    return pTarget;
 }
 
 /*!
@@ -385,7 +375,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
 
 ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg) : Shot(dmg) {
     elapsed_ = -1;
-    curPos_ = dmg.originLocW;
+    curLocW_ = dmg.originLocW;
     currentDistance_ = 0;
     lifeOver_ = false;
     drawImpact_ = false;
@@ -397,9 +387,9 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
     targetLocW_.y = dmg.aimedLocW.y;
     targetLocW_.z = dmg.aimedLocW.z;
 
-    double diffx = (double)(targetLocW_.x - curPos_.x);
-    double diffy = (double)(targetLocW_.y - curPos_.y);
-    double diffz = (double)(targetLocW_.z - curPos_.z);
+    double diffx = (double)(targetLocW_.x - curLocW_.x);
+    double diffy = (double)(targetLocW_.y - curLocW_.y);
+    double diffz = (double)(targetLocW_.z - curLocW_.z);
 
     double distanceToTarget  = sqrt(diffx * diffx + diffy * diffy + diffz * diffz);
     if (distanceToTarget != 0) {
@@ -517,7 +507,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     // maxr here is set to maximum that projectile can fly from its
     // current position
     uint8 block_mask = pMission->inRangeCPos(
-        curPos_, &pShootableHit_, &pn, true, false, distanceMax_ - was_dist);
+        curLocW_, &pShootableHit_, &pn, true, false, distanceMax_ - was_dist);
 
     if (block_mask == 1) {
         // ??
@@ -543,7 +533,7 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
 
     drawTrace(pMission, reached_pos);
 
-    curPos_ = reached_pos;
+    curLocW_ = reached_pos;
 
     dmg_.d_owner->setIsIgnored(previousIgnoreState);
 
@@ -559,7 +549,7 @@ void GaussGunShot::inflictDamage(Mission *pMission) {
 
     if (drawImpact_) {
         int dmgRange = dmg_.pWeapon->getWeaponClass()->rangeDmg();
-        Explosion::createExplosion(pMission, dmg_.pWeapon, curPos_, dmgRange, dmg_.dvalue);
+        Explosion::createExplosion(pMission, dmg_.pWeapon, curLocW_, dmgRange, dmg_.dvalue);
     }
 }
 
@@ -582,7 +572,7 @@ void GaussGunShot::drawTrace(Mission *pMission, const WorldPoint &currentPos) {
         int diff_dist = (int) ((d - lastAnimDist_) / anim_d);
         if (diff_dist != 0) {
             for (int i = 1; i <= diff_dist; i++) {
-                toDefineXYZ t;
+                WorldPoint t;
                 lastAnimDist_ += anim_d;
                 t.x = dmg_.originLocW.x + (int)(lastAnimDist_ * incX_);
                 t.y = dmg_.originLocW.y + (int)(lastAnimDist_ * incY_);
@@ -594,8 +584,7 @@ void GaussGunShot::drawTrace(Mission *pMission, const WorldPoint &currentPos) {
 
                 SFXObject *so = new SFXObject(pMission->map(),
                     dmg_.pWeapon->getWeaponClass()->impactAnims()->trace_anim);
-                so->setPosition(t.x / 256, t.y / 256, t.z / 128, t.x % 256,
-                    t.y % 256, t.z % 128 );
+                so->setPosition(t);
                 pMission->addSfxObject(so);
             }
         }

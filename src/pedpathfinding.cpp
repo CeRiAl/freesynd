@@ -1251,7 +1251,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
 #endif
 
     // path is created here
-    toDefineXYZ ctile;
+    WorldPoint ctile;
     ctile.x = pos_.tx;
     ctile.y = pos_.ty;
     ctile.z = pos_.tz;
@@ -1261,7 +1261,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     cdestpath.reserve(256);
     do {
         unsigned char nt = ct;
-        toDefineXYZ toadd;
+        WorldPoint toadd;
         char dist = 5;
         pfdp = &(mdpmirror[ctile.x + ctile.y * m->mmax_x_
                     + ctile.z * m->mmax_m_xy]);
@@ -2343,12 +2343,7 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             // and calculate distance at every step, but it is
             // a high cpu consuming
             if (!dest_path_.empty()) {
-                toDefineXYZ tmp;
-                dest_path_.back().convertPosToXYZ(&tmp);
-                WorldPoint wpt;
-                wpt.x = tmp.x;
-                wpt.y = tmp.y;
-                wpt.z = tmp.z;
+                WorldPoint wpt(dest_path_.back());
                 double dist_cur = distanceToPosition(wpt);
                 if (dist_cur < (double)dist_to_pos_) {
                     dest_path_.clear();

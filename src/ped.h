@@ -639,16 +639,6 @@ public:
         og_dmCriminal = 0x10
     } objGroupDefMasks;
 
-
-    typedef struct {
-        PathNode t_pn;
-        ShootableMapObject *t_smo;
-        toDefineXYZ t_xyz;
-        // 0 - unset, 1 - use t_pn, 2 - use t_smo, 3 - both are set
-        // 4 - t_xyz used
-        uint8 desc;
-    } targetDescType;
-
     //! Returns ped's speed under normal conditions
     int getDefaultSpeed();
     int getSpeedOwnerBoost();
