@@ -210,12 +210,12 @@ void PedInstance::changeSourceOfActions(Action::ActionSource source) {
 
 /*!
  * Adds the action to walk.
- * \param tpn Destination point
+ * \param destPosT Destination point
  * \param origin Origin of action
  * \param appendAction If true action is append after all existing actions.
  */
-void PedInstance::addActionWalk(const PathNode &tpn, bool appendAction) {
-    WalkAction *action = new WalkAction(tpn);
+void PedInstance::addActionWalk(const TilePoint &destPosT, bool appendAction) {
+    WalkAction *action = new WalkAction(destPosT);
     addMovementAction(action, appendAction);
 }
 
@@ -281,7 +281,7 @@ MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVehicle) {
 
 //! Adds action to drive vehicle to destination
 void PedInstance::addActionDriveVehicle(
-        VehicleInstance *pVehicle, PathNode &destination, bool appendAction) {
+        VehicleInstance *pVehicle, const TilePoint &destination, bool appendAction) {
     DriveVehicleAction *pAction = new DriveVehicleAction(pVehicle, destination);
     addMovementAction(pAction, appendAction);
 }
@@ -336,27 +336,26 @@ void PedInstance::insertHitAction(DamageInflictType &d) {
  * \return kShootActionNotAdded if no action (see canAddUseWeaponAction()),
  *
  */
-uint8 PedInstance::addActionShootAt(const PathNode &aimedPt) {
+uint8 PedInstance::addActionShootAt(const WorldPoint &aimedLocW) {
     if (canAddUseWeaponAction()) {
         uint8 res;
         // adds precision to the shoot
-        PathNode adjAimedPt = aimedPt;
+        WorldPoint adjAimedLocW = aimedLocW;
         WeaponInstance *pWeapon = selectedWeapon();
-        adjustAimedPtWithRangeAndAccuracy(pWeapon->getWeaponClass(), adjAimedPt);
-        // TODO : change PathNode to WorldPoint
-        WorldPoint adjAimedWpt(adjAimedPt);
+        adjustAimedPtWithRangeAndAccuracy(pWeapon->getWeaponClass(), &adjAimedLocW);
+
         if (pWeapon->getWeaponClass()->isAutomatic()) {
-            pUseWeaponAction_ = new AutomaticShootAction(adjAimedWpt, pWeapon);
+            pUseWeaponAction_ = new AutomaticShootAction(adjAimedLocW, pWeapon);
             res = ShootAction::kShootActionAutomaticShoot;
         } else {
-            pUseWeaponAction_ = new ShootAction(adjAimedWpt, pWeapon);
+            pUseWeaponAction_ = new ShootAction(adjAimedLocW, pWeapon);
             res = ShootAction::kShootActionSingleShoot;
         }
 
         // notify persuadeds to shoot
         for (std::set <PedInstance *>::iterator it =  persuadedSet_.begin();
                 it != persuadedSet_.end(); it++) {
-                    (*it)->addActionShootAt(aimedPt);
+                    (*it)->addActionShootAt(aimedLocW);
         }
 
         return res;

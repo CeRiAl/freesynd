@@ -693,6 +693,8 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             // This scenario defines something that uses a location
             PathNode pn(sc.tilex >> 1, sc.tiley >> 1, sc.tilez,
                 (sc.tilex & 0x01) << 7, (sc.tiley & 0x01) << 7);
+            TilePoint locT(sc.tilex >> 1, sc.tiley >> 1, sc.tilez,
+                (sc.tilex & 0x01) << 7, (sc.tiley & 0x01) << 7);
             WorldPoint locW(pn);
             if (sc.type == LevelData::kScenarioTypeTrigger) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Trigger at (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
@@ -701,7 +703,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             if (v) {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive car to (%d, %d, %d) (%d, %d)", pn.tileX(), pn.tileY(), pn.tileZ(), pn.offX(), pn.offY()))
                 VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
-                pPed->addToDefaultActions(new DriveVehicleAction(pCar, pn));
+                pPed->addToDefaultActions(new DriveVehicleAction(pCar, locT));
             } else {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Walk toward location (%d, %d, %d)", pn.tileX(), pn.tileY(), pn.tileZ()))
                 pPed->addToDefaultActions(new WalkToDirectionAction(locW));
@@ -726,12 +728,10 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                     pPed->addToDefaultActions(pAction);
                 }
             } else {
-                PathNode pn(v->tileX(), v->tileY(), v->tileZ(),
-                    v->offX(), v->offY());
-                LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive to (%d, %d, %d) (%d, %d)", pn.tileX(), pn.tileY(), pn.tileZ(), pn.offX(), pn.offY()))
+                LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive to (%d, %d, %d) (%d, %d)", v->tileX(), v->tileY(), v->tileZ(), v->offX(), v->offY()))
                 VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
                 pPed->addToDefaultActions(
-                        new DriveVehicleAction(pCar, pn));
+                        new DriveVehicleAction(pCar, v->position()));
             }
         } else if (sc.type == LevelData::kScenarioTypeEscape) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Escape"))

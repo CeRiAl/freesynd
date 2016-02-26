@@ -41,10 +41,10 @@
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-bool PedInstance::setDestination(Mission *m, PathNode &node, int newSpeed) {
+bool PedInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
     // if no speed was set, use ped's default speed
     speed_ = newSpeed != -1 ? newSpeed : getDefaultSpeed();
-    setDestinationP(m, node.tileX(), node.tileY(), node.tileZ(), node.offX(), node.offY());
+    setDestinationP(m, locT.tx, locT.ty, locT.tz, locT.ox, locT.oy);
     if (dest_path_.empty()) {
         // destination was not set -> stop ped
         speed_ = 0;

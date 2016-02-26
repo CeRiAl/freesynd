@@ -1477,48 +1477,35 @@ int PedInstance::getSpeedOwnerBoost()
  * on the weapon used, the ped's mods and IPA levels.
  * \param pWeaponClass The type of weapon used to shoot
  * \param aimedPt Where the player has clicked on the map. This point
- * will be updated to reflet the influence of precision.
+ * will be updated to reflect the influence of precision.
  */
-void PedInstance::adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, PathNode &aimedPt) {
-    // First adjust Range
-    int cx = tileX() * 256 + offX();
-    int cy = tileY() * 256 + offY();
-    int cz = tileZ() * 128 + offZ();
-    if (cz > (g_App.maps().map(map_)->maxZ() - 1) * 128)
+void PedInstance::adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, WorldPoint *pAimedLocW) {
+    // 1- Adjust Range
+    WorldPoint originLocW(pos_);
+    if (originLocW.z > (g_App.maps().map(map_)->maxZ() - 1) * 128)
         return;
 
-    int tx = aimedPt.tileX() * 256 + aimedPt.offX();
-    int ty = aimedPt.tileY() * 256 + aimedPt.offY();
-    int tz = aimedPt.tileZ() * 128 + aimedPt.offZ();
-    if (tz > (g_App.maps().map(map_)->maxZ() - 1) * 128)
+    if (pAimedLocW->z > (g_App.maps().map(map_)->maxZ() - 1) * 128)
         return;
 
-    double d = 0;
-    d = sqrt((double)((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy)
-        + (tz - cz) * (tz - cz)));
+    double d = distanceToPosition(*pAimedLocW);
 
     if (d == 0)
         return;
 
-    double sx = (double) cx;
-    double sy = (double) cy;
-    double sz = (double) cz;
-
     double maxr = (double) pWeaponClass->range();
     if (d >= maxr) {
-
+        // weapon's range is less than the distance to aimed point
+        // so compute new aimed point that is clipped by the range
         double dist_k = maxr / d;
-        tx = cx + (int)((tx - cx) * dist_k);
-        ty = cy + (int)((ty - cy) * dist_k);
-        tz = cz + (int)((tz - cz) * dist_k);
-
-        aimedPt.setTileXYZ(tx / 256, ty / 256, tz / 128);
-        aimedPt.setOffXYZ(tx % 256, ty % 256, tz % 128);
+        pAimedLocW->x = originLocW.x + (int)((pAimedLocW->x - originLocW.x) * dist_k);
+        pAimedLocW->y = originLocW.y + (int)((pAimedLocW->y - originLocW.y) * dist_k);
+        pAimedLocW->z = originLocW.z + (int)((pAimedLocW->z - originLocW.z) * dist_k);
     }
 
-
-    double accuracy = pWeaponClass->shotAcurracy();
+    // 2- Adjust Accuracy
     // TODO Add imprecision and accuracy
+    //double accuracy = pWeaponClass->shotAcurracy();
 }
 
 void PedInstance::getAccuracy(double &base_acc)

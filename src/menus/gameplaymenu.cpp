@@ -650,15 +650,14 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
 
     if (isPlayerShooting_) {
         // update direction for each shooting player
-        PathNode dest;
-        if (getAimedAt(x, y, dest)) {
-            WorldPoint aimedAtPt(dest);
+        WorldPoint aimedAtLocW;
+        if (getAimedAt(x, y, &aimedAtLocW)) {
             for (SquadSelection::Iterator it = selection_.begin(); it != selection_.end(); ++it) {
                 PedInstance *pAgent = *it;
                 if (pAgent->isUsingWeapon()) {
                     // If ped is currently shooting
                     // then update the action with new shooting target
-                    pAgent->updateShootingTarget(aimedAtPt);
+                    pAgent->updateShootingTarget(aimedAtLocW);
                 }
             }
         }
@@ -808,10 +807,10 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
             selection_.moveTo(mapPt, ctrl);
         }
     } else if (button == kMouseRightButton) {
-        PathNode pn;
-        if (getAimedAt(x, y, pn)) {
+        WorldPoint aimedAtLocW;
+        if (getAimedAt(x, y, &aimedAtLocW)) {
             isPlayerShooting_ = true;
-            selection_.shootAt(pn);
+            selection_.shootAt(aimedAtLocW);
         }
     }
 }
@@ -841,44 +840,26 @@ void GameplayMenu::handleClickOnMinimap(int x, int y) {
  * or a point on the ground.
  * \param x mouse X coord on screen
  * \param y mouse Y coord on screen
- * \param loc Finale location
+ * \param pLocWToSet Finale location
  * \return True if location has been set.
  */
-bool GameplayMenu::getAimedAt(int x, int y, PathNode &locToSet) {
+bool GameplayMenu::getAimedAt(int x, int y, WorldPoint *pLocWToSet) {
     bool locationSet = false;
 
     if (target_) {
         //  Player has aimed an object
+        pLocWToSet->convertFromTilePoint(target_->position());
         // z is set to half the size of the object
-        int tilez = target_->tileZ() * 128 + target_->offZ() + (target_->sizeZ() >> 1);
-        int offz = tilez % 128;
-        tilez /= 128;
+        pLocWToSet->z += target_->sizeZ() >> 1;
         locationSet = true;
-        locToSet.setTileX(target_->tileX());
-        locToSet.setTileY(target_->tileY());
-        locToSet.setTileZ(tilez);
-        locToSet.setOffX(target_->offX());
-        locToSet.setOffY(target_->offY());
-        locToSet.setOffZ(offz);
     } else {
-        TilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
+        // Player is shooting on the ground
+        TilePoint mapLocT = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
                     world_y_ + y);
-        mapPt.tz = 0;
-        int oz = 0;
-        if (mission_->getShootableTile(mapPt.tx, mapPt.ty, mapPt.tz, mapPt.ox, mapPt.oy, oz)) {
+        mapLocT.tz = 0;
+        if (mission_->getShootableTile(&mapLocT)) {
             locationSet = true;
-            locToSet.setTileX(mapPt.tx);
-            locToSet.setTileY(mapPt.ty);
-            locToSet.setTileZ(mapPt.tz);
-            locToSet.setOffX(mapPt.ox);
-            locToSet.setOffY(mapPt.oy);
-            locToSet.setOffZ(oz);
-#if 0
-            printf("shooting at\n x = %i, y=%i, z=%i\n",
-                    stx, sty, stz);
-            printf("shooting pos\n ox = %i, oy=%i, oz=%i\n",
-                    sox, soy, oz);
-#endif
+            pLocWToSet->convertFromTilePoint(mapLocT);
         }
     }
 

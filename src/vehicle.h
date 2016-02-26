@@ -53,7 +53,7 @@ public:
 
     VehicleAnimation();
     virtual ~VehicleAnimation() {}
-    
+
     //! Draw the vehicle
     void draw(int x, int y, int dir, int frame);
 
@@ -126,7 +126,7 @@ public:
     void draw(int x, int y);
 
     //! Set the destination to reach at given speed (todo : replace setDestinationV())
-    bool setDestination(Mission *m, PathNode &node, int newSpeed = -1);
+    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1);
 
     void addDestinationV(int x, int y, int z, int ox = 128, int oy = 128,
             int new_speed = 160) {

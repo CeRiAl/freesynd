@@ -327,7 +327,7 @@ public:
     void changeSourceOfActions(Action::ActionSource source);
 
     //! Adds action to walk to a given destination
-    void addActionWalk(const PathNode &tpn, bool appendAction);
+    void addActionWalk(const TilePoint &destPosT, bool appendAction);
 
     //! Adds action to follow a ped
     void addActionFollowPed(PedInstance *pPed);
@@ -339,11 +339,11 @@ public:
     MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
     //! Adds action to drive vehicle to destination
     void addActionDriveVehicle(
-           VehicleInstance *pVehicle, PathNode &destination, bool appendAction);
+           VehicleInstance *pVehicle, const TilePoint &destination, bool appendAction);
     //! Return true if ped can use a weapon
     bool canAddUseWeaponAction(WeaponInstance *pWeapon = NULL);
     //! Adds action to shoot somewhere
-    uint8 addActionShootAt(const PathNode &aimedPt);
+    uint8 addActionShootAt(const WorldPoint &aimedPt);
     //! Adds action to use medikit
     void addActionUseMedikit();
     //! Creates and insert a HitAction for the ped
@@ -353,7 +353,7 @@ public:
     // Movement management
     //*************************************
     //! Set the destination to reach at given speed (todo : replace setDestinationP())
-    bool setDestination(Mission *m, PathNode &node, int newSpeed = -1);
+    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1);
 
     void setDestinationP(Mission *m, int x, int y, int z,
         int ox = 128, int oy = 128);
@@ -378,7 +378,7 @@ public:
     //! Update the ped's shooting target
     void updateShootingTarget(const WorldPoint &aimedPt);
     //! Adjust aimed point with user accuracy and weapon max range
-    void adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, PathNode &aimedPt);
+    void adjustAimedPtWithRangeAndAccuracy(Weapon *pWeaponClass, WorldPoint *pAimedLocW);
     //! Gets the time before a ped can shoot again
     int getTimeBetweenShoots(WeaponInstance *pWeapon);
 

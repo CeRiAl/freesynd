@@ -86,8 +86,8 @@ protected:
     void updateSelectionForDeadAgent(PedInstance *p_ped);
     //! updates visual markers for our agents
     void updtAgentsMarker();
-    //! Set loc param with point on the map where player clicked to shoot
-    bool getAimedAt(int x, int y, PathNode &loc);
+    //! Set pLocWToSet param with point on the map where player clicked to shoot
+    bool getAimedAt(int x, int y, WorldPoint *pLocWToSet);
     void stopShootingEvent();
     //! Centers the minimap on the selection leader
     void centerMinimapOnLeader();
@@ -118,7 +118,7 @@ protected:
     int scroll_y_;
     /*! Agent selection manager.*/
     SquadSelection selection_;
-    /*! Object mouse cursor is above*/ 
+    /*! Object mouse cursor is above*/
     ShootableMapObject *target_;
     /*! This renderer is in charge of drawing the map.*/
     MapRenderer map_renderer_;

@@ -258,13 +258,13 @@ public:
     void clrSurfaces();
     bool getWalkable(TilePoint &mtp);
     bool getWalkableClosestByZ(TilePoint &mtp);
-    bool getShootableTile(int &x, int &y, int &z, int &ox, int &oy, int &oz);
+    bool getShootableTile(TilePoint *pLocT);
     bool isTileSolid(int x, int y, int z, int ox, int oy, int oz);
 
     //! TODO remove method
     void adjXYZ(int &x, int &y, int &z) { p_map_->adjXYZ(x, y, z); }
     //! Check if a tile is blocking the path between originLoc and pTargetLoc
-    uint8 checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTargetLoc, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
+    uint8 checkBlockedByTile(const WorldPoint & originLoc, WorldPoint *pTargetPosW, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
 
     void blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
         double *dist, MapObject** blockerObj);

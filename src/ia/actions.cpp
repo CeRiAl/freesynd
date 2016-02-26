@@ -202,10 +202,10 @@ void MovementAction::removeAndJoinChain() {
     pNext_ = NULL;
 }
 
-WalkAction::WalkAction(PathNode pn, int speed) :
+WalkAction::WalkAction(const TilePoint &locT, int speed) :
     MovementAction(kActTypeWalk) {
     newSpeed_ = speed;
-    dest_ = pn;
+    destLocT_ = locT;
     targetState_ = PedInstance::pa_smWalking;
 }
 
@@ -218,12 +218,7 @@ MovementAction(kActTypeWalk) {
 
 void WalkAction::setDestination(ShootableMapObject *smo) {
     // Set destination point
-    dest_.setTileX(smo->tileX());
-    dest_.setTileY(smo->tileY());
-    dest_.setTileZ(smo->tileZ());
-    dest_.setOffX(smo->offX());
-    dest_.setOffY(smo->offY());
-    dest_.setOffZ(smo->offZ());
+    destLocT_ = smo->position();
 }
 
 bool WalkAction::suspend(PedInstance *pPed) {
@@ -233,7 +228,7 @@ bool WalkAction::suspend(PedInstance *pPed) {
 
 void WalkAction::doStart(Mission *pMission, PedInstance *pPed) {
     // Go to given location at given speed
-    if (!pPed->setDestination(pMission, dest_, newSpeed_)) {
+    if (!pPed->setDestination(pMission, destLocT_, newSpeed_)) {
         setFailed();
         return;
     }
@@ -400,12 +395,7 @@ MovementAction(kActTypeFollow) {
  * Saves the target current position in the targetLastPos_ field.
  */
 void FollowAction::updateLastTargetPos() {
-    targetLastPos_.setTileX(pTarget_->tileX());
-    targetLastPos_.setTileY(pTarget_->tileY());
-    targetLastPos_.setTileZ(pTarget_->tileZ());
-    targetLastPos_.setOffX(pTarget_->offX());
-    targetLastPos_.setOffY(pTarget_->offY());
-    targetLastPos_.setOffZ(pTarget_->offZ());
+    targetLastPos_ = pTarget_->position();
 }
 
 void FollowAction::doStart(Mission *pMission, PedInstance *pPed) {
@@ -444,7 +434,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
 
         // target has moved: we use checkCurrPosTileOnly() to give time to ped
         // to walk away else animation is buggy
-        if (!pTarget_->checkCurrPosTileOnly(targetLastPos_)) {
+        if (!pTarget_->sameTile(targetLastPos_)) {
             // resetting target position
             updateLastTargetPos();
             if (pPed->setDestination(pMission, targetLastPos_)) {
@@ -482,8 +472,7 @@ void FollowToShootAction::doStart(Mission *pMission, PedInstance *pPed) {
         followDistance_ = (pPed->selectedWeapon()->range() / 3 ) *2;
     }
 
-    targetLastPos_.setTileXYZ(0, 0, 0);
-    targetLastPos_.setOffXY(0, 0);
+    targetLastPosW_.reset();
 }
 
 bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
@@ -494,22 +483,22 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
         pPed->clearDestination();
         setFailed();
     } else {
-        // target has moved: we use checkCurrPosTileOnly() to give time to ped
+        // target has moved: we check if target is not too far to give time to ped
         // to walk away else animation is buggy
-        if (!pTarget_->checkCurrPosTileOnly(targetLastPos_)) {
+        if (!pTarget_->isCloseTo(targetLastPosW_, 128)) {
             // resetting target position
-            pTarget_->getPosition(&targetLastPos_);
-            if (!pPed->setDestination(pMission, targetLastPos_)) {
+            targetLastPosW_.convertFromTilePoint(pTarget_->position());
+            if (!pPed->setDestination(pMission, pTarget_->position())) {
                 setFailed();
                 return true;
             }
         }
 
-        WorldPoint policeLoc(pPed->position());
+        WorldPoint policePosW(pPed->position());
         // police stops walking if the target is in range of fire (ie close enough and not
         // hiding behing something)
         if (pPed->isCloseTo(pTarget_, followDistance_) &&
-            pMission->checkBlockedByTile(policeLoc, &targetLastPos_, true, followDistance_) == 1) {
+            pMission->checkBlockedByTile(policePosW, &targetLastPosW_, true, followDistance_) == 1) {
             // We reached the target so stop moving
             setSucceeded();
             pPed->clearDestination();
@@ -599,7 +588,7 @@ bool EnterVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-DriveVehicleAction::DriveVehicleAction(VehicleInstance *pVehicle, PathNode &dest) :
+DriveVehicleAction::DriveVehicleAction(VehicleInstance *pVehicle, const TilePoint &dest) :
     MovementAction(kActTypeUndefined, false, true) {
     pVehicle_ = pVehicle;
     dest_ = dest;
@@ -616,7 +605,7 @@ void DriveVehicleAction::doStart(Mission *pMission, PedInstance *pPed) {
 }
 
 bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (pPed->checkCurrPosTileOnly(dest_)) {
+    if (pPed->sameTile(dest_)) {
         setSucceeded();
     }
     return true;
@@ -712,10 +701,9 @@ void FireWeaponAction::doStart(Mission *pMission, PedInstance *pPed) {
         // Police man don't shoot on peds that don't have gun out
         setFailed();
     } else {
-        PathNode targetLoc;
-        pTarget_->getPosition(&targetLoc);
+        WorldPoint targetLocW(pTarget_->position());
 
-        shootType_ = pPed->addActionShootAt(targetLoc);
+        shootType_ = pPed->addActionShootAt(targetLocW);
         if (shootType_ == ShootAction::kShootActionNotAdded) {
             // failed to shoot because weapon has no ammo
             setFailed();

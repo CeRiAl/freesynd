@@ -2574,13 +2574,13 @@ void Mission::blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
 }
 
 /*!
- * Verify that the path from originLoc to pTargetLoc is not blocked by a tile.
- * If such a tile exists, pTargetLoc is updated with the position of the blocking tile.
- * \param originLoc Path starting point
- * \param pTargetLoc Path end point
- * \param updateLoc Set to true to update pTargetLoc when blocking tile is found
+ * Verify that the path from originPosW to pTargetPosW is not blocked by a tile.
+ * If such a tile exists, pTargetPosW is updated with the position of the blocking tile.
+ * \param originPosW Path starting point
+ * \param pTargetPosW Path end point
+ * \param updateLoc Set to true to update pTargetPosW when blocking tile is found
  * \param distanceMax Maximum distance we cannot cross. If distanceMax is
- *   reached before pTargetLoc, then path is stopped.
+ *   reached before pTargetPosW, then path is stopped.
  * \param pInitialDistance This is the distance between origin and initial target position
  * \return a bitmask indicating the type of result:
  *      - 0b(1) : target in range
@@ -2588,20 +2588,20 @@ void Mission::blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
  *      - 4b(16): blocker tile, "pTargetLoc" is set
  *      - 5b(32): out of visible reach
  */
-uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTargetLoc,
+uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTargetPosW,
                                   bool updateLoc, double distanceMax, double *pInitialDistance) {
     // TODO: some objects mid point is higher then map z
     assert(distanceMax >= 0);
 
-    int cx = originLoc.x;
-    int cy = originLoc.y;
-    int cz = originLoc.z;
+    int cx = originPosW.x;
+    int cy = originPosW.y;
+    int cz = originPosW.z;
     if (cz > (mmax_z_ - 1) * 128)
         return 32;
 
     // This variable will store the target location as it may moves if
     // a tile blocks the path.
-    WorldPoint tmpTargetWLoc(*pTargetLoc);
+    WorldPoint tmpTargetWLoc = *pTargetPosW;
 
     if (tmpTargetWLoc.z > (mmax_z_ - 1) * 128)
         return 32;
@@ -2633,8 +2633,7 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
         // set mask to indicate distanceMax is reached
         block_mask = 8;
         if (updateLoc) {
-            pTargetLoc->setTileXYZ(tmpTargetWLoc.x / 256, tmpTargetWLoc.y / 256, tmpTargetWLoc.z / 128);
-            pTargetLoc->setOffXYZ(tmpTargetWLoc.x % 256, tmpTargetWLoc.y % 256, tmpTargetWLoc.z % 128);
+            *pTargetPosW = tmpTargetWLoc;
         }
         d = distanceMax;
     }
@@ -2702,10 +2701,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
                     else
                         block_mask |= 16;
                     if (updateLoc) {
-                        pTargetLoc->setTileXYZ((int)sx / 256, (int)sy / 256,
-                            (int)sz / 128);
-                        pTargetLoc->setOffXYZ((int)sx % 256, (int)sy % 256,
-                            (int)sz % 128);
+                        pTargetPosW->x = (int)sx;
+                        pTargetPosW->y = (int)sy;
+                        pTargetPosW->z = (int)sz;
                     }
                     break;
                 }
@@ -2735,47 +2733,44 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originLoc, PathNode *pTarge
  * NOTE: only if "pn" or "t" are not null, variables are set
 
 */
-uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
+uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** pTarget,
     PathNode * pn, bool setBlocker, bool checkTileOnly, double maxr,
     double * distTo)
 {
     // search for a tile blocking the path towards the target
     // tmp will hold the updated position after that search
-    PathNode tmp;
-    if (t && *t) {
-        tmp.setTileX((*t)->tileX());
-        tmp.setTileY((*t)->tileY());
-        tmp.setTileZ((*t)->tileZ());
-        tmp.setOffX((*t)->offX());
-        tmp.setOffY((*t)->offY());
-        tmp.setOffZ((*t)->offZ());
+    WorldPoint tmpPosW;
+    if (pTarget && *pTarget) {
+        tmpPosW.convertFromTilePoint((*pTarget)->position());
     } else {
-        tmp = *pn;
+        tmpPosW.convertFromPathNode(*pn);
     }
 
-    uint8 block_mask = checkBlockedByTile(originLoc, &tmp, true, maxr, distTo);
+    uint8 block_mask = checkBlockedByTile(originLoc, &tmpPosW, true, maxr, distTo);
     if (block_mask == 32) {
         // coords are out of map limits
         return block_mask;
     }
 
     if (setBlocker) {
-        pn->setTileXYZ(tmp.tileX(), tmp.tileY(), tmp.tileZ());
-        pn->setOffXYZ(tmp.offX(), tmp.offY(), tmp.offZ());
+        pn->setTileXYZ(tmpPosW.x / 256, tmpPosW.y / 256,
+                            tmpPosW.z / 128);
+        pn->setOffXYZ(tmpPosW.x % 256, tmpPosW.y % 256,
+                            tmpPosW.z % 128);
     }
 
     if (checkTileOnly)
         return block_mask;
 
     WorldPoint tmpOrigin = originLoc;
-    WorldPoint tmpEnd(tmp);
+    WorldPoint tmpEnd = tmpPosW;
     MapObject *blockerObj = NULL;
 
     // We search for a possible object blocking the way on the path
     // between origin and the reached position
-    int tx = tmp.tileX() * 256 + tmp.offX();
-    int ty = tmp.tileY() * 256 + tmp.offY();
-    int tz = tmp.tileZ() * 128 + tmp.offZ();
+    int tx = tmpPosW.x;
+    int ty = tmpPosW.y;
+    int tz = tmpPosW.z;
     double dist_blocker = sqrt((double)((tx - originLoc.x) *
         (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
         + (tz - originLoc.z) * (tz - originLoc.z)));
@@ -2793,13 +2788,13 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t
                     tmpOrigin.z % 128);
                 block_mask |= 4;
             }
-            if (t) {
-                *t = (ShootableMapObject *)blockerObj;
+            if (pTarget) {
+                *pTarget = (ShootableMapObject *)blockerObj;
                 block_mask |= 2;
             }
         } else {
-            if (t && *t) {
-                if (*t != blockerObj)
+            if (pTarget && *pTarget) {
+                if (*pTarget != blockerObj)
                     block_mask |= 6;
                 else
                     block_mask = 1;
@@ -2808,8 +2803,8 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t
         }
     } else {
         if (setBlocker) {
-            if (block_mask != 1 && t)
-                *t = NULL;
+            if (block_mask != 1 && pTarget)
+                *pTarget = NULL;
         }
     }
 
@@ -2895,8 +2890,7 @@ uint8 Mission::getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objec
     return res == 1 ? 0 : 1;
 }
 
-bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
-    int &oz)
+bool Mission::getShootableTile(TilePoint *pLocT)
 {
     // TODO: review later
     bool gotit = false;
@@ -2907,10 +2901,10 @@ bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
     do {
         --bz;
         int bzm = bz - 1;
-        bx = x * 256 + ox + 128 * bzm;
+        bx = pLocT->tx * 256 + pLocT->ox + 128 * bzm;
         box = bx % 256;
         bx = bx / 256;
-        by = y * 256 + oy + 128 * bzm;
+        by = pLocT->ty * 256 + pLocT->oy + 128 * bzm;
         boy = by % 256;
         by = by / 256;
         if (bz >= mmax_z_ || bx >= mmax_x_ || by >= mmax_y_)
@@ -3110,19 +3104,19 @@ bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
         twd = mtsurfaces_[bx + by * mmax_x_ + (bz - 1) * mmax_m_xy].twd;
         switch (twd) {
             case 0x01:
-                oz = 127 - (boy >> 1);
+                pLocT->oz = 127 - (boy >> 1);
                 --bz;
                 break;
             case 0x02:
-                oz = boy >> 1;
+                pLocT->oz = boy >> 1;
                 --bz;
                 break;
             case 0x03:
-                oz = box >> 1;
+                pLocT->oz = box >> 1;
                 --bz;
                 break;
             case 0x04:
-                oz = 127 - (box >> 1);
+                pLocT->oz = 127 - (box >> 1);
                 --bz;
                 break;
             default:
@@ -3131,28 +3125,28 @@ bool Mission::getShootableTile(int &x, int &y, int &z, int &ox, int &oy,
                     // recalculating point of collision
                     if (box > 192 || boy > 192) {
                         if (box >= boy)
-                            oz = (256 - box) << 1;
+                            pLocT->oz = (256 - box) << 1;
                         else if (boy > box)
-                            oz = (256 - boy) << 1;
+                            pLocT->oz = (256 - boy) << 1;
                     } else
-                        oz = 128;
+                        pLocT->oz = 128;
 
-                    bx = x * 256 + ox + 128 * (bz - 1) + oz;
+                    bx = pLocT->tx * 256 + pLocT->ox + 128 * (bz - 1) + pLocT->oz;
                     box = bx % 256;
                     bx = bx / 256;
-                    by = y * 256 + oy + 128 * (bz - 1) + oz;
+                    by = pLocT->ty * 256 + pLocT->oy + 128 * (bz - 1) + pLocT->oz;
                     boy = by % 256;
                     by = by / 256;
-                    bz += oz / 128;
-                    oz %= 128;
+                    bz += pLocT->oz / 128;
+                    pLocT->oz %= 128;
                 } else
-                    oz = 0;
+                    pLocT->oz = 0;
         }
-        x = bx;
-        y = by;
-        z = bz;
-        ox = box;
-        oy = boy;
+        pLocT->tx = bx;
+        pLocT->ty = by;
+        pLocT->tz = bz;
+        pLocT->ox = box;
+        pLocT->oy = boy;
         assert(bz >= 0);
     }
     return gotit;

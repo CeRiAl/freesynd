@@ -304,12 +304,12 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
                     sty = mapPt.ty * 256 + mapPt.oy + 128 * (pVehicle->tileZ() - 1);
                     //soy = sty % 256;
                     sty = sty / 256;
-                    PathNode tpn = PathNode(stx, sty, 0, 128, 128);
-                    pAgent->addActionDriveVehicle(pVehicle, tpn, addAction);
+                    TilePoint posT = TilePoint(stx, sty, 0, 128, 128);
+                    pAgent->addActionDriveVehicle(pVehicle, posT, addAction);
                 }
             }
         } else {
-            PathNode tpn = PathNode(mapPt.tx, mapPt.ty, mapPt.tz, mapPt.ox, mapPt.oy, 0);
+            TilePoint tmpPosT = mapPt;
 
             if (size() > 1) {
                 //TODO: current group position is like
@@ -320,11 +320,11 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
 
                 //this should be romoved if non-tile
                 //position needed
-                tpn.setOffX(63 + 128 * (i % 2));
-                tpn.setOffY(63 + 128 * (i >> 1));
+                tmpPosT.ox = 63 + 128 * (i % 2);
+                tmpPosT.oy = 63 + 128 * (i >> 1);
             }
 
-            pAgent->addActionWalk(tpn, addAction);
+            pAgent->addActionWalk(tmpPosT, addAction);
         }
     } // end of for
 }
@@ -332,11 +332,11 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
 /*!
  * Each selected agent will use his weapon and shoot at the given target.
  * Agent will shoot only if he's armed and ready to shoot.
- * \param aimedPt Where the agent must shoot
+ * \param aimedLocW Where the agent must shoot
  */
-void SquadSelection::shootAt(PathNode &aimedPt) {
+void SquadSelection::shootAt(const WorldPoint &aimedLocW) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
         PedInstance *pAgent = *it;
-        pAgent->addActionShootAt(aimedPt);
+        pAgent->addActionShootAt(aimedLocW);
     }
 }

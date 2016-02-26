@@ -625,33 +625,6 @@ bool ShootableMovableMapObject::updatePlacement(int nOffX, int nOffY)
     return changed;
 }
 
-bool ShootableMovableMapObject::checkFinalDest(PathNode &pn) {
-    if (dest_path_.empty())
-        return false;
-    PathNode &target_pn = dest_path_.back();
-    return pn.tileX() == target_pn.tileX()
-        && pn.tileY() == target_pn.tileY()
-        && pn.tileZ() == target_pn.tileZ()
-        && pn.offX() == target_pn.offX()
-        && pn.offY() == target_pn.offY()
-        && pn.offZ() == target_pn.offZ();
-}
-
-bool ShootableMovableMapObject::checkCurrPos(PathNode &pn) {
-    return pn.tileX() == pos_.tx
-        && pn.tileY() == pos_.ty
-        && pn.tileZ() == pos_.tz
-        && pn.offX() == pos_.ox
-        && pn.offY() == pos_.oy
-        && pn.offZ() == pos_.oz;
-}
-
-bool ShootableMovableMapObject::checkCurrPosTileOnly(PathNode &pn) {
-    return pn.tileX() == pos_.tx
-        && pn.tileY() == pos_.ty
-        && pn.tileZ() == pos_.tz;
-}
-
 Static *Static::loadInstance(uint8 * data, uint16 id, int m)
 {
     LevelData::Statics * gamdata =

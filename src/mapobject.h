@@ -131,18 +131,6 @@ public:
                     pos.y % 256, pos.z % 128 );
     }
 
-    /*!
-     * Set the given position to the ped's position.
-     */
-    void getPosition(PathNode *pn) {
-        pn->setTileX(pos_.tx);
-        pn->setTileY(pos_.ty);
-        pn->setTileZ(pos_.tz);
-        pn->setOffX(pos_.ox);
-        pn->setOffY(pos_.oy);
-        pn->setOffZ(pos_.oz);
-    }
-
     int tileX() const { return pos_.tx; }
     int tileY() const { return pos_.ty; }
     int tileZ() const { return pos_.tz; }
@@ -173,8 +161,23 @@ public:
     virtual int map() { return map_; }
     void setMap(int new_map) { map_ = new_map; }
 
+    /*!
+     *
+     */
     bool samePosition(MapObject * other) {
         return pos_.equals(other->position());
+    }
+
+    /*!
+     * checks whether current position is on the same tile as
+     * posT.
+     * \param posT point to compare.
+     * \return true if tile is the same
+     */
+    bool sameTile(const TilePoint &posT) {
+        return posT.tx == pos_.tx
+        && posT.ty == pos_.ty
+        && posT.tz == pos_.tz;
     }
 
     /*!
@@ -512,17 +515,12 @@ public:
     }
 
     //! Set the destination to reach at given speed
-    virtual bool setDestination(Mission *m, PathNode &node, int newSpeed = -1) = 0;
+    virtual bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1) = 0;
 
-    //! checks whether final destination is same as pn
-    bool checkFinalDest(PathNode& pn);
+    //! Return true if the ped is moving
     bool isMoving() { return speed_ != 0 || !dest_path_.empty();}
     //! Returns true if object currently has a destination point (ie it's arrived)
     bool hasDestination() { return !dest_path_.empty(); }
-    //! checks whether current position is same as pn
-    bool checkCurrPos(PathNode &pn);
-    //! checks whether current position is same as pn, tile only
-    bool checkCurrPosTileOnly(PathNode &pn);
 
     FreeWay hold_on_;
 

@@ -178,7 +178,7 @@ class SquadSelection {
     //! Move selected agents to the given point
     void moveTo(TilePoint &mapPt, bool addAction);
     //! Every selected armed agent shoot at location
-    void shootAt(PathNode &pn);
+    void shootAt(const WorldPoint &aimedLocW);
  private:
     /*!
      * Return true if an agent can be selected :

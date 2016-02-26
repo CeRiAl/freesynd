@@ -34,24 +34,6 @@ class WeaponInstance;
 class Vehicle;
 class VehicleInstance;
 
-namespace fs_action {
-
-    /*!
-     * List the different process by which action can be created.
-     */
-    enum CreatOrigin {
-        //! By script
-        kOrigScript = 1,
-        //! Obsolete : to remove
-        kOrigDefault = 2,
-        //! By another action group
-        kOrigAction = 3,
-        //! From user input
-        kOrigUser = 4,
-        //! Something happened that generated this action
-        kOrigEvent = 5
-    };
-}
 
 /*!
  * The Action class is an abstract class representing an action that a ped can do
@@ -251,7 +233,7 @@ protected:
 class WalkAction : public MovementAction {
 public:
     //! Walt to given point
-    WalkAction(PathNode pn, int speed = -1);
+    WalkAction(const TilePoint &locT, int speed = -1);
     //! Walk to given object
     WalkAction(ShootableMapObject *smo, int speed = -1);
 
@@ -264,7 +246,7 @@ protected:
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 protected:
     /*! Where to walk to.*/
-    PathNode dest_;
+    TilePoint destLocT_;
     /*! Speed used to walk to destination.*/
     int newSpeed_;
 };
@@ -336,9 +318,9 @@ protected:
  */
 class ResetScriptedAction : public MovementAction {
 public:
-    ResetScriptedAction(ActionSource source):
+    ResetScriptedAction(ActionSource aSource):
         MovementAction(kActTypeReset, false, true) {
-            sourceToReset_ = source;
+            sourceToReset_ = aSource;
         }
 
     ActionSource sourceToReset() { return sourceToReset_; }
@@ -393,7 +375,7 @@ protected:
     /*! The ped to follow.*/
     PedInstance *pTarget_;
     /*! To keep track of target position and see if it has moved.*/
-    PathNode targetLastPos_;
+    TilePoint targetLastPos_;
 };
 
 /*!
@@ -414,7 +396,7 @@ protected:
     /*! The ped to follow.*/
     PedInstance *pTarget_;
     /*! To keep track of target position and see if it has moved.*/
-    PathNode targetLastPos_;
+    WorldPoint targetLastPosW_;
     /*! The distance.*/
     int followDistance_;
 };
@@ -474,7 +456,7 @@ protected:
  */
 class DriveVehicleAction : public MovementAction {
 public:
-    DriveVehicleAction(VehicleInstance *pVehicle, PathNode &dest);
+    DriveVehicleAction(VehicleInstance *pVehicle, const TilePoint &dest);
 
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
@@ -483,7 +465,7 @@ protected:
     /*! Vehicle to drive.*/
     VehicleInstance *pVehicle_;
     /*! Destination point.*/
-    PathNode dest_;
+    TilePoint dest_;
 };
 
 /*!

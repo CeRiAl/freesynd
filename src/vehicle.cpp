@@ -392,13 +392,13 @@ bool VehicleInstance::dirWalkable(PathNode *p, int x, int y, int z) {
 /*!
  * Sets a destination point for the vehicle to reach at given speed.
  * \param m
- * \param node destination point
+ * \param locT destination point
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-bool VehicleInstance::setDestination(Mission *m, PathNode &node, int newSpeed) {
+bool VehicleInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
     speed_ = newSpeed;
-    setDestinationV(node.tileX(), node.tileY(), node.tileZ(), node.offX(), node.offY(), newSpeed);
+    setDestinationV(locT.tx, locT.ty, locT.tz, locT.ox, locT.oy, newSpeed);
     return !dest_path_.empty();
 }
 

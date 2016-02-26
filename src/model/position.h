@@ -48,12 +48,17 @@ public:
     int oz;
 
     TilePoint() {
-        tx = 0;
-        ty = 0;
-        tz = 0;
-        ox = 0;
-        oy = 0;
-        oz = 0;
+        reset();
+    }
+
+    TilePoint(int tile_x, int tile_y, int tile_z, int off_x = 128,
+            int off_y = 128, int off_z = 0) {
+        tx = tile_x;
+        ty = tile_y;
+        tz = tile_z;
+        ox = off_x;
+        oy = off_y;
+        oz = off_z;
     }
 
     TilePoint(const TilePoint &tp) {
@@ -63,6 +68,15 @@ public:
         ox = tp.ox;
         oy = tp.oy;
         oz = tp.oz;
+    }
+
+    void reset() {
+        tx = 0;
+        ty = 0;
+        tz = 0;
+        ox = 0;
+        oy = 0;
+        oz = 0;
     }
 
     /*!
@@ -154,9 +168,7 @@ public:
     int z;
 
     WorldPoint() {
-        x = 0;
-        y = 0;
-        z = 0;
+        reset();
     }
 
     WorldPoint(const TilePoint &tp) {
@@ -164,15 +176,34 @@ public:
     }
 
     WorldPoint(const PathNode &pn) {
-        x = pn.tileX() * 256 + pn.offX();
-        y = pn.tileY() * 256 + pn.offY();
-        z = pn.tileZ() * 128 + pn.offZ();
+        convertFromPathNode(pn);
+    }
+
+    void reset() {
+        x = 0;
+        y = 0;
+        z = 0;
     }
 
     void convertFromTilePoint(const TilePoint &tp) {
         x = tp.tx * 256 + tp.ox;
         y = tp.ty * 256 + tp.oy;
         z = tp.tz * 128 + tp.oz;
+    }
+
+    void convertFromPathNode(const PathNode &pn) {
+        x = pn.tileX() * 256 + pn.offX();
+        y = pn.tileY() * 256 + pn.offY();
+        z = pn.tileZ() * 128 + pn.offZ();
+    }
+
+    void convertToTilePoint(TilePoint *pTp) {
+        pTp->tx = x / 256;
+        pTp->ty = y / 256;
+        pTp->tz = z / 128;
+        pTp->ox = x % 256;
+        pTp->oy = y % 256;
+        pTp->oz = z % 128;
     }
 };
 

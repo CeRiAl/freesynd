@@ -306,16 +306,16 @@ void Explosion::generateFlameWaves(Mission *pMission, WorldPoint *pOrigin, doubl
             double x = (double)(144 * i) * cos(base_angle);
             double y = (double)(144 * i) * sin(base_angle);
             base_angle += angle_inc;
-            PathNode flamePos = PathNode((base_pos.x + (int)x) / 256,
-                (base_pos.y + (int)y) / 256,
-                base_pos.z / 128, (base_pos.x + (int)x) % 256,
-                (base_pos.y + (int)y) % 256, base_pos.z % 128);
+            WorldPoint flamePosW;
+            flamePosW.x = base_pos.x + (int)x;
+            flamePosW.y = base_pos.y + (int)y;
+            flamePosW.z = base_pos.z;
 
-            uint8 block_mask = pMission->checkBlockedByTile(*pOrigin, &flamePos, true, dmg_rng);
+            uint8 block_mask = pMission->checkBlockedByTile(*pOrigin, &flamePosW, true, dmg_rng);
             if (block_mask != 32) {
                 SFXObject *so = new SFXObject(pMission->map(), rngDmgAnim_,
                                 100 * (rand() % 16));
-                so->setPosition(flamePos);
+                so->setPosition(flamePosW);
                 pMission->addSfxObject(so);
             }
         }
