@@ -2734,7 +2734,7 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
 
 */
 uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** pTarget,
-    PathNode * pn, bool setBlocker, bool checkTileOnly, double maxr,
+    WorldPoint *pTargetPosW, bool setBlocker, bool checkTileOnly, double maxr,
     double * distTo)
 {
     // search for a tile blocking the path towards the target
@@ -2743,7 +2743,7 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
     if (pTarget && *pTarget) {
         tmpPosW.convertFromTilePoint((*pTarget)->position());
     } else {
-        tmpPosW.convertFromPathNode(*pn);
+        tmpPosW = *pTargetPosW;
     }
 
     uint8 block_mask = checkBlockedByTile(originLoc, &tmpPosW, true, maxr, distTo);
@@ -2753,10 +2753,11 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
     }
 
     if (setBlocker) {
-        pn->setTileXYZ(tmpPosW.x / 256, tmpPosW.y / 256,
+        *pTargetPosW = tmpPosW;
+        /*->setTileXYZ(tmpPosW.x / 256, tmpPosW.y / 256,
                             tmpPosW.z / 128);
         pn->setOffXYZ(tmpPosW.x % 256, tmpPosW.y % 256,
-                            tmpPosW.z % 128);
+                            tmpPosW.z % 128);*/
     }
 
     if (checkTileOnly)
@@ -2781,11 +2782,12 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
             block_mask = 0;
 
         if (setBlocker) {
-            if (pn) {
-                pn->setTileXYZ(tmpOrigin.x / 256, tmpOrigin.y / 256,
+            if (pTargetPosW) {
+                *pTargetPosW = tmpOrigin;
+                /*pn->setTileXYZ(tmpOrigin.x / 256, tmpOrigin.y / 256,
                     tmpOrigin.z / 128);
                 pn->setOffXYZ(tmpOrigin.x % 256, tmpOrigin.y % 256,
-                    tmpOrigin.z % 128);
+                    tmpOrigin.z % 128);*/
                 block_mask |= 4;
             }
             if (pTarget) {

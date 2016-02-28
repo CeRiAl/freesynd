@@ -71,12 +71,12 @@ class InstantImpactShot : public Shot {
  private:
     //! Spread the impact on the ground
     void diffuseImpact(Mission *m, const WorldPoint &originLocW,
-                       PathNode *impactLocT);
+                       WorldPoint *pImpactPosW);
 
     //!
     void createImpactAnimation(Mission *pMission,
                                ShootableMapObject * pTargetHit,
-                               PathNode &impactLocT);
+                               const WorldPoint impactPosW);
 };
 
 /*!
@@ -126,7 +126,7 @@ class ProjectileShot: public Shot {
  protected:
     //! Update projectile position
     virtual bool moveProjectile(int elapsed, Mission *pMission);
-    virtual void drawTrace(Mission *pMission, const WorldPoint & currentPos) = 0;
+    virtual void drawTrace(Mission *pMission) = 0;
  protected:
     /*! This tells if the shot object shot be destroyed.*/
     bool lifeOver_;
@@ -135,7 +135,7 @@ class ProjectileShot: public Shot {
     double speed_;
 
     /*! Current position of projectile.*/
-    WorldPoint curLocW_;
+    WorldPoint curPosW_;
     /*! Position of the target.*/
     WorldPoint targetLocW_;
 
@@ -172,7 +172,7 @@ class GaussGunShot: public ProjectileShot {
     void inflictDamage(Mission *pMission);
  protected:
     //! Update projectile position
-    void drawTrace(Mission *pMission, const WorldPoint & currentPos);
+    void drawTrace(Mission *pMission);
  protected:
     /*! Position of the last trace animation.*/
     double lastAnimDist_;
@@ -191,7 +191,7 @@ class FlamerShot: public ProjectileShot {
     void inflictDamage(Mission *pMission);
 
  protected:
-    void drawTrace(Mission *pMission, const WorldPoint & currentPos);
+    void drawTrace(Mission *pMission);
  protected:
     //! The flame that represents the shot
     SFXObject *pFlame_;

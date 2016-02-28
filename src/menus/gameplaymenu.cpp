@@ -549,17 +549,9 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
                     x - 129 + world_x_ < px + 21 && y + world_y_ < py + 34)
                 {
-                    for (SquadSelection::Iterator it = selection_.begin();
-                         it != selection_.end(); ++it)
-                    {
-                        WeaponInstance * wi = (*it)->selectedWeapon();
-                        target_ = p;
-                        if (wi && wi->canShoot()
-                            && wi->inRangeNoCP(&target_) == 1)
-                        {
-                            inrange = true;
-                        }
-                    }
+                    // mouse pointer is on the object, so it's the new target
+                    target_ = p;
+                    inrange = selection_.isTargetInRange(target_);
                     break;
                 }
             }
@@ -574,17 +566,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
                     x - 129 + world_x_ < px + 40 && y + world_y_ < py + 32)
                 {
-                    for (SquadSelection::Iterator it = selection_.begin();
-                         it != selection_.end(); ++it)
-                    {
-                        WeaponInstance * wi = (*it)->selectedWeapon();
-                        target_ = v;
-                        if (wi && wi->canShoot()
-                            && wi->inRangeNoCP(&target_)== 1)
-                        {
-                            inrange = true;
-                        }
-                    }
+                    target_ = v;
+                    inrange = selection_.isTargetInRange(target_);
                     break;
                 }
             }

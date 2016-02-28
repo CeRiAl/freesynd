@@ -340,3 +340,20 @@ void SquadSelection::shootAt(const WorldPoint &aimedLocW) {
         pAgent->addActionShootAt(aimedLocW);
     }
 }
+
+/*!
+ *
+ */
+bool SquadSelection::isTargetInRange(ShootableMapObject *pTarget) {
+    for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
+        if ((*it)->isArmed()) {
+            WeaponInstance * wi = (*it)->selectedWeapon();
+            WorldPoint agentPosW((*it)->position());
+            if (wi->checkRangeAndBlocker(agentPosW, &pTarget) == 1) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}

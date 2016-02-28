@@ -269,7 +269,7 @@ public:
     void blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
         double *dist, MapObject** blockerObj);
     uint8 inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
-        PathNode * pn = NULL, bool setBlocker = false,
+        WorldPoint *pTargetPosW = NULL, bool setBlocker = false,
         bool checkTileOnly = false, double maxr = -1.0, double * distTo = NULL);
     void getInRangeAll(const WorldPoint & cp, std::vector<ShootableMapObject *> & targets,
         uint8 mask, bool checkTileOnly = true, double maxr = -1.0);

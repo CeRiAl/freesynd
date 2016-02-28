@@ -332,8 +332,8 @@ void WeaponInstance::playSound() {
     g_App.gameSounds().play(pWeaponClass_->getSound());
 }
 
-uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & origin, ShootableMapObject ** t,
-    PathNode * pn, bool setBlocker, bool checkTileOnly, int maxr)
+uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & originPosW, ShootableMapObject ** t,
+    WorldPoint *pTargetPosW, bool setBlocker, bool checkTileOnly, int maxr)
 {
     // NOTE: too many calculations of type tile*tilesize + off,
     // optimize this if possible everywhere, in freesynd
@@ -351,7 +351,7 @@ uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & origin, ShootableM
     }
 
     uint8 block_mask = g_Session.getMission()->inRangeCPos(
-        origin, t, pn, setBlocker, checkTileOnly, maxr);
+        originPosW, t, pTargetPosW, setBlocker, checkTileOnly, maxr);
 
     setIsIgnored(selfState);
     if (pOwner_) {
@@ -361,25 +361,6 @@ uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & origin, ShootableM
     }
 
     return block_mask;
-}
-
-uint8 WeaponInstance::inRangeNoCP(ShootableMapObject ** t, PathNode * pn,
-                         bool setBlocker, bool checkTileOnly, int maxr)
-{
-    WorldPoint origin;
-
-    // NOTE: calculations for Z should be the same as in inflictDamage for cp
-    if (pOwner_) {
-        origin.x = pOwner_->tileX() * 256 + pOwner_->offX();
-        origin.y = pOwner_->tileY() * 256 + pOwner_->offY();
-        origin.z = pOwner_->tileZ() * 128 + pOwner_->offZ() + (pOwner_->sizeZ() >> 1);
-    } else {
-        origin.x = pos_.tx * 256 + pos_.ox;
-        origin.y = pos_.ty * 256 + pos_.oy;
-        origin.z = pos_.tz * 128 + pos_.oz + Z_SHIFT_TO_AIR;
-    }
-
-    return checkRangeAndBlocker(origin, t, pn, setBlocker, checkTileOnly, maxr);
 }
 
 int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {

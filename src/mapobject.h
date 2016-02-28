@@ -611,8 +611,8 @@ public:
     }stateAnimatedWindows;
 
 protected:
-    Static(uint16 id, int m, StaticType type) :
-            ShootableMapObject(id, m, MapObject::kNatureStatic) {
+    Static(uint16 anId, int m, StaticType type) :
+            ShootableMapObject(anId, m, MapObject::kNatureStatic) {
         type_ = type;
         subType_ = kStaticSubtype1;
     }

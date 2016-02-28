@@ -179,6 +179,8 @@ class SquadSelection {
     void moveTo(TilePoint &mapPt, bool addAction);
     //! Every selected armed agent shoot at location
     void shootAt(const WorldPoint &aimedLocW);
+    //! Return true if target is in range of at least one agent
+    bool isTargetInRange(ShootableMapObject *pTarget);
  private:
     /*!
      * Return true if an agent can be selected :

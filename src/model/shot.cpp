@@ -44,24 +44,22 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
     std::map<ShootableMapObject *, int> hitsByObject;
 
     for (int i = 0; i < nbImpacts; ++i) {
-        PathNode impactLocT;
-        impactLocT.setTileXYZ(dmg_.aimedLocW.x / 256, dmg_.aimedLocW.y / 256, dmg_.aimedLocW.z / 128);
-        impactLocT.setOffXYZ(dmg_.aimedLocW.x % 256, dmg_.aimedLocW.y % 256, dmg_.aimedLocW.z % 128);
+        WorldPoint impactPosW = dmg_.aimedLocW;
 
         if (nbImpacts > 1) {
             // When multiple impacts, they're spread
-            diffuseImpact(pMission, originLocW, &impactLocT);
+            diffuseImpact(pMission, originLocW, &impactPosW);
         }
 
         // Verify if shot hit something or was blocked by a tile
         ShootableMapObject *pTargetHit = NULL;
-        dmg_.pWeapon->checkRangeAndBlocker(originLocW, &pTargetHit, &impactLocT, true);
+        dmg_.pWeapon->checkRangeAndBlocker(originLocW, &pTargetHit, &impactPosW, true);
 
         if (pTargetHit != NULL) {
             hitsByObject[pTargetHit] = hitsByObject[pTargetHit] + 1;
         }
         // creates impact sprite
-        createImpactAnimation(pMission, pTargetHit, impactLocT);
+        createImpactAnimation(pMission, pTargetHit, impactPosW);
     }
 
     // finally distribute damage
@@ -72,7 +70,7 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
     }
 }
 
-void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &originLocW, PathNode *impactLocT) {
+void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &originLocW, WorldPoint *pImpactPosW) {
     double angle = dmg_.pWeapon->getWeaponClass()->shotAngle();
     if (angle == 0)
         return;
@@ -82,11 +80,9 @@ void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &origi
     int cy = originLocW.y;
     int cz = originLocW.z;
 
-    WorldPoint impactLocW(*impactLocT);
-
-    int tx = impactLocW.x;
-    int ty = impactLocW.y;
-    int tz = impactLocW.z;
+    int tx = pImpactPosW->x;
+    int ty = pImpactPosW->y;
+    int tz = pImpactPosW->z;
     double dtx = (double)(tx - cx);
     double dty = (double)(ty - cy);
     double dtz = (double)(tz - cz);
@@ -190,15 +186,16 @@ void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &origi
     assert(gtx >= 0 && gty >= 0 && gtz >= 0);
     assert(gtx <= max_x && gty <= max_y && gtz <= max_z);
 
-    impactLocT->setTileXYZ(gtx / 256, gty / 256, gtz / 128);
-    impactLocT->setOffXYZ(gtx % 256, gtx % 256, gtz % 128);
+    pImpactPosW->x = gtx;
+    pImpactPosW->y = gty;
+    pImpactPosW->z = gtz;
 }
 
 /*!
  * Creates the impact animation based on the type of target hit.
  * Some weapons can have no animations for an impact.
  */
-void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObject * pTargetHit, PathNode &impactLocT) {
+void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObject * pTargetHit, const WorldPoint impactPosW) {
     SFXObject::SfxTypeEnum impactAnimId =
         (pTargetHit != NULL ?
             dmg_.pWeapon->getWeaponClass()->impactAnims()->objectHit :
@@ -206,7 +203,7 @@ void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObj
 
     if (impactAnimId != SFXObject::sfxt_Unknown) {
         SFXObject *so = new SFXObject(pMission->map(), impactAnimId);
-        so->setPosition(impactLocT);
+        so->setPosition(impactPosW);
         so->correctZ();
         pMission->addSfxObject(so);
     }
@@ -375,7 +372,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
 
 ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg) : Shot(dmg) {
     elapsed_ = -1;
-    curLocW_ = dmg.originLocW;
+    curPosW_ = dmg.originLocW;
     currentDistance_ = 0;
     lifeOver_ = false;
     drawImpact_ = false;
@@ -387,9 +384,9 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
     targetLocW_.y = dmg.aimedLocW.y;
     targetLocW_.z = dmg.aimedLocW.z;
 
-    double diffx = (double)(targetLocW_.x - curLocW_.x);
-    double diffy = (double)(targetLocW_.y - curLocW_.y);
-    double diffz = (double)(targetLocW_.z - curLocW_.z);
+    double diffx = (double)(targetLocW_.x - curPosW_.x);
+    double diffy = (double)(targetLocW_.y - curPosW_.y);
+    double diffz = (double)(targetLocW_.z - curPosW_.z);
 
     double distanceToTarget  = sqrt(diffx * diffx + diffy * diffy + diffz * diffz);
     if (distanceToTarget != 0) {
@@ -433,72 +430,70 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     double inc_dist = speed_ * (double)elapsed / 1000;
     if ((currentDistance_ + inc_dist) > distanceMax_) {
         // Projectile reached the maximum distance
-        assert(currentDistance_ <= distanceMax_);
+        if (currentDistance_ > distanceMax_) {
+            currentDistance_ = distanceMax_;
+        }
         inc_dist = distanceMax_ - currentDistance_;
         endMove = true;
     }
 
-    double was_dist = currentDistance_;
-    currentDistance_ += inc_dist;
-    WorldPoint reached_pos;
+    // This is the distance after the move
+    double nextDist = currentDistance_ + inc_dist;
+    WorldPoint nextPosW; // This is the position of projectile after this move
     bool do_recalc = false;
 
-    reached_pos.x = dmg_.originLocW.x + (int)(incX_ * currentDistance_);
-    if (reached_pos.x < 0) {
-        reached_pos.x = 0;
+    nextPosW.x = dmg_.originLocW.x + (int)(incX_ * nextDist);
+    if (nextPosW.x < 0) {
+        nextPosW.x = 0;
         endMove = true;
         do_recalc = true;
-    } else if (reached_pos.x > (pMission->mmax_x_ - 1) * 256) {
-        reached_pos.x = (pMission->mmax_x_ - 1) * 256;
+    } else if (nextPosW.x > (pMission->mmax_x_ - 1) * 256) {
+        nextPosW.x = (pMission->mmax_x_ - 1) * 256;
         endMove = true;
         do_recalc = true;
     }
     if (do_recalc) {
         do_recalc = false;
         if (incX_ != 0) {
-            currentDistance_ = (double)(reached_pos.x - dmg_.originLocW.x) / incX_;
+            nextDist = (double)(nextPosW.x - dmg_.originLocW.x) / incX_;
         }
     }
 
-    reached_pos.y = dmg_.originLocW.y + (int)(incY_ * currentDistance_);
-    if (reached_pos.y < 0) {
-        reached_pos.y = 0;
+    nextPosW.y = dmg_.originLocW.y + (int)(incY_ * nextDist);
+    if (nextPosW.y < 0) {
+        nextPosW.y = 0;
         endMove = true;
         do_recalc = true;
-    } else if (reached_pos.y > (pMission->mmax_y_ - 1) * 256) {
-        reached_pos.y = (pMission->mmax_y_ - 1) * 256;
+    } else if (nextPosW.y > (pMission->mmax_y_ - 1) * 256) {
+        nextPosW.y = (pMission->mmax_y_ - 1) * 256;
         endMove = true;
         do_recalc = true;
     }
     if (do_recalc) {
         do_recalc = false;
         if (incY_ != 0) {
-            currentDistance_ = (double)(reached_pos.y - dmg_.originLocW.y) / incY_;
-            reached_pos.x = dmg_.originLocW.x + (int)(incX_ * currentDistance_);
+            nextDist = (double)(nextPosW.y - dmg_.originLocW.y) / incY_;
+            nextPosW.x = dmg_.originLocW.x + (int)(incX_ * nextDist);
         }
     }
 
-    reached_pos.z = dmg_.originLocW.z + (int)(incZ_ * currentDistance_);
-    if (reached_pos.z < 0) {
-        reached_pos.z = 0;
+    nextPosW.z = dmg_.originLocW.z + (int)(incZ_ * nextDist);
+    if (nextPosW.z < 0) {
+        nextPosW.z = 0;
         endMove = true;
         do_recalc = true;
-    } else if (reached_pos.z > (pMission->mmax_z_ - 1) * 128) {
-        reached_pos.z = (pMission->mmax_z_ - 1) * 128;
+    } else if (nextPosW.z > (pMission->mmax_z_ - 1) * 128) {
+        nextPosW.z = (pMission->mmax_z_ - 1) * 128;
         endMove = true;
         do_recalc = true;
     }
     if (do_recalc) {
         if (incZ_ != 0) {
-            currentDistance_ = (double)(reached_pos.z - dmg_.originLocW.z) / incZ_;
-            reached_pos.x = dmg_.originLocW.x + (int)(incX_ * currentDistance_);
-            reached_pos.y = dmg_.originLocW.y + (int)(incY_ * currentDistance_);
+            nextDist = (double)(nextPosW.z - dmg_.originLocW.z) / incZ_;
+            nextPosW.x = dmg_.originLocW.x + (int)(incX_ * nextDist);
+            nextPosW.y = dmg_.originLocW.y + (int)(incY_ * nextDist);
         }
     }
-
-    PathNode pn(reached_pos.x / 256, reached_pos.y / 256,
-        reached_pos.z / 128, reached_pos.x % 256, reached_pos.y % 256,
-        reached_pos.z % 128);
 
     // force shooter to be ignored when searching for blockers
     bool previousIgnoreState = dmg_.d_owner->isIgnored();
@@ -507,33 +502,28 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     // maxr here is set to maximum that projectile can fly from its
     // current position
     uint8 block_mask = pMission->inRangeCPos(
-        curLocW_, &pShootableHit_, &pn, true, false, distanceMax_ - was_dist);
+        curPosW_, &pShootableHit_, &nextPosW, true, false, distanceMax_ - currentDistance_);
 
     if (block_mask == 1) {
-        // ??
-        if (reached_pos.x == targetLocW_.x
-            && reached_pos.y == targetLocW_.y
-            && reached_pos.z == targetLocW_.z)
-        {
-
+        // Projectile has reached initial target
+        if (nextPosW.equals(targetLocW_)) {
+            // we can stop the move and draw the explosion
             drawImpact_ = true;
             endMove = true;
         }
     } else if (block_mask == 32) {
-        // projectile is out of map : do not draw exmplosion
+        // projectile is out of map : do not draw explosion
         // not sure if necessary
         endMove = true;
     } else {
-        reached_pos.x = pn.tileX() * 256 + pn.offX();
-        reached_pos.y = pn.tileY() * 256 + pn.offY();
-        reached_pos.z = pn.tileZ() * 128 + pn.offZ();
+        // projectile has hit something
         drawImpact_ = true;
         endMove = true;
     }
 
-    drawTrace(pMission, reached_pos);
-
-    curLocW_ = reached_pos;
+    curPosW_ = nextPosW;
+    currentDistance_ = nextDist;
+    drawTrace(pMission);
 
     dmg_.d_owner->setIsIgnored(previousIgnoreState);
 
@@ -549,22 +539,21 @@ void GaussGunShot::inflictDamage(Mission *pMission) {
 
     if (drawImpact_) {
         int dmgRange = dmg_.pWeapon->getWeaponClass()->rangeDmg();
-        Explosion::createExplosion(pMission, dmg_.pWeapon, curLocW_, dmgRange, dmg_.dvalue);
+        Explosion::createExplosion(pMission, dmg_.pWeapon, curPosW_, dmgRange, dmg_.dvalue);
     }
 }
 
 /*!
- * Draws the animation of smoke begind the projectile.
+ * Draws the animation of smoke behind the projectile.
  * \param pMission Mission data
- * \param currentPos Current position of projectile.
  */
-void GaussGunShot::drawTrace(Mission *pMission, const WorldPoint &currentPos) {
+void GaussGunShot::drawTrace(Mission *pMission) {
     // distance between 2 animations
     double anim_d = 64;
 
-    double diffx = (double) (dmg_.originLocW.x - currentPos.x);
-    double diffy = (double) (dmg_.originLocW.y - currentPos.y);
-    double diffz = (double) (dmg_.originLocW.z - currentPos.z);
+    double diffx = (double) (dmg_.originLocW.x - curPosW_.x);
+    double diffy = (double) (dmg_.originLocW.y - curPosW_.y);
+    double diffz = (double) (dmg_.originLocW.z - curPosW_.z);
     double d = sqrt(diffx * diffx + diffy * diffy
         + diffz * diffz);
 
@@ -609,13 +598,12 @@ FlamerShot::~FlamerShot() {
 }
 
 /*!
- * Draws the animation of smoke begind the projectile.
+ * Draws the animation of smoke behind the projectile.
  * \param pMission Mission data
- * \param currentPos Current position of projectile.
  */
-void FlamerShot::drawTrace(Mission *pMission, const WorldPoint & currentPos) {
+void FlamerShot::drawTrace(Mission *pMission) {
 
-    pFlame_->setPosition(currentPos);
+    pFlame_->setPosition(curPosW_);
 }
 
 void FlamerShot::inflictDamage(Mission *pMission) {

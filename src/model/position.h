@@ -205,6 +205,15 @@ public:
         pTp->oy = y % 256;
         pTp->oz = z % 128;
     }
+
+    /*!
+     * Return true if this point matches the other
+     */
+    bool equals(const WorldPoint &otherWp) {
+        return otherWp.x == x
+                && otherWp.y == y
+                && otherWp.z == z;
+    }
 };
 
 #endif // MODEL_POSITION_H_
