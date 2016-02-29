@@ -645,13 +645,13 @@ void PedInstance::showPath(int scrollX, int scrollY) {
     int px = screenX();
     int py = screenY() - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
-    for (std::list<PathNode>::iterator it = dest_path_.begin();
+    for (std::list<TilePoint>::iterator it = dest_path_.begin();
             it != dest_path_.end(); ++it) {
-        PathNode & d = *it;
-        MapScreenPoint msPt = g_App.maps().map(map())->tileToScreenPoint(d.tileX(), d.tileY(),
-                                       d.tileZ(), d.offX(), d.offY());
+        TilePoint & d = *it;
+        MapScreenPoint msPt = g_App.maps().map(map())->tileToScreenPoint(d.tx, d.ty,
+                                       d.tz, d.ox, d.oy);
         int x = msPt.x;
-        int y = msPt.y - d.tileZ() * TILE_HEIGHT/3 + TILE_HEIGHT/3;
+        int y = msPt.y - d.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
         int ox = x;
         int oy = y;

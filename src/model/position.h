@@ -101,60 +101,12 @@ public:
                 && otherTp.oy == oy
                 && otherTp.oz == oz;
     }
-};
 
-/*!
- * Path node class.
- */
-class PathNode {
-public:
-    PathNode() :
-        tile_x_(0), tile_y_(0), tile_z_(0), off_x_(0), off_y_(0), off_z_(0) {}
-    PathNode(int tile_x, int tile_y, int tile_z, int off_x = 128,
-            int off_y = 128, int off_z = 0) :
-        tile_x_(tile_x), tile_y_(tile_y), tile_z_(tile_z),
-        off_x_(off_x), off_y_(off_y), off_z_(off_z) {}
-
-    int tileX() const { return tile_x_; }
-    int tileY() const { return tile_y_; }
-    int tileZ() const { return tile_z_; }
-
-    int offX() const { return off_x_; }
-    int offY() const { return off_y_; }
-    int offZ() const { return off_z_; }
-
-    bool operator<(const PathNode &other) const {
-        int a = tile_x_ | (tile_y_ << 16);
-        int b = other.tile_x_ | (other.tile_y_ << 16);
+    bool operator<(const TilePoint &other) const {
+        int a = tx | (ty << 16);
+        int b = other.tx | (other.ty << 16);
         return a < b;
     }
-
-    void setOffX(int x) { off_x_ = x; }
-    void setOffY(int y) { off_y_ = y; }
-    void setOffZ(int z) { off_z_ = z; }
-    void setOffXY(int x, int y) { off_x_ = x; off_y_ = y; }
-    void setOffXYZ(int x, int y, int z) {
-        off_x_ = x;
-        off_y_ = y;
-        off_z_ = z;
-    }
-
-    void setTileX(int x) { tile_x_ = x; }
-    void setTileY(int y) { tile_y_ = y; }
-    void setTileZ(int z) { tile_z_ = z; }
-    void setTileXYZ(int x, int y, int z) {
-        tile_x_ = x;
-        tile_y_ = y;
-        tile_z_ = z;
-    }
-
-    void convertPosToXY(int *x, int *y) {
-        *x = tile_x_ * 256 + off_x_;
-        *y = tile_y_ * 256 + off_y_;
-    }
-
-protected:
-    int tile_x_, tile_y_, tile_z_, off_x_, off_y_, off_z_;
 };
 
 /*!
@@ -175,10 +127,6 @@ public:
         convertFromTilePoint(tp);
     }
 
-    WorldPoint(const PathNode &pn) {
-        convertFromPathNode(pn);
-    }
-
     void reset() {
         x = 0;
         y = 0;
@@ -189,12 +137,6 @@ public:
         x = tp.tx * 256 + tp.ox;
         y = tp.ty * 256 + tp.oy;
         z = tp.tz * 128 + tp.oz;
-    }
-
-    void convertFromPathNode(const PathNode &pn) {
-        x = pn.tileX() * 256 + pn.offX();
-        y = pn.tileY() * 256 + pn.offY();
-        z = pn.tileZ() * 128 + pn.offZ();
     }
 
     void convertToTilePoint(TilePoint *pTp) {

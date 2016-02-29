@@ -357,12 +357,12 @@ uint16 VehicleInstance::tileDir(int x, int y, int z) {
     return dir;
 }
 
-bool VehicleInstance::dirWalkable(PathNode *p, int x, int y, int z) {
+bool VehicleInstance::dirWalkable(TilePoint *p, int x, int y, int z) {
 
     if(!(walkable(x,y,z)))
         return false;
 
-    uint16 dirStart = tileDir(p->tileX(),p->tileY(),p->tileZ());
+    uint16 dirStart = tileDir(p->tx,p->ty,p->tz);
     uint16 dirEnd = tileDir(x,y,z);
     if (dirStart == 0x0 || dirEnd == 0x0)
         return false;
@@ -404,11 +404,11 @@ bool VehicleInstance::setDestination(Mission *m, const TilePoint &locT, int newS
 
 void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int new_speed)
 {
-    std::map < PathNode, uint16 > open;
-    std::set < PathNode > closed;
-    std::map < PathNode, PathNode > parent;
+    std::map < TilePoint, uint16 > open;
+    std::set < TilePoint > closed;
+    std::map < TilePoint, TilePoint > parent;
     int basex = pos_.tx, basey = pos_.ty;
-    std::vector < PathNode > path2add;
+    std::vector < TilePoint > path2add;
     path2add.reserve(16);
     Map *pMap = g_App.maps().map(map_);
 
@@ -435,14 +435,14 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
 
     if (!walkable(pos_.tx, pos_.ty, z)) {
         int dBest = 100000, dCur;
-        std::vector < PathNode > path2wtile;
+        std::vector < TilePoint > path2wtile;
         path2wtile.reserve(16);
         // we got somewhere we shouldn't, we need to find somewhere that is walkable
-        PathNode pntile(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
+        TilePoint pntile(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = 1; i < 16; i++) {
             if (pos_.tx + i >= pMap->maxX())
                 break;
-            pntile.setTileX(pos_.tx + i);
+            pntile.tx = pos_.tx + i;
             path2wtile.push_back(pntile);
             if (walkable(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
@@ -457,11 +457,11 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         }
 
         path2wtile.clear();
-        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
+        pntile = TilePoint(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = -1; i > -16; --i) {
             if (pos_.tx + i < 0)
                 break;
-            pntile.setTileX(pos_.tx + i);
+            pntile.tx = (pos_.tx + i);
             path2wtile.push_back(pntile);
             if (walkable(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
@@ -476,11 +476,11 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         }
 
         path2wtile.clear();
-        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
+        pntile = TilePoint(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = -1; i > -16; --i) {
             if (pos_.ty + i < 0)
                 break;
-            pntile.setTileY(pos_.ty + i);
+            pntile.ty = (pos_.ty + i);
             path2wtile.push_back(pntile);
             if (walkable(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
@@ -495,11 +495,11 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         }
 
         path2wtile.clear();
-        pntile = PathNode(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
+        pntile = TilePoint(pos_.tx , pos_.ty, z, pos_.ox, pos_.oy);
         for (int i = 1; i < 16; i++) {
             if (pos_.ty + i >= pMap->maxY())
                 break;
-            pntile.setTileY(pos_.ty + i);
+            pntile.ty = pos_.ty + i;
             path2wtile.push_back(pntile);
             if (walkable(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
@@ -516,7 +516,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
             return;
     }
 
-    PathNode closest;
+    TilePoint closest;
     float closest_dist = 100000;
 
     uint16 wrong_dir = (uint16)getDirection(4);
@@ -528,21 +528,21 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         wrong_dir = 0x0;
     else if(wrong_dir == 0x3)
         wrong_dir = 0x0020;
-    open.insert(std::pair< PathNode, uint16 >(PathNode(basex, basey, z, pos_.ox, pos_.oy),
+    open.insert(std::pair< TilePoint, uint16 >(TilePoint(basex, basey, z, pos_.ox, pos_.oy),
         wrong_dir));
     int watchDog = 1000;
 
     while (!open.empty()) {
         watchDog--;
         float dist = 100000;
-        PathNode p;
-        std::map < PathNode, uint16 >::iterator pit;
-        for (std::map < PathNode, uint16 >::iterator it = open.begin();
+        TilePoint p;
+        std::map < TilePoint, uint16 >::iterator pit;
+        for (std::map < TilePoint, uint16 >::iterator it = open.begin();
              it != open.end(); it++)
         {
             float d =
-                sqrt((float) (x - it->first.tileX()) * (x - it->first.tileX()) +
-                     (y - it->first.tileY()) * (y - it->first.tileY()));
+                sqrt((float) (x - it->first.tx) * (x - it->first.tx) +
+                     (y - it->first.ty) * (y - it->first.ty));
             if (d < dist) {
                 dist = d;
                 p = it->first;
@@ -558,55 +558,55 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         open.erase(pit);
         closed.insert(p);
 
-        if ((p.tileX() == x && p.tileY() == y && p.tileZ() == z)
+        if ((p.tx == x && p.ty == y && p.tz == z)
             || watchDog < 0)
         {
             if (watchDog < 0) {
                 p = closest;
                 dest_path_.
-                    push_front(PathNode
-                               (p.tileX(), p.tileY(), p.tileZ(), ox, oy));
+                    push_front(TilePoint
+                               (p.tx, p.ty, p.tz, ox, oy));
             } else
-                dest_path_.push_front(PathNode(x, y, z, ox, oy));
+                dest_path_.push_front(TilePoint(x, y, z, ox, oy));
             while (parent.find(p) != parent.end()) {
                 p = parent[p];
-                if (p.tileX() == pos_.tx && p.tileY() == pos_.ty
-                    && p.tileZ() == z)
+                if (p.tx == pos_.tx && p.ty == pos_.ty
+                    && p.tz == z)
                     break;
                 dest_path_.push_front(p);
             }
             break;
         }
 
-        std::map <PathNode, uint16> neighbours;
-        uint16 goodDir = tileDir(p.tileX(), p.tileY(), p.tileZ());
+        std::map <TilePoint, uint16> neighbours;
+        uint16 goodDir = tileDir(p.tx, p.ty, p.tz);
 
-        if (wrong_dir != 0x6000 && p.tileX() > 0) {
-            if (dirWalkable(&p, p.tileX() - 1, p.tileY(), p.tileZ())
+        if (wrong_dir != 0x6000 && p.tx > 0) {
+            if (dirWalkable(&p, p.tx - 1, p.ty, p.tz)
                 && ((goodDir & 0xF000) == 0x6000 || goodDir == 0xFFFF))
-                neighbours[PathNode(p.tileX() - 1, p.tileY(), p.tileZ())] = 0x0020;
+                neighbours[TilePoint(p.tx - 1, p.ty, p.tz)] = 0x0020;
         }
 
-        if (wrong_dir != 0x0020 && p.tileX() < g_App.maps().map(map())->maxX()) {
-            if (dirWalkable(&p, p.tileX() + 1, p.tileY(), p.tileZ())
+        if (wrong_dir != 0x0020 && p.tx < g_App.maps().map(map())->maxX()) {
+            if (dirWalkable(&p, p.tx + 1, p.ty, p.tz)
                 && ((goodDir & 0x00F0) == 0x0020 || goodDir == 0xFFFF))
-                neighbours[PathNode(p.tileX() + 1, p.tileY(), p.tileZ())] = 0x6000;
+                neighbours[TilePoint(p.tx + 1, p.ty, p.tz)] = 0x6000;
         }
 
-        if (wrong_dir != 0x0400 && p.tileY() > 0)
-            if (dirWalkable(&p, p.tileX(), p.tileY() - 1, p.tileZ())
+        if (wrong_dir != 0x0400 && p.ty > 0)
+            if (dirWalkable(&p, p.tx, p.ty - 1, p.tz)
                 && ((goodDir & 0x0F00) == 0x0400 || goodDir == 0xFFFF))
-                neighbours[PathNode(p.tileX(), p.tileY() - 1, p.tileZ())] = 0x0;
+                neighbours[TilePoint(p.tx, p.ty - 1, p.tz)] = 0x0;
 
-        if (wrong_dir != 0x0000 && p.tileY() < g_App.maps().map(map())->maxY())
-            if (dirWalkable(&p, p.tileX(), p.tileY() + 1, p.tileZ())
+        if (wrong_dir != 0x0000 && p.ty < g_App.maps().map(map())->maxY())
+            if (dirWalkable(&p, p.tx, p.ty + 1, p.tz)
                 && ((goodDir & 0x000F) == 0x0 || goodDir == 0xFFFF))
-                neighbours[PathNode(p.tileX(), p.tileY() + 1, p.tileZ())] = 0x0400;
+                neighbours[TilePoint(p.tx, p.ty + 1, p.tz)] = 0x0400;
 
-        for (std::map <PathNode, uint16>::iterator it = neighbours.begin();
+        for (std::map <TilePoint, uint16>::iterator it = neighbours.begin();
             it != neighbours.end(); it++)
-            if (dirWalkable(&p, it->first.tileX(), it->first.tileY(),
-                it->first.tileZ())
+            if (dirWalkable(&p, it->first.tx, it->first.ty,
+                it->first.tz)
                 && open.find(it->first) == open.end()
                 && closed.find(it->first) == closed.end())
             {
@@ -620,42 +620,42 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         speed_ = new_speed;
         int curox = pos_.ox;
         int curoy = pos_.oy;
-        for(std::list < PathNode >::iterator it = dest_path_.begin();
+        for(std::list < TilePoint >::iterator it = dest_path_.begin();
             it != dest_path_.end(); it++)
         {
             // TODO : adjust offsets respecting direction relative to
             // close next tiles
-            switch(tileDir(it->tileX(), it->tileY(), it->tileZ())) {
+            switch(tileDir(it->tx, it->ty, it->tz)) {
                 case 0xFFF0:
                 case 0xFF20:
-                    it->setOffX(200);
-                    it->setOffY(32);
+                    it->ox = 200;
+                    it->oy = 32;
                     curox = 200;
                     curoy = 32;
                     break;
                 case 0xF4FF:
-                    it->setOffX(32);
-                    it->setOffY(200);
+                    it->ox = 32;
+                    it->oy = 200;
                     curox = 32;
                     curoy = 200;
                     break;
                 case 0xFF2F:
                 case 0xF42F:
-                    it->setOffX(32);
-                    it->setOffY(32);
+                    it->ox = 32;
+                    it->oy = 32;
                     curox = 32;
                     curoy = 32;
                     break;
                 case 0x6FFF:
                 case 0x64FF:
-                    it->setOffX(32);
-                    it->setOffY(200);
+                    it->ox = 32;
+                    it->oy = 200;
                     curox = 32;
                     curoy = 200;
                     break;
                 case 0x6FF0:
-                    it->setOffX(200);
-                    it->setOffY(200);
+                    it->ox = 200;
+                    it->oy = 200;
                     curox = 200;
                     curoy = 200;
                     break;
@@ -670,18 +670,18 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                         it->tileX(), it->tileY(), it->tileZ()));
 #endif
 #endif
-                    it->setOffX(curox);
-                    it->setOffY(curoy);
+                    it->ox = curox;
+                    it->oy = curoy;
                     break;
             }
-            it->setTileZ(pos_.tz);
+            it->tz = pos_.tz;
         }
     }
     if((!path2add.empty()) && (!dest_path_.empty())) {
-        for (std::vector < PathNode >::reverse_iterator it = path2add.rbegin();
+        for (std::vector < TilePoint >::reverse_iterator it = path2add.rbegin();
             it != path2add.rend(); it++)
         {
-            it->setTileZ(pos_.tz);
+            it->tz = pos_.tz;
             dest_path_.push_front(*it);
         }
     }
@@ -707,19 +707,19 @@ bool VehicleInstance::move_vehicle(int elapsed)
 
         // Get distance between car and next NodePath
         int adx =
-            dest_path_.front().tileX() * 256 + dest_path_.front().offX();
+            dest_path_.front().tx * 256 + dest_path_.front().ox;
         int ady =
-            dest_path_.front().tileY() * 256 + dest_path_.front().offY();
+            dest_path_.front().ty * 256 + dest_path_.front().oy;
         int atx = pos_.tx * 256 + pos_.ox;
         int aty = pos_.ty * 256 + pos_.oy;
         int diffx = adx - atx, diffy = ady - aty;
 
         if (abs(diffx) < 16 && abs(diffy) < 16) {
             // We reached the next point : remove it from path
-            pos_.oy = dest_path_.front().offY();
-            pos_.ox = dest_path_.front().offX();
-            pos_.ty = dest_path_.front().tileY();
-            pos_.tx = dest_path_.front().tileX();
+            pos_.oy = dest_path_.front().oy;
+            pos_.ox = dest_path_.front().ox;
+            pos_.ty = dest_path_.front().ty;
+            pos_.tx = dest_path_.front().tx;
             dest_path_.pop_front();
             // There's no following point so stop moving
             if (dest_path_.size() == 0)
@@ -769,10 +769,10 @@ bool VehicleInstance::move_vehicle(int elapsed)
                 speed_ = 0;
             }
 #endif
-            if(dest_path_.front().tileX() == pos_.tx
-                && dest_path_.front().tileY() == pos_.ty
-                && dest_path_.front().offX() == pos_.ox
-                && dest_path_.front().offY() == pos_.oy)
+            if(dest_path_.front().tx == pos_.tx
+                && dest_path_.front().ty == pos_.ty
+                && dest_path_.front().ox == pos_.ox
+                && dest_path_.front().oy == pos_.oy)
                 dest_path_.pop_front();
             if (dest_path_.size() == 0)
                 speed_ = 0;

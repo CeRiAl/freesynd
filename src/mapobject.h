@@ -113,19 +113,6 @@ public:
      * Set the position of the object to be the given one.
      * \param pos New object position
      */
-    void setPosition(const PathNode &pos) {
-        pos_.tx = pos.tileX();
-        pos_.ty = pos.tileY();
-        pos_.tz = pos.tileZ();
-        pos_.ox = pos.offX();
-        pos_.oy = pos.offY();
-        pos_.oz = pos.offZ();
-    }
-
-    /*!
-     * Set the position of the object to be the given one.
-     * \param pos New object position
-     */
     void setPosition(const WorldPoint &pos) {
         setPosition(pos.x / 256, pos.y / 256, pos.z / 128, pos.x % 256,
                     pos.y % 256, pos.z % 128 );
@@ -528,7 +515,7 @@ protected:
     int speed_, base_speed_;
     //! on reaching this distance object should stop
     int dist_to_pos_;
-    std::list<PathNode> dest_path_;
+    std::list<TilePoint> dest_path_;
 
     bool updatePlacement(int nOffX, int nOffY);
 

@@ -130,7 +130,7 @@ public:
 
     void addDestinationV(int x, int y, int z, int ox = 128, int oy = 128,
             int new_speed = 160) {
-        dest_path_.push_back(PathNode(x, y, z, ox, oy));
+        dest_path_.push_back(TilePoint(x, y, z, ox, oy));
         speed_ = new_speed;
     }
 
@@ -163,7 +163,7 @@ protected:
     bool move_vehicle(int elapsed);
     bool walkable(int x, int y, int z);
     uint16 tileDir(int x, int y, int z);
-    bool dirWalkable(PathNode *p, int x, int y, int z);
+    bool dirWalkable(TilePoint *p, int x, int y, int z);
 
 protected:
     VehicleAnimation *vehicle_;
