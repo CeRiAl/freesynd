@@ -43,6 +43,8 @@ class SoundManager;
  */
 class MenuFactory {
 public:
+    virtual ~MenuFactory() {}
+
     virtual Menu * createMenu(const int menuId) = 0;
     void setMenuManager(MenuManager *pManager) { pManager_ = pManager; }
 
@@ -91,7 +93,7 @@ public:
     void saveBackground();
     //! Blit a portion of the background to the current screen
     void blitFromBackground(int x, int y, int width, int height);
-    /*! 
+    /*!
      * Adds a new dirty rectangle
      */
     void addRect(int x, int y, int width, int height) {

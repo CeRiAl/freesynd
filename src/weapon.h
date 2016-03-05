@@ -312,8 +312,7 @@ public:
         bool checkTileOnly = false, int maxr = -1);
 
     int getShots(int *elapsed = NULL, uint32 make_shots = 0);
-    void getInRangeAll(const WorldPoint & originLocW, std::vector<ShootableMapObject *> & targets,
-        uint8 mask, bool checkTileOnly = true, int maxr = -1);
+
     void activate();
     void deactivate();
 

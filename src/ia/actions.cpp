@@ -494,11 +494,11 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             }
         }
 
-        WorldPoint policePosW(pPed->position());
-        // police stops walking if the target is in range of fire (ie close enough and not
+        WorldPoint pedPosW(pPed->position());
+        // Ped stops walking if the target is in range of fire (ie close enough and not
         // hiding behing something)
         if (pPed->isCloseTo(pTarget_, followDistance_) &&
-            pMission->checkBlockedByTile(policePosW, &targetLastPosW_, true, followDistance_) == 1) {
+            pMission->checkBlockedByTile(pedPosW, &targetLastPosW_, true, followDistance_) == 1) {
             // We reached the target so stop moving
             setSucceeded();
             pPed->clearDestination();

@@ -2814,69 +2814,6 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
 }
 
 /*!
- * Returns all objects of given type that are in the range of the given point.
- * Methods searches through those objects:
- * - Ped : must be not ignored and alive
- * - Static : must be not ignored
- * - Vehicle : must be not ignored
- * - Weapon : must be not ignored
- * \param cp The central point
- * \param targets The list of found objects
- * \param mask A mask to select the type of objects
- * \param checkTileOnly
- * \param maxr The range
- */
-void Mission::getInRangeAll(const WorldPoint & cp,
-   std::vector<ShootableMapObject *> & targets, uint8 mask,
-   bool checkTileOnly, double maxr)
-{
-    if (mask & MapObject::kNaturePed) {
-        for (size_t i = 0; i < numPeds(); ++i) {
-            ShootableMapObject *p = ped(i);
-            if (!p->isIgnored() && p->isAlive())
-                if (inRangeCPos(cp, &p, NULL, false, checkTileOnly,
-                    maxr) == 1)
-                {
-                    targets.push_back(p);
-                }
-        }
-    }
-    if (mask & MapObject::kNatureStatic) {
-        for (size_t i = 0; i < numStatics(); ++i) {
-            ShootableMapObject *st = statics(i);
-            if (!st->isIgnored())
-                if (inRangeCPos(cp, &st, NULL, false, checkTileOnly,
-                    maxr) == 1)
-                {
-                    targets.push_back(st);
-                }
-        }
-    }
-    if (mask & MapObject::kNatureVehicle) {
-        for (size_t i = 0; i < numVehicles(); ++i) {
-            ShootableMapObject *v = vehicle(i);
-            if (!v->isIgnored())
-                if (inRangeCPos(cp, &v, NULL, false, checkTileOnly,
-                    maxr) == 1)
-                {
-                    targets.push_back(v);
-                }
-        }
-    }
-    if (mask & MapObject::kNatureWeapon) {
-        for (size_t i = 0; i < numWeapons(); ++i) {
-            ShootableMapObject *w = weapon(i);
-            if (!w->isIgnored())
-                if (inRangeCPos(cp, &w, NULL, false, checkTileOnly,
-                    maxr) == 1)
-                {
-                    targets.push_back(w);
-                }
-        }
-    }
-}
-
-/*!
  * Returns the length of the path between a ped and a object if such a path exists and it is
  * shorter than the maximum length allowed.
  * \param pPed The origin of the path

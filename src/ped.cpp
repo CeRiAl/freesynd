@@ -624,16 +624,16 @@ bool isOnScreen(int scrollX, int scrollY, int x, int y) {
             && y < scrollY + GAME_SCREEN_HEIGHT;
 }
 
-bool getOnScreen(int scrollX, int scrollY, int &x, int &y, int tx, int ty) {
+bool getOnScreen(int scrollX, int scrollY, ScreenPoint &scPt, const ScreenPoint &tScPt) {
     bool off = false;
 
     // get x, y on screen
-    while (!isOnScreen(scrollX, scrollY, x, y)) {
-        if (abs(tx - x) != 0)
-            x += (tx - x) / abs(tx - x);
+    while (!isOnScreen(scrollX, scrollY, scPt.x, scPt.y)) {
+        if (abs(tScPt.x - scPt.x) != 0)
+            scPt.x += (tScPt.x - scPt.x) / abs(tScPt.x - scPt.x);
 
-        if (abs(ty - y) != 0)
-            y += (ty - y) / abs(ty - y);
+        if (abs(tScPt.y - scPt.y) != 0)
+            scPt.y += (tScPt.y - scPt.y) / abs(tScPt.y - scPt.y);
 
         off = true;
     }
@@ -642,41 +642,41 @@ bool getOnScreen(int scrollX, int scrollY, int &x, int &y, int tx, int ty) {
 }
 
 void PedInstance::showPath(int scrollX, int scrollY) {
-    int px = screenX();
-    int py = screenY() - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
+    ScreenPoint pedScPt;
+    g_App.maps().map(map())->tileToScreenPoint(pos_, &pedScPt);
+    pedScPt.y = pedScPt.y - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
     for (std::list<TilePoint>::iterator it = dest_path_.begin();
             it != dest_path_.end(); ++it) {
         TilePoint & d = *it;
-        MapScreenPoint msPt = g_App.maps().map(map())->tileToScreenPoint(d.tx, d.ty,
-                                       d.tz, d.ox, d.oy);
-        int x = msPt.x;
-        int y = msPt.y - d.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
+        ScreenPoint pathSp;
+        g_App.maps().map(map())->tileToScreenPoint(d, &pathSp);
+        pathSp.y = pathSp.y - d.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
-        int ox = x;
-        int oy = y;
-        if (isOnScreen(scrollX, scrollY, x, y))
-            getOnScreen(scrollX, scrollY, px, py, x, y);
-        else if (isOnScreen(scrollX, scrollY, px, py))
-            getOnScreen(scrollX, scrollY, x, y, px, py);
+        int ox = pathSp.x;
+        int oy = pathSp.y;
+        if (isOnScreen(scrollX, scrollY, pathSp.x, pathSp.y))
+            getOnScreen(scrollX, scrollY, pedScPt, pathSp);
+        else if (isOnScreen(scrollX, scrollY, pedScPt.x, pedScPt.y))
+            getOnScreen(scrollX, scrollY, pathSp, pedScPt);
         else {
-            px = x;
-            py = y;
+            pedScPt.x = pathSp.x;
+            pedScPt.y = pathSp.y;
             continue;
         }
 
         int cl = 11;
-        g_Screen.drawLine(px - scrollX + 129, py - scrollY,
-                x - scrollX + 129, y - scrollY, cl);
-        g_Screen.drawLine(px - scrollX + 129 - 1, py - scrollY,
-                x - scrollX + 129 - 1, y - scrollY, cl);
-        g_Screen.drawLine(px - scrollX + 129, py - scrollY - 1,
-                x - scrollX + 129, y - scrollY - 1, cl);
-        g_Screen.drawLine(px - scrollX + 129 - 1, py - scrollY - 1,
-                x - scrollX + 129 - 1, y - scrollY - 1, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + 129, pedScPt.y - scrollY,
+                pathSp.x - scrollX + 129, pathSp.y - scrollY, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + 129 - 1, pedScPt.y - scrollY,
+                pathSp.x - scrollX + 129 - 1, pathSp.y - scrollY, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + 129, pedScPt.y - scrollY - 1,
+                pathSp.x - scrollX + 129, pathSp.y - scrollY - 1, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + 129 - 1, pedScPt.y - scrollY - 1,
+                pathSp.x - scrollX + 129 - 1, pathSp.y - scrollY - 1, cl);
 
-        px = ox;
-        py = oy;
+        pedScPt.x = ox;
+        pedScPt.y = oy;
     }
 }
 

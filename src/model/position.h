@@ -158,4 +158,15 @@ public:
     }
 };
 
+/*!
+ * This a convenient structure to store a position
+ * in screen coordinates (in pixels).
+ */
+struct ScreenPoint {
+    /*! the X coord on the screen.*/
+    int x;
+    /*! the Y coord on the screen.*/
+    int y;
+};
+
 #endif // MODEL_POSITION_H_

@@ -35,7 +35,7 @@ uint16 SFXObject::sfxIdCnt = 0;
 const int Static::kStaticSubtype1 = 0;
 const int Static::kStaticSubtype2 = 2;
 
-MapObject::MapObject(uint16 id, int m, ObjectNature nature):
+MapObject::MapObject(uint16 anId, int m, ObjectNature aNature):
     size_x_(1), size_y_(1), size_z_(2),
     map_(m), frame_(0), elapsed_carry_(0),
     frames_per_sec_(8),
@@ -44,8 +44,8 @@ MapObject::MapObject(uint16 id, int m, ObjectNature nature):
     is_ignored_(false), is_frame_drawn_(false),
     state_(0xFFFFFFFF)
 {
-    nature_ = nature;
-    id_ = id;
+    nature_ = aNature;
+    id_ = anId;
 }
 
 const char* MapObject::natureName() {
@@ -61,18 +61,6 @@ const char* MapObject::natureName() {
     default:
         return "Undefined";
     }
-}
-
-int MapObject::screenX()
-{
-    return g_App.maps().map(map())->tileToScreenX(pos_.tx, pos_.ty,
-                                                  pos_.tz, pos_.ox, pos_.oy);
-}
-
-int MapObject::screenY()
-{
-    return g_App.maps().map(map())->tileToScreenY(pos_.tx, pos_.ty,
-                                                  pos_.tz, pos_.ox, pos_.oy);
 }
 
 void MapObject::setOffX(int n)
@@ -577,12 +565,12 @@ void SFXObject::reset() {
     elapsed_left_ = 0;
 }
 
-ShootableMapObject::ShootableMapObject(uint16 id, int m, ObjectNature nature):
-    MapObject(id, m, nature)
+ShootableMapObject::ShootableMapObject(uint16 anId, int m, ObjectNature aNature):
+    MapObject(anId, m, aNature)
 {}
 
-ShootableMovableMapObject::ShootableMovableMapObject(uint16 id, int m, ObjectNature nature):
-        ShootableMapObject(id, m, nature) {
+ShootableMovableMapObject::ShootableMovableMapObject(uint16 anId, int m, ObjectNature aNature):
+        ShootableMapObject(anId, m, aNature) {
     speed_ = 0;
     base_speed_ = 0;
     dist_to_pos_ = 0;
@@ -946,8 +934,8 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
     return s;
 }
 
-Door::Door(uint16 id, int m, int anim, int closingAnim, int openAnim, int openingAnim) :
-    Static(id, m, Static::smt_Door), anim_(anim), closing_anim_(closingAnim),
+Door::Door(uint16 anId, int m, int anim, int closingAnim, int openAnim, int openingAnim) :
+    Static(anId, m, Static::smt_Door), anim_(anim), closing_anim_(closingAnim),
         open_anim_(openAnim), opening_anim_(openingAnim) {
     state_ = Static::sttdoor_Closed;
 }
@@ -1075,8 +1063,8 @@ bool Door::isPathBlocker()
 }
 
 
-LargeDoor::LargeDoor(uint16 id, int m, int anim, int closingAnim, int openingAnim):
-        Static(id, m, Static::smt_LargeDoor), anim_(anim),
+LargeDoor::LargeDoor(uint16 anId, int m, int anim, int closingAnim, int openingAnim):
+        Static(anId, m, Static::smt_LargeDoor), anim_(anim),
         closing_anim_(closingAnim), opening_anim_(openingAnim) {
     state_ = Static::sttdoor_Closed;
 }
@@ -1434,8 +1422,8 @@ bool LargeDoor::isPathBlocker()
 }
 
 
-Tree::Tree(uint16 id, int m, int anim, int burningAnim, int damagedAnim) :
-        Static(id, m, Static::smt_Tree), anim_(anim), burning_anim_(burningAnim),
+Tree::Tree(uint16 anId, int m, int anim, int burningAnim, int damagedAnim) :
+        Static(anId, m, Static::smt_Tree), anim_(anim), burning_anim_(burningAnim),
         damaged_anim_(damagedAnim) {
     state_ = Static::stttree_Healthy;
 }
@@ -1486,9 +1474,9 @@ void Tree::handleHit(DamageInflictType &d) {
     }
 }
 
-WindowObj::WindowObj(uint16 id, int m, int anim, int openAnim, int breakingAnim,
+WindowObj::WindowObj(uint16 anId, int m, int anim, int openAnim, int breakingAnim,
                      int damagedAnim) :
-        Static(id, m, Static::smt_Window), anim_(anim), open_anim_(openAnim),
+        Static(anId, m, Static::smt_Window), anim_(anim), open_anim_(openAnim),
         breaking_anim_(breakingAnim), damaged_anim_(damagedAnim) {}
 
 bool WindowObj::animate(int elapsed, Mission *obj) {
@@ -1526,8 +1514,8 @@ void WindowObj::handleHit(DamageInflictType &d) {
     }
 }
 
-EtcObj::EtcObj(uint16 id, int m, int anim, int burningAnim, int damagedAnim, StaticType type) :
-        Static(id, m, type), anim_(anim), burning_anim_(burningAnim),
+EtcObj::EtcObj(uint16 anId, int m, int anim, int burningAnim, int damagedAnim, StaticType aType) :
+        Static(anId, m, aType), anim_(anim), burning_anim_(burningAnim),
         damaged_anim_(damagedAnim) {}
 
 void EtcObj::draw(int x, int y)
@@ -1536,7 +1524,7 @@ void EtcObj::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_, frame_, x, y);
 }
 
-NeonSign::NeonSign(uint16 id, int m, int anim) : Static(id, m, Static::smt_NeonSign) {
+NeonSign::NeonSign(uint16 anId, int m, int anim) : Static(anId, m, Static::smt_NeonSign) {
     anim_ = anim;
 }
 
@@ -1546,8 +1534,8 @@ void NeonSign::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_, frame_, x, y);
 }
 
-Semaphore::Semaphore(uint16 id, int m, int anim, int damagedAnim) :
-        Static(id, m, Static::smt_Semaphore), anim_(anim),
+Semaphore::Semaphore(uint16 anId, int m, int anim, int damagedAnim) :
+        Static(anId, m, Static::smt_Semaphore), anim_(anim),
         damaged_anim_(damagedAnim), elapsed_left_smaller_(0),
         elapsed_left_bigger_(0), up_down_(1)
 {
@@ -1635,7 +1623,7 @@ void Semaphore::draw(int x, int y)
     g_App.gameSprites().drawFrame(anim_ +  state_, frame_, x, y);
 }
 
-AnimWindow::AnimWindow(uint16 id, int m, int anim) : Static(id, m, smt_AnimatedWindow) {
+AnimWindow::AnimWindow(uint16 anId, int m, int anim) : Static(anId, m, smt_AnimatedWindow) {
     setIsIgnored(true);
     setFramesPerSec(4);
     anim_ = anim;

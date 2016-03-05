@@ -244,8 +244,9 @@ void GameplayMenu::initWorldCoords()
 {
     // get the leader position on the map
     PedInstance *p_leader = selection_.leader();
-    MapScreenPoint start = mission_->get_map()->tileToScreenPoint(p_leader->tileX(),
-        p_leader->tileY(), mission_->mmax_z_ + 1, 0, 0);
+    ScreenPoint start;
+    mission_->get_map()->tileToScreenPoint(p_leader->tileX(),
+        p_leader->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
     start.x -= (GAME_SCREEN_WIDTH - 129) / 2;
     start.y -= GAME_SCREEN_HEIGHT / 2;
 
@@ -271,8 +272,9 @@ void GameplayMenu::initWorldCoords()
         mpt.ty = mission_->maxY();
 
     // recalculating new screen coords
-    MapScreenPoint msp = mission_->get_map()->tileToScreenPoint(mpt.tx, mpt.ty,
-        mission_->mmax_z_ + 1, 0, 0);
+    ScreenPoint msp;
+    mission_->get_map()->tileToScreenPoint(mpt.tx, mpt.ty,
+        mission_->mmax_z_ + 1, 0, 0, &msp);
     world_x_ = msp.x;
     world_y_ = msp.y;
 }
@@ -542,8 +544,10 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
 #endif
             PedInstance *p = mission_->ped(i);
             if (p->isAlive() && p->map() != -1) {
-                int px = p->screenX() - 10;
-                int py = p->screenY() - (1 + p->tileZ()) * TILE_HEIGHT/3
+                ScreenPoint scPt;
+                mission_->get_map()->tileToScreenPoint(p->position(), &scPt);
+                int px = scPt.x - 10;
+                int py = scPt.y - (1 + p->tileZ()) * TILE_HEIGHT/3
                     - (p->offZ() * TILE_HEIGHT/3) / 128;
 
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
@@ -560,8 +564,10 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
         for (size_t i = 0; mission_ && i < mission_->numVehicles(); ++i) {
             Vehicle *v = mission_->vehicle(i);
             if (v->isAlive()) {
-                int px = v->screenX() - 20;
-                int py = v->screenY() - 10 - v->tileZ() * TILE_HEIGHT/3;
+                ScreenPoint scPt;
+                mission_->get_map()->tileToScreenPoint(v->position(), &scPt);
+                int px = scPt.x - 20;
+                int py = scPt.y - 10 - v->tileZ() * TILE_HEIGHT/3;
 
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
                     x - 129 + world_x_ < px + 40 && y + world_y_ < py + 32)
@@ -577,8 +583,10 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
             WeaponInstance *w = mission_->weapon(i);
 
             if (w->map() != -1) {
-                int px = w->screenX() - 10;
-                int py = w->screenY() + 4 - w->tileZ() * TILE_HEIGHT/3
+                ScreenPoint scPt;
+                mission_->get_map()->tileToScreenPoint(w->position(), &scPt);
+                int px = scPt.x - 10;
+                int py = scPt.y + 4 - w->tileZ() * TILE_HEIGHT/3
                     - (w->offZ() * TILE_HEIGHT/3) / 128;
 
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
@@ -595,8 +603,10 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
             Static *s = mission_->statics(i);
 
             if (s->map() != -1) {
-                int px = s->screenX() - 10;
-                int py = s->screenY() + 4 - s->tileZ() * TILE_HEIGHT/3
+                ScreenPoint scPt;
+                mission_->get_map()->tileToScreenPoint(w->position(), &scPt);
+                int px = scPt.x - 10;
+                int py = scPt.y + 4 - s->tileZ() * TILE_HEIGHT/3
                     - (s->offZ() * TILE_HEIGHT/3) / 128;
 
                 if (x - 129 + world_x_ >= px && y + world_y_ >= py &&

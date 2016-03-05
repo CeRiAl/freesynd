@@ -642,7 +642,7 @@ public:
     UseWeaponAction(WeaponInstance *pWeapon) : Action(kActTypeUndefined) {
         pWeapon_ = pWeapon;
     };
-    UseWeaponAction(ActionType type, WeaponInstance *pWeapon) : Action(type) {
+    UseWeaponAction(ActionType aType, WeaponInstance *pWeapon) : Action(aType) {
         pWeapon_ = pWeapon;
     };
 

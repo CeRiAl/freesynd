@@ -121,33 +121,20 @@ float scalexPy = 256.0f;
 float scaleyPx = 256.0f;
 float scaleyPy = 256.0f;
 
-int Map::tileToScreenX(int x, int y, int z, int pX, int pY)
-{
-    float fx = x + pX / scalexPx;
-    float fy = y + pY / scalexPy;
-    return (int) ((max_x_ * TILE_WIDTH / 2) + (fx - fy) * TILE_WIDTH / 2
-                  + TILE_WIDTH / 2);
-}
 
-int Map::tileToScreenY(int x, int y, int z, int pX, int pY)
-{
-    float fx = x + pX / scaleyPx;
-    float fy = y + pY / scaleyPy;
-    return (int) ((max_z_ + 1) * TILE_HEIGHT / 3 + (fx + fy) * TILE_HEIGHT / 3);
-}
-
-MapScreenPoint Map::tileToScreenPoint(int x, int y, int z, int pX, int pY)
+void Map::tileToScreenPoint(int x, int y, int z, int pX, int pY, ScreenPoint *pScp)
 {
     float fx = x + pX / scalexPx;
     float fy = y + pY / scalexPy;
 
-    MapScreenPoint msp;
-    msp.x = (int) ((max_x_ * TILE_WIDTH / 2) + (fx - fy) * TILE_WIDTH / 2
+    pScp->x = (int) ((max_x_ * TILE_WIDTH / 2) + (fx - fy) * TILE_WIDTH / 2
                   + TILE_WIDTH / 2);
 
-    msp.y = (int) ((max_z_ + 1) * TILE_HEIGHT / 3 + (fx + fy) * TILE_HEIGHT / 3);
+    pScp->y = (int) ((max_z_ + 1) * TILE_HEIGHT / 3 + (fx + fy) * TILE_HEIGHT / 3);
+}
 
-    return msp;
+void Map::tileToScreenPoint(const TilePoint &tPt, ScreenPoint *pScp) {
+    tileToScreenPoint(tPt.tx, tPt.ty, tPt.tz, tPt.ox, tPt.oy, pScp);
 }
 
 /*!

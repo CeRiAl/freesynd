@@ -335,9 +335,6 @@ void WeaponInstance::playSound() {
 uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & originPosW, ShootableMapObject ** t,
     WorldPoint *pTargetPosW, bool setBlocker, bool checkTileOnly, int maxr)
 {
-    // NOTE: too many calculations of type tile*tilesize + off,
-    // optimize this if possible everywhere, in freesynd
-
     if (maxr == -1)
         maxr = range();
 
@@ -434,21 +431,6 @@ int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {
     } else
         *elapsed = elapsed_l;
     return shots;
-}
-
-void WeaponInstance::getInRangeAll(const WorldPoint & originLocW,
-   std::vector<ShootableMapObject *> & targets, uint8 mask,
-   bool checkTileOnly, int maxr)
-{
-    // NOTE: no need to ignore pOwner_ here, as all in range are vulnerable
-
-    bool selfState = isIgnored();
-    setIsIgnored(true);
-
-    g_Session.getMission()->getInRangeAll(originLocW, targets, mask,
-        checkTileOnly, maxr);
-
-    setIsIgnored(selfState);
 }
 
 void WeaponInstance::activate() {

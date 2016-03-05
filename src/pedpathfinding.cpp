@@ -63,7 +63,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     printf("---------------------------");
     printf("start time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
 #endif
-    m->adjXYZ(x, y, z);
+    m->get_map()->adjXYZ(x, y, z);
     dest_path_.clear();
 
     if (map_ == -1 || health_ <= 0)

@@ -142,9 +142,6 @@ public:
     void setSizeY(int size_y) { size_y_ = size_y;}
     void setSizeZ(int size_z) { size_z_ = size_z;}
 
-    int screenX();
-    int screenY();
-
     virtual int map() { return map_; }
     void setMap(int new_map) { map_ = new_map; }
 
@@ -598,9 +595,9 @@ public:
     }stateAnimatedWindows;
 
 protected:
-    Static(uint16 anId, int m, StaticType type) :
+    Static(uint16 anId, int m, StaticType aType) :
             ShootableMapObject(anId, m, MapObject::kNatureStatic) {
-        type_ = type;
+        type_ = aType;
         subType_ = kStaticSubtype1;
     }
 

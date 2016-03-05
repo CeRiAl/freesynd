@@ -34,16 +34,6 @@ class Tile;
 class TileManager;
 class MapObject;
 
-/*!
- * This a convenient structure to store a position
- * in screen coordinates (in pixels).
- */
-struct MapScreenPoint {
-    /*! the X coord on the screen.*/
-    int x;
-    /*! the Y coord on the screen.*/
-    int y;
-};
 
 /*!
  * Map class.
@@ -62,10 +52,9 @@ public:
     //! Clip x,y,z to map dimensions
     void adjXYZ(int &x, int &y, int &z);
 
-    int tileToScreenX(int x, int y, int z, int pX, int pY);
-    int tileToScreenY(int x, int y, int z, int pX, int pY);
     //! Converts a Map tile position to a screen position
-    MapScreenPoint tileToScreenPoint(int x, int y, int z, int pX, int pY);
+    void tileToScreenPoint(int x, int y, int z, int pX, int pY, ScreenPoint *pScp);
+    void tileToScreenPoint(const TilePoint &tPt, ScreenPoint *pScp);
     //! Converts a screen position in pixel into a Map tile position
     TilePoint screenToTilePoint(int x, int y);
 
