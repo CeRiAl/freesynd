@@ -555,7 +555,7 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 {
                     // mouse pointer is on the object, so it's the new target
                     target_ = p;
-                    inrange = selection_.isTargetInRange(target_);
+                    inrange = selection_.isTargetInRange(mission_, target_);
                     break;
                 }
             }
@@ -573,7 +573,7 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                     x - 129 + world_x_ < px + 40 && y + world_y_ < py + 32)
                 {
                     target_ = v;
-                    inrange = selection_.isTargetInRange(target_);
+                    inrange = selection_.isTargetInRange(mission_, target_);
                     break;
                 }
             }
@@ -937,7 +937,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
         }
     } else if (key.keyFunc == KFC_ESCAPE) {
         // Abort mission
-        mission_->endWithStatus(Mission::ABORTED);
+        mission_->endWithStatus(Mission::kMissionStatusAborted);
         // Return false so when can still go to parent menu with escape
         return false;
     }
@@ -978,10 +978,10 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
 
 #ifdef _DEBUG
     else if (key.keyFunc == KFC_F3) {
-        mission_->endWithStatus(Mission::COMPLETED);
+        mission_->endWithStatus(Mission::kMissionStatusCompleted);
         return true;
     } else if (key.keyFunc == KFC_F4) {
-        mission_->endWithStatus(Mission::FAILED);
+        mission_->endWithStatus(Mission::kMissionStatusFailed);
         return true;
     }
 #endif
@@ -1426,7 +1426,7 @@ void GameplayMenu::handleGameEvent(GameEvent evt) {
     if (evt.type == GameEvent::kAgentDied) {
         // checking agents, if all are dead -> mission failed
         if (mission_->getSquad()->isAllDead()) {
-            mission_->endWithStatus(Mission::FAILED);
+            mission_->endWithStatus(Mission::kMissionStatusFailed);
             // clear signal on minimap
             GameEvent evt;
             evt.type = GameEvent::kObjFailed;

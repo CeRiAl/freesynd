@@ -80,7 +80,7 @@ protected:
  */
 class Vehicle : public ShootableMovableMapObject{
 public:
-    Vehicle(uint16 id, int m, bool drivable) : ShootableMovableMapObject(id, m, MapObject::kNatureVehicle) {
+    Vehicle(uint16 anId, int m, bool drivable) : ShootableMovableMapObject(anId, m, MapObject::kNatureVehicle) {
         isDrivable_ = drivable;
     }
 

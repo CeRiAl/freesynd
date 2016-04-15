@@ -306,10 +306,6 @@ public:
     void playSound();
 
     void resetWeaponUsedTime() { weapon_used_time_ = 0; }
-    //! Check if target is in range and if there's something blocking the shoot
-    uint8 checkRangeAndBlocker(const WorldPoint &cp, ShootableMapObject ** t,
-        WorldPoint *pTargetPosW = NULL, bool setBlocker = false,
-        bool checkTileOnly = false, int maxr = -1);
 
     int getShots(int *elapsed = NULL, uint32 make_shots = 0);
 

@@ -27,6 +27,7 @@
 #include "agentmanager.h"
 #include "model/position.h"
 
+class Mission;
 class Vehicle;
 
 /*!
@@ -180,7 +181,7 @@ class SquadSelection {
     //! Every selected armed agent shoot at location
     void shootAt(const WorldPoint &aimedLocW);
     //! Return true if target is in range of at least one agent
-    bool isTargetInRange(ShootableMapObject *pTarget);
+    bool isTargetInRange(Mission *pMission, ShootableMapObject *pTarget);
  private:
     /*!
      * Return true if an agent can be selected :

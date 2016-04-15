@@ -24,6 +24,7 @@
 #include "ped.h"
 #include "vehicle.h"
 #include "core/gameevent.h"
+#include "mission.h"
 
 
 /*!
@@ -341,15 +342,19 @@ void SquadSelection::shootAt(const WorldPoint &aimedLocW) {
     }
 }
 
-/*!
+
+/**
+ * Return true if the given object is in the line of fire of at least
+ * one selected agent.
+ * \param pMission Mission*
+ * \param pTarget ShootableMapObject*
+ * \return bool
  *
  */
-bool SquadSelection::isTargetInRange(ShootableMapObject *pTarget) {
+bool SquadSelection::isTargetInRange(Mission *pMission, ShootableMapObject *pTarget) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
         if ((*it)->isArmed()) {
-            WeaponInstance * wi = (*it)->selectedWeapon();
-            WorldPoint agentPosW((*it)->position());
-            if (wi->checkRangeAndBlocker(agentPosW, &pTarget) == 1) {
+            if (pMission->checkIfBlockersInShootingLine(*it, &pTarget) == 1) {
                 return true;
             }
         }

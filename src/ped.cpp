@@ -27,6 +27,7 @@
 
 #include "common.h"
 #include "app.h"
+#include "utils/log.h"
 #include "vehicle.h"
 #include "mission.h"
 #include "core/squad.h"
@@ -941,6 +942,8 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
     case Weapon::Persuadatron:
         behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtPersuadotronActivated);
         break;
+    default:
+        break;
     }
 
     if (type_ != kPedTypePolice || isPersuaded()) {
@@ -1271,6 +1274,8 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
                     destroyAllWeapons();
                 }
                 break;
+            default:
+                FSERR(Log::k_FLG_GAME, "PedInstance", "handleDeath", ("Unhandled damage type: %d\n", d.dtype))
         }
 
         updatePersuadedRelations(pMission->getSquad());

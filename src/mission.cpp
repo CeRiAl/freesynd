@@ -59,7 +59,7 @@ void MissionStats::init(int nbAgents) {
 
 Mission::Mission(const LevelData::MapInfos & map_infos)
 {
-    status_ = RUNNING;
+    status_ = kMissionStatusRunning;
 
     mtsurfaces_ = NULL;
     mdpoints_ = NULL;
@@ -235,13 +235,13 @@ void Mission::checkObjectives() {
 
         if (pObj->isTerminated()) {
             if (pObj->status == kFailed) {
-                endWithStatus(FAILED);
+                endWithStatus(kMissionStatusFailed);
             } else {
                 // Objective is completed -> go to next one
                 cur_objective_++;
                 if (cur_objective_ >= objectives_.size()) {
                     // the last objective has been completed : mission succeeded
-                    endWithStatus(COMPLETED);
+                    endWithStatus(kMissionStatusCompleted);
                 }
             }
         }
@@ -254,20 +254,20 @@ void Mission::checkObjectives() {
  */
 void Mission::endWithStatus(Status status) {
     switch (status) {
-    case COMPLETED:
-        status_ = COMPLETED;
+    case kMissionStatusCompleted:
         g_App.gameSounds().play(snd::SPEECH_MISSION_COMPLETED);
         break;
-    case FAILED:
-        status_ = FAILED;
+    case kMissionStatusFailed:
         g_App.gameSounds().play(snd::SPEECH_MISSION_FAILED);
         break;
-    case ABORTED:
-        status_ = ABORTED;
+    case kMissionStatusAborted:
         break;
-    case RUNNING:
-        break;
+    default:
+        // leave without changing status
+        return;
     }
+
+    status_ = status;
 }
 
 void Mission::addWeaponsFromPedToAgent(PedInstance* p, Agent* pAg)
@@ -2473,10 +2473,48 @@ bool Mission::getWalkableClosestByZ(TilePoint &mtp) {
     return found;
 }
 
+/**
+ *
+ * \param pShooter PedInstance*
+ * \param pTarget ShootableMapObject**
+ * \param pTargetPosW WorldPoint*
+ * \return uint8
+ *
+ */
+uint8 Mission::checkIfBlockersInShootingLine(PedInstance *pShooter, ShootableMapObject ** pTarget, WorldPoint *pTargetPosW) {
+    WorldPoint shooterPosW(pShooter->position());
+    WeaponInstance *pWeapon = pShooter->selectedWeapon();
+    // remember previous ignore status
+    bool shooterState = pShooter->isIgnored();
+    bool weaponState = pWeapon->isIgnored();
+    VehicleInstance *pVehicle = pShooter->inVehicle();
+    bool vehicleState = pVehicle != NULL ? pVehicle->isIgnored() : false;
+
+    // Set those objects as ignored when searching for targets
+    pShooter->setIsIgnored(true);
+    pWeapon->setIsIgnored(true);
+    if (pVehicle) {
+        pVehicle->setIsIgnored(true);
+    }
+
+    //! we update target with blocker only if the position parameter has been supplied
+    bool updateTarget = pTargetPosW != NULL;
+    uint8 block_mask = inRangeCPos(
+        shooterPosW, pTarget, pTargetPosW, updateTarget, false, pWeapon->range());
+
+    pShooter->setIsIgnored(shooterState);
+    pWeapon->setIsIgnored(weaponState);
+    if (pVehicle) {
+        pVehicle->setIsIgnored(vehicleState);
+    }
+
+    return block_mask;
+}
+
 /*!
 * This function looks for blockers - statics, vehicles, peds, weapons
 */
-void Mission::blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
+void Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pEndPt,
                             double *dist, MapObject** blockerObj)
 {
     // TODO: calculating closest blocker first? (start point can be closer though)
@@ -2754,10 +2792,6 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
 
     if (setBlocker) {
         *pTargetPosW = tmpPosW;
-        /*->setTileXYZ(tmpPosW.x / 256, tmpPosW.y / 256,
-                            tmpPosW.z / 128);
-        pn->setOffXYZ(tmpPosW.x % 256, tmpPosW.y % 256,
-                            tmpPosW.z % 128);*/
     }
 
     if (checkTileOnly)
@@ -2775,7 +2809,7 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
     double dist_blocker = sqrt((double)((tx - originLoc.x) *
         (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
         + (tz - originLoc.z) * (tz - originLoc.z)));
-    blockerExists(&tmpOrigin, &tmpEnd, &dist_blocker, &blockerObj);
+    checkBlockedByObject(&tmpOrigin, &tmpEnd, &dist_blocker, &blockerObj);
 
     if (blockerObj) {
         if (block_mask == 1)
@@ -2784,10 +2818,6 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
         if (setBlocker) {
             if (pTargetPosW) {
                 *pTargetPosW = tmpOrigin;
-                /*pn->setTileXYZ(tmpOrigin.x / 256, tmpOrigin.y / 256,
-                    tmpOrigin.z / 128);
-                pn->setOffXYZ(tmpOrigin.x % 256, tmpOrigin.y % 256,
-                    tmpOrigin.z % 128);*/
                 block_mask |= 4;
             }
             if (pTarget) {

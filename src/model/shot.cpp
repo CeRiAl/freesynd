@@ -53,7 +53,7 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
 
         // Verify if shot hit something or was blocked by a tile
         ShootableMapObject *pTargetHit = NULL;
-        dmg_.pWeapon->checkRangeAndBlocker(originLocW, &pTargetHit, &impactPosW, true);
+        pMission->checkIfBlockersInShootingLine(dmg_.pWeapon->owner(), &pTargetHit, &impactPosW);
 
         if (pTargetHit != NULL) {
             hitsByObject[pTargetHit] = hitsByObject[pTargetHit] + 1;

@@ -117,11 +117,11 @@ void DebriefMenu::handleShow() {
 void DebriefMenu::updateStatsFields(Mission *pMission) {
     MissionStats *pStats = pMission->stats();
 
-    if (pMission->getStatus() == Mission::FAILED) {
+    if (pMission->getStatus() == Mission::kMissionStatusFailed) {
         getStatic(txtStatusId_)->setText("#DEBRIEF_MIS_FAILED");
-    } else if (pMission->getStatus() == Mission::COMPLETED) {
+    } else if (pMission->getStatus() == Mission::kMissionStatusCompleted) {
         getStatic(txtStatusId_)->setText("#DEBRIEF_MIS_COMP");
-    } else if (pMission->getStatus() == Mission::ABORTED) {
+    } else if (pMission->getStatus() == Mission::kMissionStatusAborted) {
         getStatic(txtStatusId_)->setText("#DEBRIEF_MIS_ABORT");
     }
 

@@ -332,34 +332,6 @@ void WeaponInstance::playSound() {
     g_App.gameSounds().play(pWeaponClass_->getSound());
 }
 
-uint8 WeaponInstance::checkRangeAndBlocker(const WorldPoint & originPosW, ShootableMapObject ** t,
-    WorldPoint *pTargetPosW, bool setBlocker, bool checkTileOnly, int maxr)
-{
-    if (maxr == -1)
-        maxr = range();
-
-    bool ownerState, vehicleState, selfState = isIgnored();
-
-    setIsIgnored(true);
-    if (pOwner_) {
-        ownerState = pOwner_->isIgnored();
-        pOwner_->setIsIgnored(true);
-        vehicleState = pOwner_->setVehicleIgnore(true);
-    }
-
-    uint8 block_mask = g_Session.getMission()->inRangeCPos(
-        originPosW, t, pTargetPosW, setBlocker, checkTileOnly, maxr);
-
-    setIsIgnored(selfState);
-    if (pOwner_) {
-        pOwner_->setIsIgnored(ownerState);
-        if (vehicleState)
-            pOwner_->setVehicleIgnore(false);
-    }
-
-    return block_mask;
-}
-
 int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {
     int time_for_shot = pWeaponClass_->timeForShot();
     int time_reload = pWeaponClass_->timeReload();

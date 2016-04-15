@@ -116,15 +116,46 @@ public:
      * List of all possible mission status.
      */
     enum Status {
-        RUNNING = 0,
-        ABORTED = 1,
-        FAILED = 2,
-        COMPLETED = 3
+        /*! Mission is currently running.*/
+        kMissionStatusRunning = 0,
+        /*! Player left the mission without finishing it.*/
+        kMissionStatusAborted = 1,
+        /*! Player finished the mission with failure.*/
+        kMissionStatusFailed = 2,
+        /*! Player finished the mission with success.*/
+        kMissionStatusCompleted = 3
     };
 
     Mission(const LevelData::MapInfos & map_infos);
     virtual ~Mission();
 
+    //*************************************
+    // Mission life cycle and objectives
+    //*************************************
+
+    //! Init mission data
+    void start();
+    //! Destroy mission
+    void end();
+
+    //! Ends mission with the given status
+    void endWithStatus(Status status);
+    //! Returns true if mission status is failed
+    bool failed() { return status_ == kMissionStatusFailed; }
+    //! Returns true if mission status is completed
+    bool completed() { return status_ == kMissionStatusCompleted; }
+    //! Returns mission status
+    Status getStatus() { return status_; }
+
+    //! Adds an objective for the mission
+    void addObjective(ObjectiveDesc *pObjective) { objectives_.push_back(pObjective); }
+    //! Check if objectives are completed or failed
+    void checkObjectives();
+    void objectiveMsg(std::string& msg);
+
+    //*************************************
+    // Map
+    //*************************************
     /*!
      * Sets the given map for the mission.
      * If p_map is not null, creates a minimap from it.
@@ -133,14 +164,15 @@ public:
     void set_map(Map *p_map);
 
     /*!
+     * Returns the map used for the mission.
+     */
+    Map * get_map() {return p_map_; }
+
+    /*!
      * Returns the map id used for the mission.
      */
     int map() { return i_map_id_; }
     uint16 mapId() { return i_map_id_; }
-    /*!
-     * Returns the map used for the mission.
-     */
-    Map * get_map() {return p_map_; }
 
     int mapWidth();
     int mapHeight();
@@ -150,8 +182,9 @@ public:
     int maxX() { return max_x_; }
     int maxY() { return max_y_; }
 
-    void objectiveMsg(std::string& msg);
-
+    //*************************************
+    // Map objects
+    //*************************************
     size_t numPeds() { return peds_.size(); }
     PedInstance *ped(size_t i) { return peds_[i]; }
     void addPed(PedInstance *p) { peds_.push_back(p); }
@@ -236,21 +269,7 @@ public:
     /*! Return the mission statistics. */
     MissionStats *stats() { return &stats_; }
 
-    void start();
-    //! Returns mission status
-    Status getStatus() { return status_; }
-    //! Adds an objective for the mission
-    void addObjective(ObjectiveDesc *pObjective) { objectives_.push_back(pObjective); }
-    //! Check if objectives are completed or failed
-    void checkObjectives();
-    //! Ends mission with the given status
-    void endWithStatus(Status status);
-    //! Returns true if mission status is failed
-    bool failed() { return status_ == FAILED; }
-    //! Returns true if mission status is completed
-    bool completed() { return status_ == COMPLETED; }
     void addWeaponsFromPedToAgent(PedInstance *p, Agent *pAg);
-    void end();
 
     MapObject * findAt(int tilex, int tiley, int tilez,
         MapObject::ObjectNature *nature, int *searchIndex, bool only);
@@ -261,10 +280,15 @@ public:
     bool getShootableTile(TilePoint *pLocT);
     bool isTileSolid(int x, int y, int z, int ox, int oy, int oz);
 
+    //*************************************
+    // Methods for shooting verification
+    //*************************************
+    //! Check if nothing blocks the line between the shooter and his target
+    uint8 checkIfBlockersInShootingLine(PedInstance *pShooter, ShootableMapObject ** pTarget, WorldPoint *pTargetPosW = NULL);
     //! Check if a tile is blocking the path between originLoc and pTargetLoc
     uint8 checkBlockedByTile(const WorldPoint & originLoc, WorldPoint *pTargetPosW, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
-
-    void blockerExists(WorldPoint * pStartPt, WorldPoint * pEndPt,
+    //! Check if anobject is blocking the path between
+    void checkBlockedByObject(WorldPoint * originLoc, WorldPoint * pTargetPosW,
         double *dist, MapObject** blockerObj);
     uint8 inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
         WorldPoint *pTargetPosW = NULL, bool setBlocker = false,
