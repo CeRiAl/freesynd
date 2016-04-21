@@ -266,13 +266,14 @@ public:
      */
     void removeArmedPed(PedInstance *pPed);
 
+    MapObject * findObjectWithNatureAtPos(int tilex, int tiley, int tilez,
+        MapObject::ObjectNature *nature, int *searchIndex, bool only);
+
     /*! Return the mission statistics. */
     MissionStats *stats() { return &stats_; }
 
     void addWeaponsFromPedToAgent(PedInstance *p, Agent *pAg);
 
-    MapObject * findAt(int tilex, int tiley, int tilez,
-        MapObject::ObjectNature *nature, int *searchIndex, bool only);
     bool setSurfaces();
     void clrSurfaces();
     bool getWalkable(TilePoint &mtp);
@@ -283,16 +284,15 @@ public:
     //*************************************
     // Methods for shooting verification
     //*************************************
-    //! Check if nothing blocks the line between the shooter and his target
-    uint8 checkIfBlockersInShootingLine(PedInstance *pShooter, ShootableMapObject ** pTarget, WorldPoint *pTargetPosW = NULL);
-    //! Check if a tile is blocking the path between originLoc and pTargetLoc
+    //! Check if a tile is blocking the line between originLoc and pTargetPosW
     uint8 checkBlockedByTile(const WorldPoint & originLoc, WorldPoint *pTargetPosW, bool updateLoc, double distanceMax, double *pFinalDest = NULL);
-    //! Check if anobject is blocking the path between
-    void checkBlockedByObject(WorldPoint * originLoc, WorldPoint * pTargetPosW,
-        double *dist, MapObject** blockerObj);
-    uint8 inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** t,
+    //! Check if an object is blocking the line between originLoc and pTargetPosW
+    MapObject * checkBlockedByObject(WorldPoint * originLoc, WorldPoint * pTargetPosW,
+        double *dist, const ShootableMapObject *pOrigin);
+    //! Check if tile or object blocks the line between originLoc and pTarget
+    uint8 checkIfBlockersInShootingLine(const WorldPoint & originLoc, ShootableMapObject **pTarget,
         WorldPoint *pTargetPosW = NULL, bool setBlocker = false,
-        bool checkTileOnly = false, double maxr = -1.0, double * distTo = NULL);
+        bool checkTileOnly = false, double maxr = -1.0, double * distTo = NULL, const ShootableMapObject *pOrigin = NULL);
     //! Returns the distance between a ped and a object if a path exists between the two
     uint8 getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double distanceMax, double *length);
 

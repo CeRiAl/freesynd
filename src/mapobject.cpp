@@ -972,7 +972,7 @@ bool Door::animate(int elapsed, Mission *obj)
             for(*i = 0; *i < 2; *i += 1) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + inc_rel,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                         y + rel_inc, z, &nature, &si, true));
                     if (!p && state_ == Static::sttdoor_Open && (!found)) {
                         state_ = Static::sttdoor_Closing;
@@ -999,7 +999,7 @@ bool Door::animate(int elapsed, Mission *obj)
             *i = 1;
             nature = MapObject::kNaturePed; si = 0;
             do {
-                p = (PedInstance *)(obj->findAt(x + inc_rel,
+                p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                     y + rel_inc, z, &nature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
@@ -1020,7 +1020,7 @@ bool Door::animate(int elapsed, Mission *obj)
             *i = 0;
             nature = MapObject::kNaturePed; si = 0;
             do {
-                p = (PedInstance *)(obj->findAt(x + inc_rel,
+                p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                     y + rel_inc, z, &nature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
@@ -1122,7 +1122,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = -1;
             for(*i = -2; *i < 3; (*i)++) {
                 nature = MapObject::kNatureVehicle; si = 0;
-                v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+                v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                     y + rel_inc,z, &nature, &si, true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
@@ -1137,7 +1137,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = 1;
             for(*i = -2; *i < 3; (*i)++) {
                 nature = MapObject::kNatureVehicle; si = 0;
-                v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+                v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                     y + rel_inc,z,&nature,&si,true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
@@ -1153,7 +1153,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
@@ -1169,7 +1169,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
@@ -1185,7 +1185,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds_mid.push_back(p);
@@ -1253,7 +1253,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = -1 * sign;
             *i = -2;
             nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                 y + rel_inc,z, &nature, &si,true));
             if (v) {
                 if (!found) {
@@ -1267,7 +1267,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = 1 * sign;
             *i = 2;
             nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                 y + rel_inc,z, &nature, &si,true));
             if (v) {
                 if (!found) {
@@ -1282,7 +1282,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
@@ -1298,7 +1298,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
@@ -1355,7 +1355,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *i = -2;
             set_wayFree = state_ == Static::sttdoor_Opening ? 1 : 2;
             nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                 y + rel_inc,z, &nature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
@@ -1364,7 +1364,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = 1 * sign;
             *i = 2;
             nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findAt(x + inc_rel,
+            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
                 y + rel_inc,z, &nature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
@@ -1374,7 +1374,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
@@ -1385,7 +1385,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             for (*i = -1; *i <= 1; (*i)++ ) {
                 nature = MapObject::kNaturePed; si = 0;
                 do {
-                    p = (PedInstance *)(obj->findAt(x + rel_inc,
+                    p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
                         y + inc_rel, z, &nature, &si, true));
                     if (p) {
                         found_peds.push_back(p);

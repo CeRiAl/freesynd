@@ -354,7 +354,13 @@ void SquadSelection::shootAt(const WorldPoint &aimedLocW) {
 bool SquadSelection::isTargetInRange(Mission *pMission, ShootableMapObject *pTarget) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
         if ((*it)->isArmed()) {
-            if (pMission->checkIfBlockersInShootingLine(*it, &pTarget) == 1) {
+            WorldPoint shooterPosW((*it)->position());
+            WeaponInstance *pWeapon = (*it)->selectedWeapon();
+
+            uint8 blockRes = pMission->checkIfBlockersInShootingLine(
+                shooterPosW, &pTarget, NULL, false, false, pWeapon->range(), NULL, (*it));
+
+            if (blockRes == 1) {
                 return true;
             }
         }

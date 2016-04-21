@@ -59,6 +59,8 @@ public:
 
     //! Return the nature of the object
     ObjectNature nature() { return nature_; }
+    //! Return true the object has the same nature as the given one
+    bool is(ObjectNature aNature) const { return nature_ == aNature; }
     //! For debug purpose
     const char* natureName();
 

@@ -35,7 +35,6 @@
 
 void InstantImpactShot::inflictDamage(Mission *pMission) {
     WorldPoint originLocW(dmg_.d_owner->position()); // origin of shooting
-    //dmg_.d_owner->convertPosToXYZ(&originLocW);
     // get how much impacts does the weapon generate
     int nbImpacts = dmg_.pWeapon->getWeaponClass()->shotsPerAmmo();
 
@@ -53,7 +52,8 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
 
         // Verify if shot hit something or was blocked by a tile
         ShootableMapObject *pTargetHit = NULL;
-        pMission->checkIfBlockersInShootingLine(dmg_.pWeapon->owner(), &pTargetHit, &impactPosW);
+        pMission->checkIfBlockersInShootingLine(
+            originLocW, &pTargetHit, &impactPosW, true, false, dmg_.pWeapon->range(), NULL, dmg_.d_owner);
 
         if (pTargetHit != NULL) {
             hitsByObject[pTargetHit] = hitsByObject[pTargetHit] + 1;
@@ -322,21 +322,21 @@ void Explosion::generateFlameWaves(Mission *pMission, WorldPoint *pOrigin, doubl
 
 /*!
  * Returns all ShootableMapObject that are alive and in range of
- * weapon who generated this shot.
+ * weapon who generated this explosion.
  * Every object found is added to the objInRangeVec vector.
  * \param pMission Mission data
- * \param originLocW Origin of shot
+ * \param originLocW Origin of explosion
  * \param objInRangeVec Result list
- * \param includeShooter if true, owner of the shot will be include in the result list
  */
 void Explosion::getAllShootablesWithinRange(Mission *pMission,
                                        const WorldPoint &originLocW,
                                        std::vector<ShootableMapObject *> &objInRangeVec) {
-    // Look at all peds
+    // Look at all peds alive, in range of explosion and not in a vehicle
     for (size_t i = 0; i < pMission->numPeds(); ++i) {
         ShootableMapObject *p = pMission->ped(i);
-        if (p->isAlive()) {
-            if (pMission->inRangeCPos(originLocW, &p, NULL, false, true, dmg_.range) == 1) {
+        if (p->isAlive() && p->isCloseTo(originLocW, dmg_.range) && p->inVehicle() == NULL) {
+            WorldPoint pedPosW(p->position());
+            if (pMission->checkBlockedByTile(originLocW, &pedPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(p);
             }
         }
@@ -344,28 +344,33 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
 
     for (size_t i = 0; i < pMission->numStatics(); ++i) {
         ShootableMapObject *st = pMission->statics(i);
-        if (st->isAlive())
-            if (pMission->inRangeCPos(originLocW, &st, NULL, false, true, dmg_.range) == 1) {
+        if (st->isAlive() && st->isCloseTo(originLocW, dmg_.range)) {
+            WorldPoint staticPosW(st->position());
+            if (pMission->checkBlockedByTile(originLocW, &staticPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(st);
             }
+        }
     }
 
     // look at all vehicles
     for (size_t i = 0; i < pMission->numVehicles(); ++i) {
         ShootableMapObject *v = pMission->vehicle(i);
-        if (v->isAlive()) {
-            if (pMission->inRangeCPos(originLocW, &v, NULL, false, true, dmg_.range) == 1) {
-                    objInRangeVec.push_back(v);
+        if (v->isAlive() && v->isCloseTo(originLocW, dmg_.range)) {
+            WorldPoint vehiclePosW(v->position());
+            if (pMission->checkBlockedByTile(originLocW, &vehiclePosW, false, dmg_.range) == 1) {
+                objInRangeVec.push_back(v);
             }
         }
     }
 
-    // look at all weapons on the ground except the weapon that generated the shot
+    // look at all bombs on the ground except the weapon that generated the shot
     for (size_t i = 0; i < pMission->numWeapons(); ++i) {
         WeaponInstance *w = pMission->weapon(i);
-        if (w != dmg_.pWeapon && w->map() != -1 &&
-            pMission->inRangeCPos(originLocW, (ShootableMapObject **)w, NULL, false, true, dmg_.range) == 1) {
+        if (w->getWeaponType() == Weapon::TimeBomb && w != dmg_.pWeapon && !w->hasOwner()) {
+            WorldPoint weaponPosW(w->position());
+            if (pMission->checkBlockedByTile(originLocW, &weaponPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(w);
+            }
         }
     }
 }
@@ -495,14 +500,10 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
         }
     }
 
-    // force shooter to be ignored when searching for blockers
-    bool previousIgnoreState = dmg_.d_owner->isIgnored();
-    dmg_.d_owner->setIsIgnored(true);
-
     // maxr here is set to maximum that projectile can fly from its
     // current position
-    uint8 block_mask = pMission->inRangeCPos(
-        curPosW_, &pShootableHit_, &nextPosW, true, false, distanceMax_ - currentDistance_);
+    uint8 block_mask = pMission->checkIfBlockersInShootingLine(
+        curPosW_, &pShootableHit_, &nextPosW, true, false, distanceMax_ - currentDistance_, NULL, dmg_.d_owner);
 
     if (block_mask == 1) {
         // Projectile has reached initial target
@@ -524,8 +525,6 @@ bool ProjectileShot::moveProjectile(int elapsed, Mission *pMission) {
     curPosW_ = nextPosW;
     currentDistance_ = nextDist;
     drawTrace(pMission);
-
-    dmg_.d_owner->setIsIgnored(previousIgnoreState);
 
     return endMove;
 }

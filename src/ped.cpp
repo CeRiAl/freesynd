@@ -1007,7 +1007,7 @@ bool PedInstance::wePickupWeapon() {
     return (state_ & pa_smPickUp) != 0;
 }
 
-VehicleInstance *PedInstance::inVehicle()
+VehicleInstance *PedInstance::inVehicle() const
 {
     return (state_ & (PedInstance::pa_smInCar
         | PedInstance::pa_smUsingCar)) != 0 ? in_vehicle_ : NULL;
@@ -1401,7 +1401,7 @@ void PedInstance::verifyHostilesFound(Mission *m) {
             && isFriendWith((PedInstance *)(smo)))
             || (smo->nature() == MapObject::kNatureVehicle
             && ((VehicleInstance *)smo)->containsHostilesForPed(this, hostile_desc_))
-            || (m->inRangeCPos(cur_xyz, &smo, NULL, false, false,
+            || (m->checkIfBlockersInShootingLine(cur_xyz, &smo, NULL, false, false,
             check_rng, &distTo) != 1))
         {
             rm_set.push_back(smo);

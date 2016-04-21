@@ -259,7 +259,7 @@ WeaponInstance *WeaponInstance::createInstance(Weapon *pWeaponClass) {
     return new WeaponInstance(pWeaponClass, weaponIdCnt++);
 }
 
-WeaponInstance::WeaponInstance(Weapon * w, uint16 id) : ShootableMapObject(id, -1, MapObject::kNatureWeapon),
+WeaponInstance::WeaponInstance(Weapon * w, uint16 anId) : ShootableMapObject(anId, -1, MapObject::kNatureWeapon),
     bombSoundTimer(w->timeReload()), bombExplosionTimer(w->timeForShot()),
     flamerTimer_(180) {
     pWeaponClass_ = w;

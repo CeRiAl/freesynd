@@ -411,7 +411,7 @@ public:
     void setNewOwner(PedInstance *pPed);
 
     bool inSightRange(MapObject *t);
-    VehicleInstance *inVehicle();
+    VehicleInstance * inVehicle() const;
 
     void putInVehicle(VehicleInstance *v, pedActionStateMasks add_state);
     void leaveVehicle();

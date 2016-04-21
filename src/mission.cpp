@@ -359,7 +359,7 @@ void Mission::addWeapon(WeaponInstance * w)
     weapons_.push_back(w);
 }
 
-MapObject * Mission::findAt(int tilex, int tiley, int tilez,
+MapObject * Mission::findObjectWithNatureAtPos(int tilex, int tiley, int tilez,
                             MapObject::ObjectNature *nature, int *searchIndex,
                             bool only)
 {
@@ -2473,50 +2473,11 @@ bool Mission::getWalkableClosestByZ(TilePoint &mtp) {
     return found;
 }
 
-/**
- *
- * \param pShooter PedInstance*
- * \param pTarget ShootableMapObject**
- * \param pTargetPosW WorldPoint*
- * \return uint8
- *
- */
-uint8 Mission::checkIfBlockersInShootingLine(PedInstance *pShooter, ShootableMapObject ** pTarget, WorldPoint *pTargetPosW) {
-    WorldPoint shooterPosW(pShooter->position());
-    WeaponInstance *pWeapon = pShooter->selectedWeapon();
-    // remember previous ignore status
-    bool shooterState = pShooter->isIgnored();
-    bool weaponState = pWeapon->isIgnored();
-    VehicleInstance *pVehicle = pShooter->inVehicle();
-    bool vehicleState = pVehicle != NULL ? pVehicle->isIgnored() : false;
-
-    // Set those objects as ignored when searching for targets
-    pShooter->setIsIgnored(true);
-    pWeapon->setIsIgnored(true);
-    if (pVehicle) {
-        pVehicle->setIsIgnored(true);
-    }
-
-    //! we update target with blocker only if the position parameter has been supplied
-    bool updateTarget = pTargetPosW != NULL;
-    uint8 block_mask = inRangeCPos(
-        shooterPosW, pTarget, pTargetPosW, updateTarget, false, pWeapon->range());
-
-    pShooter->setIsIgnored(shooterState);
-    pWeapon->setIsIgnored(weaponState);
-    if (pVehicle) {
-        pVehicle->setIsIgnored(vehicleState);
-    }
-
-    return block_mask;
-}
-
 /*!
 * This function looks for blockers - statics, vehicles, peds, weapons
 */
-void Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pEndPt,
-                            double *dist, MapObject** blockerObj)
-{
+MapObject * Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pEndPt,
+        double *dist, const ShootableMapObject *pOrigin) {
     // TODO: calculating closest blocker first? (start point can be closer though)
     double inc_xyz[3];
     inc_xyz[0] = (pEndPt->x - pStartPt->x) / (*dist);
@@ -2527,6 +2488,7 @@ void Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pEndPt,
     WorldPoint blockStartPt;
     WorldPoint blockEndPt;
     double closest = *dist;
+    MapObject *pBlocker = NULL;
 
     for (unsigned int i = 0; i < statics_.size(); ++i) {
         MapObject * s_blocker = statics_[i];
@@ -2539,76 +2501,87 @@ void Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pEndPt,
             double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
             if (closest == -1 || dist_blocker < closest) {
                 closest = dist_blocker;
-                *blockerObj = s_blocker;
+                pBlocker = s_blocker;
                 blockStartPt = copyStartPt;
                 blockEndPt = copyEndPt;
             }
             copyStartPt = *pStartPt;
             copyEndPt = *pEndPt;
         }
+    }
+    // if shooter is a Ped and is shooting from a vehicle,
+    // then skip that vehicle in the search
+    Vehicle *pShooterVehicle = NULL;
+    if (pOrigin && pOrigin->is(MapObject::kNaturePed)) {
+        const PedInstance *pPed = static_cast<const PedInstance *>(pOrigin);
+        pShooterVehicle = pPed->inVehicle(); // can be null
     }
     for (unsigned int i = 0; i < vehicles_.size(); ++i) {
-        MapObject * v_blocker = vehicles_[i];
-        if (v_blocker->isIgnored())
-            continue;
-        if (v_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
-            int cx = pStartPt->x - copyStartPt.x;
-            int cy = pStartPt->y - copyStartPt.y;
-            int cz = pStartPt->z - copyStartPt.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = v_blocker;
-                blockStartPt = copyStartPt;
-                blockEndPt = copyEndPt;
+        Vehicle * pVehicle = vehicles_[i];
+        if (pVehicle != pShooterVehicle) {
+            if (pVehicle->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+                int cx = pStartPt->x - copyStartPt.x;
+                int cy = pStartPt->y - copyStartPt.y;
+                int cz = pStartPt->z - copyStartPt.z;
+                double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    pBlocker = pVehicle;
+                    blockStartPt = copyStartPt;
+                    blockEndPt = copyEndPt;
+                }
+                copyStartPt = *pStartPt;
+                copyEndPt = *pEndPt;
             }
-            copyStartPt = *pStartPt;
-            copyEndPt = *pEndPt;
         }
     }
+
     for (unsigned int i = 0; i < peds_.size(); ++i) {
         PedInstance * p_blocker = peds_[i];
-        if (p_blocker->isDead() || p_blocker->isIgnored())
-            continue;
-        if (p_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
-            int cx = pStartPt->x - copyStartPt.x;
-            int cy = pStartPt->y - copyStartPt.y;
-            int cz = pStartPt->z - copyStartPt.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = p_blocker;
-                blockStartPt = copyStartPt;
-                blockEndPt = copyEndPt;
+        if (p_blocker->isAlive() && p_blocker != pOrigin && p_blocker->inVehicle() == NULL) {
+            if (p_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+                int cx = pStartPt->x - copyStartPt.x;
+                int cy = pStartPt->y - copyStartPt.y;
+                int cz = pStartPt->z - copyStartPt.z;
+                double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    pBlocker = p_blocker;
+                    blockStartPt = copyStartPt;
+                    blockEndPt = copyEndPt;
+                }
+                copyStartPt = *pStartPt;
+                copyEndPt = *pEndPt;
             }
-            copyStartPt = *pStartPt;
-            copyEndPt = *pEndPt;
         }
     }
+
     for (unsigned int i = 0; i < weapons_.size(); ++i) {
-        MapObject * w_blocker = weapons_[i];
-        if (w_blocker->isIgnored())
-            continue;
-        if (w_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
-            int cx = pStartPt->x - copyStartPt.x;
-            int cy = pStartPt->y - copyStartPt.y;
-            int cz = pStartPt->z - copyStartPt.z;
-            double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
-            if (closest == -1 || dist_blocker < closest) {
-                closest = dist_blocker;
-                *blockerObj = w_blocker;
-                blockStartPt = copyStartPt;
-                blockEndPt = copyEndPt;
+        WeaponInstance *pWeapon = weapons_[i];
+        if (!pWeapon->hasOwner()) {
+            if (pWeapon->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
+                int cx = pStartPt->x - copyStartPt.x;
+                int cy = pStartPt->y - copyStartPt.y;
+                int cz = pStartPt->z - copyStartPt.z;
+                double dist_blocker = sqrt((double) (cx * cx + cy * cy + cz * cz));
+                if (closest == -1 || dist_blocker < closest) {
+                    closest = dist_blocker;
+                    pBlocker = pWeapon;
+                    blockStartPt = copyStartPt;
+                    blockEndPt = copyEndPt;
+                }
+                copyStartPt = *pStartPt;
+                copyEndPt = *pEndPt;
             }
-            copyStartPt = *pStartPt;
-            copyEndPt = *pEndPt;
         }
     }
-    if (*blockerObj != NULL) {
+    if (pBlocker != NULL) {
         *pStartPt = blockStartPt;
         *pEndPt = blockEndPt;
         *dist = closest;
     }
+
+    return pBlocker;
 }
 
 /*!
@@ -2771,9 +2744,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
  * NOTE: only if "pn" or "t" are not null, variables are set
 
 */
-uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** pTarget,
+uint8 Mission::checkIfBlockersInShootingLine(const WorldPoint & originLoc, ShootableMapObject ** pTarget,
     WorldPoint *pTargetPosW, bool setBlocker, bool checkTileOnly, double maxr,
-    double * distTo)
+    double * distTo, const ShootableMapObject *pOrigin)
 {
     // search for a tile blocking the path towards the target
     // tmp will hold the updated position after that search
@@ -2799,7 +2772,6 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
 
     WorldPoint tmpOrigin = originLoc;
     WorldPoint tmpEnd = tmpPosW;
-    MapObject *blockerObj = NULL;
 
     // We search for a possible object blocking the way on the path
     // between origin and the reached position
@@ -2809,7 +2781,7 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
     double dist_blocker = sqrt((double)((tx - originLoc.x) *
         (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
         + (tz - originLoc.z) * (tz - originLoc.z)));
-    checkBlockedByObject(&tmpOrigin, &tmpEnd, &dist_blocker, &blockerObj);
+    MapObject *blockerObj = checkBlockedByObject(&tmpOrigin, &tmpEnd, &dist_blocker, pOrigin);
 
     if (blockerObj) {
         if (block_mask == 1)
@@ -2855,7 +2827,8 @@ uint8 Mission::inRangeCPos(const WorldPoint & originLoc, ShootableMapObject ** p
 uint8 Mission::getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double maxLength, double *length) {
     WorldPoint cur_xyz(pPed->position());
     cur_xyz.z += (pPed->sizeZ() >> 1);
-    uint8 res = inRangeCPos(cur_xyz, &objectToReach, NULL, false, true, maxLength, length);
+    // TODO : it's not inRangeCPos that must be called but a method for path calculation
+    uint8 res = checkIfBlockersInShootingLine(cur_xyz, &objectToReach, NULL, false, true, maxLength, length, pPed);
     return res == 1 ? 0 : 1;
 }
 
