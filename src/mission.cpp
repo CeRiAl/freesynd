@@ -361,53 +361,26 @@ void Mission::addWeapon(WeaponInstance * w)
 
 MapObject * Mission::findObjectWithNatureAtPos(int tilex, int tiley, int tilez,
                             MapObject::ObjectNature *nature, int *searchIndex,
-                            bool only)
-{
+                            bool only) {
+
+    const TilePoint position(tilex, tiley, tilez);
     switch(*nature) {
         case MapObject::kNaturePed:
-            for (unsigned int i = *searchIndex; i < peds_.size(); i++)
-                if ((!peds_[i]->isIgnored()) && peds_[i]->tileX() == tilex
-                    && peds_[i]->tileY() == tiley
-                    && peds_[i]->tileZ() == tilez)
-                {
+            for (unsigned int i = *searchIndex; i < peds_.size(); i++) {
+                // dead peds are included because doors stay opened even with dead corpses
+                // it also prevents glitches with a closed door over a dead body
+                if (peds_[i]->sameTile(position)) {
                     *searchIndex = i + 1;
                     *nature = MapObject::kNaturePed;
                     return peds_[i];
                 }
-            if(only)
-                return NULL;
-            *searchIndex = 0;
-        case MapObject::kNatureWeapon:
-            for (unsigned int i = *searchIndex; i < weapons_.size(); i++)
-                if ((!weapons_[i]->isIgnored()) && weapons_[i]->tileX() == tilex
-                    && weapons_[i]->tileY() == tiley
-                    && weapons_[i]->tileZ() == tilez)
-                {
-                    *searchIndex = i + 1;
-                    *nature = MapObject::kNatureWeapon;
-                    return weapons_[i];
-                }
-            if(only)
-                return NULL;
-            *searchIndex = 0;
-        case MapObject::kNatureStatic:
-            for (unsigned int i = *searchIndex; i < statics_.size(); i++)
-                if (statics_[i]->tileX() == tilex
-                    && statics_[i]->tileY() == tiley
-                    && statics_[i]->tileZ() == tilez)
-                {
-                    *searchIndex = i + 1;
-                    *nature = MapObject::kNatureStatic;
-                    return statics_[i];
-                }
+            }
             if(only)
                 return NULL;
             *searchIndex = 0;
         case MapObject::kNatureVehicle:
             for (unsigned int i = *searchIndex; i < vehicles_.size(); i++)
-                if (vehicles_[i]->tileX() == tilex
-                    && vehicles_[i]->tileY() == tiley
-                    && vehicles_[i]->tileZ() == tilez)
+                if (vehicles_[i]->sameTile(position))
                 {
                     *searchIndex = i + 1;
                     *nature = MapObject::kNatureVehicle;
@@ -415,7 +388,7 @@ MapObject * Mission::findObjectWithNatureAtPos(int tilex, int tiley, int tilez,
                 }
             break;
         default:
-            printf("undefined majortype %i", *nature);
+            FSERR(Log::k_FLG_GAME, "Mission", "findObjectWithNatureAtPos", ("Undefined nature %i\n", *nature));
             break;
     }
     return NULL;
@@ -487,12 +460,12 @@ bool Mission::setSurfaces() {
             int indx = s->tileX() + s->tileY() * mmax_x_
                 + s->tileZ() * mmax_m_xy;
             mtsurfaces_[indx].twd = 0x00;
-            if (s->subType() == Static::kStaticSubtype1) {
+            if (s->orientation() == Static::kStaticOrientation1) {
                 if (indx - 1 >= 0)
                     mtsurfaces_[indx - 1].twd = 0x00;
                 if (indx + 1 < mmax_m_all)
                     mtsurfaces_[indx + 1].twd = 0x00;
-            } else if (s->subType() == Static::kStaticSubtype2) {
+            } else if (s->orientation() == Static::kStaticOrientation2) {
                 if (indx - mmax_x_ >= 0)
                     mtsurfaces_[indx - mmax_x_].twd = 0x00;
                 if (indx + mmax_x_ < mmax_m_all)
@@ -2491,8 +2464,8 @@ MapObject * Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pE
     MapObject *pBlocker = NULL;
 
     for (unsigned int i = 0; i < statics_.size(); ++i) {
-        MapObject * s_blocker = statics_[i];
-        if (s_blocker->isIgnored())
+        Static * s_blocker = statics_[i];
+        if (s_blocker->isExcludedFromBlockers())
             continue;
         if (s_blocker->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
             int cx = pStartPt->x - copyStartPt.x;

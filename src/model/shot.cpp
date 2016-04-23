@@ -333,7 +333,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
                                        std::vector<ShootableMapObject *> &objInRangeVec) {
     // Look at all peds alive, in range of explosion and not in a vehicle
     for (size_t i = 0; i < pMission->numPeds(); ++i) {
-        ShootableMapObject *p = pMission->ped(i);
+        PedInstance *p = pMission->ped(i);
         if (p->isAlive() && p->isCloseTo(originLocW, dmg_.range) && p->inVehicle() == NULL) {
             WorldPoint pedPosW(p->position());
             if (pMission->checkBlockedByTile(originLocW, &pedPosW, false, dmg_.range) == 1) {
@@ -343,8 +343,8 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     }
 
     for (size_t i = 0; i < pMission->numStatics(); ++i) {
-        ShootableMapObject *st = pMission->statics(i);
-        if (st->isAlive() && st->isCloseTo(originLocW, dmg_.range)) {
+        Static *st = pMission->statics(i);
+        if (!st->isExcludedFromBlockers() && st->isAlive() && st->isCloseTo(originLocW, dmg_.range)) {
             WorldPoint staticPosW(st->position());
             if (pMission->checkBlockedByTile(originLocW, &staticPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(st);
@@ -366,7 +366,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     // look at all bombs on the ground except the weapon that generated the shot
     for (size_t i = 0; i < pMission->numWeapons(); ++i) {
         WeaponInstance *w = pMission->weapon(i);
-        if (w->getWeaponType() == Weapon::TimeBomb && w != dmg_.pWeapon && !w->hasOwner()) {
+        if (w->getWeaponType() == Weapon::TimeBomb && w != dmg_.pWeapon && !w->hasOwner() && w->isAlive()) {
             WorldPoint weaponPosW(w->position());
             if (pMission->checkBlockedByTile(originLocW, &weaponPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(w);

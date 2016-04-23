@@ -299,13 +299,11 @@ bool WeaponInstance::animate(int elapsed) {
                 g_App.gameSounds().play(snd::TIMEBOMB);
             }
 
-            is_ignored_ = true;
             if (bombExplosionTimer.update(elapsed)) {
                 ShootableMapObject::DamageInflictType dmg;
                 fire(g_Session.getMission(), dmg, elapsed);
                 return true;
             }
-            is_ignored_ = false;
             time_consumed_ = true;
         }
 
@@ -504,7 +502,6 @@ void WeaponInstance::handleHit(ShootableMapObject::DamageInflictType & d)
 {
     // When a bomb is hit, it explodes
     if (getWeaponType() == Weapon::TimeBomb && health_ > 0) {
-        is_ignored_ = true;
         // we pass the given DamageInflictType just for the compiler
         // as it is not used by the fire method for a Bomb
         // same for elapsed

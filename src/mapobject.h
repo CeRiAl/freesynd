@@ -259,9 +259,6 @@ public:
         return time_show_anim_ > time_showing_anim_;
     }
 
-    bool isIgnored() { return is_ignored_; }
-    void setIsIgnored(bool is_ignored = false) { is_ignored_ = is_ignored; }
-
     bool isBlocker(WorldPoint * pStartPt, WorldPoint * pEndPt,
                double * inc_xyz);
 
@@ -300,8 +297,6 @@ protected:
     int time_show_anim_;
     //! looped animations, playing time
     int time_showing_anim_;
-    //! object is not included in view/shot trajectory calculation
-    bool is_ignored_;
     /*! animation to draw can, change this varible should provide check
      * whether first frame was drawn successfully, only if successful
      * MapObject::animate should be called
@@ -466,7 +461,6 @@ public:
      */
     virtual void handleHit(DamageInflictType &d) {}
 
-    virtual bool isExcluded() { return health_ <= 0; }
     bool isAlive() { return health_ > 0; }
     bool isDead() { return health_ <= 0; }
 
@@ -526,10 +520,10 @@ protected:
  */
 class Static : public ShootableMapObject {
 public:
-    /*! Const for subtype 1 of Static.*/
-    static const int kStaticSubtype1;
-    /*! Const for subtype 2 of Static.*/
-    static const int kStaticSubtype2;
+    /*! Const for orientation 1 of Static.*/
+    static const int kStaticOrientation1;
+    /*! Const for orientation 2 of Static.*/
+    static const int kStaticOrientation2;
 
     enum StaticType {
         // NOTE: should be the same name as Class
@@ -543,6 +537,44 @@ public:
         smt_AnimatedWindow,
         smt_NeonSign
     };
+
+    enum stateDoors {
+        sttdoor_Closed = 0,
+        sttdoor_Closing,
+        sttdoor_Open,
+        sttdoor_Opening
+    };
+
+    enum stateTrees {
+        stttree_Healthy = 0,
+        stttree_Burning,
+        stttree_Damaged
+    };
+
+    //semaphore, 4 animations + damaged
+    enum stateSemaphores {
+        sttsem_Stt0 = 0,
+        sttsem_Stt1,
+        sttsem_Stt2,
+        sttsem_Stt3,
+        sttsem_Damaged
+    };
+
+    enum stateWindows {
+        sttwnd_Closed = 0,
+        sttwnd_Open,
+        sttwnd_Breaking,
+        sttwnd_Damaged
+    };
+
+    enum stateAnimatedWindows {
+        sttawnd_LightOff = 0,
+        sttawnd_LightSwitching,
+        sttawnd_PedAppears,
+        sttawnd_ShowPed,
+        sttawnd_PedDisappears,
+        sttawnd_LightOn
+    };
 public:
     static Static *loadInstance(uint8 *data, uint16 id, int m);
     virtual ~Static() {}
@@ -550,64 +582,36 @@ public:
     //! Return the type of statics
     StaticType type() { return type_; }
     //! Set the sub type of statics
-    void setSubType(int objSubType) { subType_ = objSubType; }
+    void setOrientation(int anOrientation) { orientation_ = anOrientation; }
     //! Return the type of statics
-    int subType() { return subType_; }
+    int orientation() { return orientation_; }
+
+    //! Return true if static should not be included in the search for blockers
+    bool isExcludedFromBlockers() { return excludedFromBlockers_; }
+    //! Set whether to include static in search for blockers
+    void setExcludedFromBlockers(bool exclude) { excludedFromBlockers_ = exclude; }
 
     virtual bool animate(int elapsed, Mission *obj) {
         return MapObject::animate(elapsed);
     }
 
-    typedef enum {
-        sttdoor_Closed = 0,
-        sttdoor_Closing,
-        sttdoor_Open,
-        sttdoor_Opening
-    }stateDoors;
-
-    typedef enum {
-        stttree_Healthy = 0,
-        stttree_Burning,
-        stttree_Damaged
-    }stateTrees;
-
-    //semaphore, 4 animations + damaged
-    typedef enum {
-        sttsem_Stt0 = 0,
-        sttsem_Stt1,
-        sttsem_Stt2,
-        sttsem_Stt3,
-        sttsem_Damaged
-    }stateSemaphores;
-
-    typedef enum {
-        sttwnd_Closed = 0,
-        sttwnd_Open,
-        sttwnd_Breaking,
-        sttwnd_Damaged
-    }stateWindows;
-
-    typedef enum {
-        sttawnd_LightOff = 0,
-        sttawnd_LightSwitching,
-        sttawnd_PedAppears,
-        sttawnd_ShowPed,
-        sttawnd_PedDisappears,
-        sttawnd_LightOn
-    }stateAnimatedWindows;
-
 protected:
     Static(uint16 anId, int m, StaticType aType) :
             ShootableMapObject(anId, m, MapObject::kNatureStatic) {
         type_ = aType;
-        subType_ = kStaticSubtype1;
+        orientation_ = kStaticOrientation1;
+        excludedFromBlockers_ = false;
     }
 
 protected:
     /*! Type of statics.*/
     StaticType type_;
-    /*! Sub division for statics of same type.*/
-    int subType_;
+    /*! Some statics can be displayed in 1 of 2 orientations : SW or SE.*/
+    int orientation_;
+    /*! This flag is used to exclude this object from the list of statics
+     * that can block a shoot.
+     */
+     bool excludedFromBlockers_;
 };
 
 /*!

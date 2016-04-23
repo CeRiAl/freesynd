@@ -49,7 +49,6 @@ void WeaponHolder::addWeapon(WeaponInstance *w) {
     assert(w);
     assert(weapons_.size() < kMaxHoldedWeapons);
     w->setMap(-1);
-    w->setIsIgnored(true);
     weapons_.push_back(w);
 }
 
@@ -159,7 +158,7 @@ void WeaponHolder::updtPreferedWeapon() {
     }
 }
 
-/*! 
+/*!
  * Selects a weapon based on given criteria.
  * \param pw_to_use The criteria.
  * \return True if selection has changed

@@ -415,7 +415,6 @@ public:
 
     void putInVehicle(VehicleInstance *v, pedActionStateMasks add_state);
     void leaveVehicle();
-    bool setVehicleIgnore(bool ignored);
 
     int map();
     AnimationDrawn drawnAnim(void);
@@ -648,7 +647,6 @@ public:
 
     void cpyEnemyDefs(Mmuu32_t &eg_defs) { eg_defs = enemy_group_defs_; }
     bool isArmed() { return (desc_state_ & pd_smArmed) != 0; }
-    bool isExcluded() { return (state_ & pa_smCheckExcluded) != 0; }
 
     IPAStim *adrenaline_;
     IPAStim *perception_;

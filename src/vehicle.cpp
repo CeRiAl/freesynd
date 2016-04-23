@@ -108,8 +108,8 @@ bool Vehicle::containsHostilesForPed(PedInstance* p,
     return false;
 }
 
-VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 id, int m):
-    Vehicle(id, m, true), vehicle_(vehicle), vehicle_driver_(NULL)
+VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 anId, int m):
+    Vehicle(anId, m, true), vehicle_(vehicle), vehicle_driver_(NULL)
 {
     hold_on_.wayFree = 0;
 }
@@ -808,7 +808,6 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
 
     decreaseHealth(d.dvalue);
     if (health_ == 0) {
-        is_ignored_ = true;
         clearDestination();
         switch ((unsigned int)d.dtype) {
             case MapObject::dmg_Bullet:

@@ -526,7 +526,6 @@ VehicleInstance * MissionManager::createVehicleInstance(const LevelData::Cars &g
             vehicleanim->set_base_anims(cur_anim - 12 + (dir >> 1));
             vehicle_new->setStartHealth(0);
             vehicle_new->setHealth(-1);
-            vehicle_new->setIsIgnored(true);
             vehicleanim->set_animation_type(VehicleAnimation::kBurntAnim);
             break;
         case 0x05:

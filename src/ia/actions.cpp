@@ -45,12 +45,12 @@ const uint8 ShootAction::kShootActionSingleShoot = 2;
 
 /*!
  * Default constructor.
- * \param type What type of action.
+ * \param aType What type of action.
  * \param origin Who has created this action.
  */
-Action::Action(ActionType type) {
+Action::Action(ActionType aType) {
     status_ = kActStatusNotStarted;
-    type_ = type;
+    type_ = aType;
     source_ = kActionNotScripted;
 }
 
@@ -63,15 +63,15 @@ void Action::reset() {
 
 /*!
  * Default constructor.
- * \param origin Who has created this action.
- * \param isExclusive Does action allow shooting
+ * \param aType What type of action.
+ * \param exclusive Does action allow shooting
  * \param canExecVehicle Is action is allowed while ped is in vehicle
  */
-MovementAction::MovementAction(ActionType type, bool isExclusive, bool canExecVehicle) :
-Action(type) {
+MovementAction::MovementAction(ActionType aType, bool exclusive, bool canExecVehicle) :
+Action(aType) {
     pNext_ = NULL;
     pPrevious_ = NULL;
-    isExclusive_ = isExclusive;
+    isExclusive_ = exclusive;
     canExecInVehicle_ = canExecVehicle;
     targetState_ = PedInstance::pa_smNone;
     warnBehaviour_ = false;
@@ -209,6 +209,12 @@ WalkAction::WalkAction(const TilePoint &locT, int speed) :
     targetState_ = PedInstance::pa_smWalking;
 }
 
+/*! \brief
+ *
+ * \param smo ShootableMapObject*
+ * \param speed int
+ *
+ */
 WalkAction::WalkAction(ShootableMapObject *smo, int speed) :
 MovementAction(kActTypeWalk) {
     newSpeed_ = speed;
@@ -299,7 +305,7 @@ bool WalkToDirectionAction::doExecute(int elapsed, Mission *pMission, PedInstanc
         distanceToWalk = (int)sqrt((double)(diffx * diffx + diffy * diffy));
 
         if (distanceToWalk > 0) {
-            uint8 res = pPed->moveToDir(pMission,
+            pPed->moveToDir(pMission,
                             elapsed,
                             moveDirdesc_,
                             -1,

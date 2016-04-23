@@ -967,7 +967,6 @@ WeaponInstance * PedInstance::dropWeapon(uint8 index) {
 
     if(pWeapon) {
         pWeapon->setMap(map_);
-        pWeapon->setIsIgnored();
         pWeapon->setPosition(pos_);
     }
 
@@ -999,7 +998,6 @@ void PedInstance::destroyAllWeapons() {
     while (!weapons_.empty()) {
         WeaponInstance * w = removeWeaponAtIndex(0);
         w->setMap(-1);
-        w->setIsIgnored(true);
     }
 }
 
@@ -1018,7 +1016,6 @@ void PedInstance::putInVehicle(VehicleInstance * v,
 {
     map_ = -1;
     in_vehicle_ = v;
-    is_ignored_ = true;
     switchActionStateTo((uint32)add_state);
 }
 
@@ -1026,20 +1023,8 @@ void PedInstance::leaveVehicle() {
     assert(map_ == -1 && in_vehicle_);
     map_ = in_vehicle_->map();
     in_vehicle_ = NULL;
-    is_ignored_ = false;
     switchActionStateFrom(state_ & (PedInstance::pa_smInCar
         | PedInstance::pa_smUsingCar));
-}
-
-
-bool PedInstance::setVehicleIgnore(bool ignored) {
-    if ((state_ & (PedInstance::pa_smInCar
-        | PedInstance::pa_smUsingCar)) != 0)
-    {
-        in_vehicle_->setIsIgnored(ignored);
-        return true;
-    }
-    return false;
 }
 
 int PedInstance::map() {

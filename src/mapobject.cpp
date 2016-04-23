@@ -7,6 +7,7 @@
  *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
  *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
  *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2016  Benoit Blancard <benblan@users.sourceforge.net>*
  *                                                                      *
  *    This program is free software;  you can redistribute it and / or  *
  *  modify it  under the  terms of the  GNU General  Public License as  *
@@ -32,8 +33,8 @@
 #include "mission.h"
 
 uint16 SFXObject::sfxIdCnt = 0;
-const int Static::kStaticSubtype1 = 0;
-const int Static::kStaticSubtype2 = 2;
+const int Static::kStaticOrientation1 = 0;
+const int Static::kStaticOrientation2 = 2;
 
 MapObject::MapObject(uint16 anId, int m, ObjectNature aNature):
     size_x_(1), size_y_(1), size_z_(2),
@@ -41,7 +42,7 @@ MapObject::MapObject(uint16 anId, int m, ObjectNature aNature):
     frames_per_sec_(8),
     dir_(0),
     time_show_anim_(-1), time_showing_anim_(-1),
-    is_ignored_(false), is_frame_drawn_(false),
+    is_frame_drawn_(false),
     state_(0xFFFFFFFF)
 {
     nature_ = aNature;
@@ -683,7 +684,7 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
         case 0x0A:
             s = new NeonSign(id, m, curanim);
             s->setFrame(g_App.gameSprites().getFrameFromFrameIndx(curframe));
-            s->setIsIgnored(true);
+            s->setExcludedFromBlockers(true);
             s->setSizeX(32);
             s->setSizeY(1);
             s->setSizeZ(48);
@@ -692,14 +693,14 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -709,14 +710,14 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -726,14 +727,14 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -744,14 +745,14 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80
                 || gamdata->orientation == 0x7E || gamdata->orientation == 0xFE) {
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(256);
                 s->setSizeY(1);
                 s->setSizeZ(196);
             } else {
                 baseanim++;
                 s = new Door(id, m, baseanim, baseanim + 2, baseanim + 4, baseanim + 6);
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(1);
                 s->setSizeY(256);
                 s->setSizeZ(196);
@@ -767,12 +768,12 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             // open window
             s = new WindowObj(id, m, curanim - 2, curanim, curanim + 2, curanim + 4);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(96);
                 s->setSizeY(4);
                 s->setSizeZ(96);
             } else {
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(4);
                 s->setSizeY(96);
                 s->setSizeZ(96);
@@ -785,12 +786,12 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             // closed window
             s = new WindowObj(id, m, curanim, curanim + 2, curanim + 4, curanim + 6);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(96);
                 s->setSizeY(4);
                 s->setSizeZ(96);
             } else {
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(4);
                 s->setSizeY(96);
                 s->setSizeZ(96);
@@ -802,7 +803,7 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
         case 0x15:
             // damaged window
             s = new WindowObj(id, m, curanim - 6, curanim - 4, curanim - 2, curanim);
-            s->setIsIgnored(true);
+            s->setExcludedFromBlockers(true);
             s->setHealth(0);
             s->setStartHealth(1);
             s->state_ = Static::sttwnd_Damaged;
@@ -838,7 +839,7 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
         case 0x1F:
             // advertisement on wall
             s = new EtcObj(id, m, curanim, curanim, curanim, smt_Advertisement);
-            s->setIsIgnored(true);
+            s->setExcludedFromBlockers(true);
             break;
 
         case 0x20:
@@ -887,12 +888,12 @@ Static *Static::loadInstance(uint8 * data, uint16 id, int m)
             // 0x40,0xC0 weast - east = 2
             s = new LargeDoor(id, m, curanim, curanim + 1, curanim + 2);
             if (gamdata->orientation == 0x00 || gamdata->orientation == 0x80) {
-                s->setSubType(kStaticSubtype1);
+                s->setOrientation(kStaticOrientation1);
                 s->setSizeX(384);
                 s->setSizeY(64);
                 s->setSizeZ(192);
             } else {
-                s->setSubType(kStaticSubtype2);
+                s->setOrientation(kStaticOrientation2);
                 s->setSizeX(64);
                 s->setSizeY(384);
                 s->setSizeZ(192);
@@ -961,10 +962,10 @@ bool Door::animate(int elapsed, Mission *obj)
     bool changed = MapObject::animate(elapsed);
     switch(state_) {
         case Static::sttdoor_Open:
-            if (subType_ == kStaticSubtype1) {
+            if (orientation_ == kStaticOrientation1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (subType_ == kStaticSubtype2) {
+            } else if (orientation_ == kStaticOrientation2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
@@ -976,11 +977,11 @@ bool Door::animate(int elapsed, Mission *obj)
                         y + rel_inc, z, &nature, &si, true));
                     if (!p && state_ == Static::sttdoor_Open && (!found)) {
                         state_ = Static::sttdoor_Closing;
-                        is_ignored_ = false;
+                        setExcludedFromBlockers(false);
                         frame_ = 0;
                     } else if (p && p->isAlive()){
                         state_ = Static::sttdoor_Open;
-                        is_ignored_ = true;
+                        setExcludedFromBlockers(true);
                         found = true;
                         p->hold_on_.wayFree = 0;
                     }
@@ -988,10 +989,10 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             break;
         case Static::sttdoor_Closed:
-            if (subType_ == kStaticSubtype1) {
+            if (orientation_ == kStaticOrientation1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (subType_ == kStaticSubtype2) {
+            } else if (orientation_ == kStaticOrientation2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
@@ -1004,7 +1005,7 @@ bool Door::animate(int elapsed, Mission *obj)
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
-                        is_ignored_ = false;
+                        setExcludedFromBlockers(false);
                         found = true;
                         frame_ = 0;
                     }
@@ -1025,7 +1026,7 @@ bool Door::animate(int elapsed, Mission *obj)
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
-                        is_ignored_ = false;
+                        setExcludedFromBlockers(false);
                         found = true;
                         frame_ = 0;
                     }
@@ -1042,14 +1043,14 @@ bool Door::animate(int elapsed, Mission *obj)
         case Static::sttdoor_Closing:
             if (frame_ >= g_App.gameSprites().lastFrame(closing_anim_)) {
                 state_ = Static::sttdoor_Closed;
-                is_ignored_ = false;
+                setExcludedFromBlockers(false);
                 frame_ = 0;
             }
             break;
         case Static::sttdoor_Opening:
             if (frame_ >= g_App.gameSprites().lastFrame(opening_anim_)) {
                 state_ = Static::sttdoor_Open;
-                is_ignored_ = true;
+                setExcludedFromBlockers(true);
                 frame_ = 0;
             }
             break;
@@ -1111,10 +1112,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
     uint32 cur_state = state_;
     switch(state_) {
         case Static::sttdoor_Open:
-            if (subType_ == kStaticSubtype1) {
+            if (orientation_ == kStaticOrientation1) {
                 i = &rel_inc;
                 j = &inc_rel;
-            } else if (subType_ == kStaticSubtype2) {
+            } else if (orientation_ == kStaticOrientation2) {
                 i = &inc_rel;
                 j = &rel_inc;
             }
@@ -1126,10 +1127,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     y + rel_inc,z, &nature, &si, true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
-                    is_ignored_ = false;
+                    setExcludedFromBlockers(false);
                 } else if (v){
                     state_ = Static::sttdoor_Open;
-                    is_ignored_ = true;
+                    setExcludedFromBlockers(true);
                     found = true;
                     v->hold_on_.wayFree = 0;
                 }
@@ -1141,10 +1142,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     y + rel_inc,z,&nature,&si,true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
-                    is_ignored_ = false;
+                    setExcludedFromBlockers(false);
                 } else if (v){
                     state_ = Static::sttdoor_Open;
-                    is_ignored_ = true;
+                    setExcludedFromBlockers(true);
                     found = true;
                     v->hold_on_.wayFree = 0;
                 }
@@ -1159,7 +1160,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
                             state_ = Static::sttdoor_Open;
-                            is_ignored_ = true;
+                            setExcludedFromBlockers(true);
                             found = true;
                         }
                     }
@@ -1175,7 +1176,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
                             state_ = Static::sttdoor_Open;
-                            is_ignored_ = true;
+                            setExcludedFromBlockers(true);
                             found = true;
                         }
                     }
@@ -1191,7 +1192,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                         found_peds_mid.push_back(p);
                         if (!found && p->hasAccessCard()) {
                             state_ = Static::sttdoor_Open;
-                            is_ignored_ = true;
+                            setExcludedFromBlockers(true);
                             found = true;
                         }
                     }
@@ -1216,10 +1217,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     p->hold_on_.wayFree = 2;
                     p->hold_on_.tilex = x;
                     p->hold_on_.tiley = y;
-                    if (subType_ == kStaticSubtype1) {
+                    if (orientation_ == kStaticOrientation1) {
                         p->hold_on_.xadj = 1;
                         p->hold_on_.yadj = 0;
-                    } else if (subType_ == kStaticSubtype2) {
+                    } else if (orientation_ == kStaticOrientation2) {
                         p->hold_on_.xadj = 0;
                         p->hold_on_.yadj = 1;
                     }
@@ -1240,11 +1241,11 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             break;
         case Static::sttdoor_Closed:
-            if (subType_ == kStaticSubtype1) {
+            if (orientation_ == kStaticOrientation1) {
                 i = &rel_inc;
                 j = &inc_rel;
                 sign = 1;
-            } else if (subType_ == kStaticSubtype2) {
+            } else if (orientation_ == kStaticOrientation2) {
                 i = &inc_rel;
                 j = &rel_inc;
                 sign = -1;
@@ -1258,7 +1259,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
-                    is_ignored_ = false;
+                    setExcludedFromBlockers(false);
                     found = true;
                 }
                 v->hold_on_.wayFree = 1;
@@ -1272,7 +1273,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
-                    is_ignored_ = false;
+                    setExcludedFromBlockers(false);
                     found = true;
                 }
                 v->hold_on_.wayFree = 1;
@@ -1288,7 +1289,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
                             state_ = Static::sttdoor_Opening;
-                            is_ignored_ = false;
+                            setExcludedFromBlockers(false);
                             found = true;
                         }
                     }
@@ -1304,7 +1305,7 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
                             state_ = Static::sttdoor_Opening;
-                            is_ignored_ = false;
+                            setExcludedFromBlockers(false);
                             found = true;
                         }
                     }
@@ -1318,10 +1319,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 p->hold_on_.wayFree = set_wayFree;
                 p->hold_on_.tilex = x;
                 p->hold_on_.tiley = y;
-                if (subType_ == kStaticSubtype1) {
+                if (orientation_ == kStaticOrientation1) {
                     p->hold_on_.xadj = 1;
                     p->hold_on_.yadj = 0;
-                } else if (subType_ == kStaticSubtype2) {
+                } else if (orientation_ == kStaticOrientation2) {
                     p->hold_on_.xadj = 0;
                     p->hold_on_.yadj = 1;
                 }
@@ -1332,20 +1333,20 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
         case Static::sttdoor_Closing:
             if (frame_ >= g_App.gameSprites().lastFrame(closing_anim_)) {
                 state_ = Static::sttdoor_Closed;
-                is_ignored_ = false;
+                setExcludedFromBlockers(false);
             }
         case Static::sttdoor_Opening:
             if (state_ == Static::sttdoor_Opening
                 && frame_ >= g_App.gameSprites().lastFrame(opening_anim_))
             {
                 state_ = Static::sttdoor_Open;
-                is_ignored_ = true;
+                setExcludedFromBlockers(true);
             }
-            if (subType_ == kStaticSubtype1) {
+            if (orientation_ == kStaticOrientation1) {
                 i = &rel_inc;
                 j = &inc_rel;
                 sign = 1;
-            } else if (subType_ == kStaticSubtype2) {
+            } else if (orientation_ == kStaticOrientation2) {
                 i = &inc_rel;
                 j = &rel_inc;
                 sign = -1;
@@ -1399,10 +1400,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                 p->hold_on_.wayFree = set_wayFree;
                 p->hold_on_.tilex = x;
                 p->hold_on_.tiley = y;
-                if (subType_ == kStaticSubtype1) {
+                if (orientation_ == kStaticOrientation1) {
                     p->hold_on_.xadj = 1;
                     p->hold_on_.yadj = 0;
-                } else if (subType_ == kStaticSubtype2) {
+                } else if (orientation_ == kStaticOrientation2) {
                     p->hold_on_.xadj = 0;
                     p->hold_on_.yadj = 1;
                 }
@@ -1469,7 +1470,7 @@ void Tree::handleHit(DamageInflictType &d) {
         if (isDead()) {
             state_ = Static::stttree_Burning;
             setTimeShowAnim(10000);
-            is_ignored_ = true;
+            setExcludedFromBlockers(true);
         }
     }
 }
@@ -1507,7 +1508,7 @@ void WindowObj::handleHit(DamageInflictType &d) {
         decreaseHealth(d.dvalue);
         if (isDead()) {
             state_ = Static::sttwnd_Breaking;
-            is_ignored_ = true;
+            setExcludedFromBlockers(true);
             frame_ = 0;
             setFramesPerSec(6);
         }
@@ -1612,7 +1613,7 @@ void Semaphore::handleHit(DamageInflictType &d) {
                     break;
                 }
             }
-            is_ignored_ = true;
+            setExcludedFromBlockers(true);
         }
     }
 }
@@ -1624,7 +1625,7 @@ void Semaphore::draw(int x, int y)
 }
 
 AnimWindow::AnimWindow(uint16 anId, int m, int anim) : Static(anId, m, smt_AnimatedWindow) {
-    setIsIgnored(true);
+    setExcludedFromBlockers(true);
     setFramesPerSec(4);
     anim_ = anim;
 }
