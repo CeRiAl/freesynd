@@ -44,7 +44,9 @@ Install and Run Freesynd
 	---------
         1/ Download and unzip the file in any directory you want.
 		2/ Install original game data files (see chapter "Original Game Data).
-		3/ Double-click on freesynd.exe.
+		3/ Optionnaly edit bin/freesynd.ini to indicate where to find original 
+		   game data files (see chapter "Configuring FreeSynd")
+		4/ Run bin/freesynd.exe.
 
     * Mac Installation
     ------------------
@@ -61,11 +63,12 @@ Install and Run Freesynd
 	1/ To build Freesynd, you will need to install Cmake (http://www.cmake.org/) 
 	or use your distribution's package manager to install it.
 	2/ Download and unzip file containing source code in any directory you want
+	   This directory will be called FS_ROOT in the following text.
 	
     * Windows - Visual C++
     ----------------------
     Run cmake-gui.
-    Set "Source" to the root folder where you unzipped the file (it should contain a CMakeLists.txt file).
+    Set "Source" to FS_ROOT/sources.
     Set "Build" to the folder where your project files should be located.
     Click "Configure" and select your version of Visual Studio.
     Click "Finish".
@@ -76,13 +79,15 @@ Install and Run Freesynd
     Select "Build | Clean Solution".
     Select "Build | Build Solution".
 	
-	To run the application, you need to copy all dll files in the directory of the feesynd.exe file.
+	To run the application, you need to copy all dll files that are in FS_ROOT/bin
+	to the directory where the feesynd.exe file has been generated.
 
     * Windows - Code::Blocks with MinGW
     -----------------------------------
 	Run cmake-gui.
-    Set "Source" to the root folder where you unzipped the file (it should contain a CMakeLists.txt file).
-    Set "Build" to the folder where your project files should be located.
+    Set "Source" to FS_ROOT/sources.
+    Set "Build" to the folder where your project files should be located 
+	    it could be for example FS_ROOT/debug if you use the Debug build configuration.
     Click "Configure" and select CodeBlocks - MinGW Makefiles.
     Click "Finish".
 	You can set the CMAKE_BUILD_TYPE variable to "release" or "debug" to enable one of the configuration
@@ -92,7 +97,8 @@ Install and Run Freesynd
 	Select "Build | Build"
 	The freesynd binary will be in the "src" folder.
 	
-	To run the application, you need to copy all dll files in the directory of the feesynd.exe file.
+	To run the application, you need to copy all dll files that are in FS_ROOT/bin
+	to the directory where the feesynd.exe file has been generated.
 
     * Linux
     -------
