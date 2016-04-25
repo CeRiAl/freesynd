@@ -80,7 +80,7 @@ else ()
 	set (BUILD_DEV_TOOLS FALSE)
 	# We only define an install target if we're doing a release build.
 	# Furthermore, on Mac, the data folder is a part of the app bundle.
-	if (NOT APPLE)
+	if (UNIX)
 		install (DIRECTORY data DESTINATION ${DATA_DIR} PATTERN .svn EXCLUDE)
 	endif ()
 endif ()

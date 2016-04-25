@@ -293,7 +293,7 @@ else ()
 	# We only define an install target if we're doing a release build.
 	if (APPLE)
 		install (TARGETS freesynd DESTINATION /Applications)
-	else ()
+	elseif (UNIX)
 		install (TARGETS freesynd DESTINATION ${BIN_DIR})
 	endif ()
 endif ()

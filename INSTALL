@@ -83,10 +83,12 @@ Install and Run Freesynd
 	Run cmake-gui.
     Set "Source" to the root folder where you unzipped the file (it should contain a CMakeLists.txt file).
     Set "Build" to the folder where your project files should be located.
-    Click "Configure" and select Code::Blocks-MinGW.
+    Click "Configure" and select CodeBlocks - MinGW Makefiles.
     Click "Finish".
+	You can set the CMAKE_BUILD_TYPE variable to "release" or "debug" to enable one of the configuration
+	  - by default,	it's set to "debug".
     Click "Generate" to generate Code::Blocks project files.
-	Select "File | Open..." and select "FreeSynd.cbp" in the build folder.
+	Open CodeBlocks IDE, select "File | Open..." and select "FreeSynd.cbp" in the build folder.
 	Select "Build | Build"
 	The freesynd binary will be in the "src" folder.
 	
