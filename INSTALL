@@ -40,26 +40,28 @@ Install and Run Freesynd
   * From binary distribution file
     =============================
 	
-	* Windows
-	---------
+     * Windows
+     ---------
         1/ Download and unzip the file in any directory you want.
-		2/ Install original game data files (see chapter "Original Game Data).
-		3/ Optionnaly edit bin/freesynd.ini to indicate where to find original 
-		   game data files (see chapter "Configuring FreeSynd")
-		4/ Run bin/freesynd.exe.
+           This directory will be called FS_ROOT in the following text.
+	2/ Install original game data files (see chapter "Original Game Data).
+	3/ Optionnaly edit FS_ROOT/bin/freesynd.ini to indicate where to find original 
+	   game data files (see chapter "Configuring FreeSynd")
+	4/ Run FS_ROOT/bin/freesynd.exe.
 
     * Mac Installation
     ------------------
         1/ Unzip the application bundle and drag it to your "Applications" folder.
 		
-	* Linux Installation
+    * Linux Installation
     ------------------
       See next chapter : Building from source
 
 
   * Building from packaged source
     =============================
-	All : 
+    * All
+    ----- 
 	1/ To build Freesynd, you will need to install Cmake (http://www.cmake.org/) 
 	or use your distribution's package manager to install it.
 	2/ Download and unzip file containing source code in any directory you want
@@ -104,12 +106,22 @@ Install and Run Freesynd
     -------
     Use your distribution's package manager to install all of
     the libraries listed in the chapter "Required Libraries".
-    From the main source folder, run: cmake .
-    Finally, run: make
-    The freesynd binary will be in the "src" folder.
+    From FS_ROOT folder, run the following commands:
+      Run cmake to create Makefiles in release mode :
+        ./configure --release
+      
+      Build the application. The freesynd binary will be in
+      the "src" folder :
+        make
 	
-	type make install
-	Type "freesynd".
+      Install the application :
+	sudo make install
+
+      Run the application
+	freesynd
+
+      Optionnaly edit freesynd.ini to indicate where to find original 
+	   game data files (see chapter "Configuring FreeSynd")
 
     * Mac
     -----
