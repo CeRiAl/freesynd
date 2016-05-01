@@ -144,6 +144,8 @@ void print_usage() {
 
 int main(int argc, char *argv[]) {
 
+    printf("Freesynd v0.7.5 (may 2016)\n");
+
 #ifdef CHEAP_LEAK_DETECTION
     initLeakDetection();
 #endif
