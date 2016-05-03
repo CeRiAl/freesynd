@@ -738,8 +738,6 @@ protected:
     //! Tells whether the panic can react to panic or not
     bool panicImmuned_;
 
-    bool walkable(int x, int y, int z) { return true; }
-
 private:
     inline int getClosestDirs(int dir, int& closest, int& closer);
 };

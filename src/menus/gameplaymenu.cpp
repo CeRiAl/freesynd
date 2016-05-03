@@ -776,6 +776,9 @@ void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys)
             printf("   > target(%i) : %s\n",
                 target_->id(), target_->natureName());
         }
+
+        int tileid = mission_->get_map()->tileAt(mapPt.tx, mapPt.ty, mapPt.tz);
+        printf("Tile id %d\n", tileid);
         return;
     }
 #endif //_DEBUG

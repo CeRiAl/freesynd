@@ -144,7 +144,7 @@ void print_usage() {
 
 int main(int argc, char *argv[]) {
 
-    printf("Freesynd v0.7.5 (may 2016)\n");
+    printf("Freesynd v0.8 (may 2016)\n");
 
 #ifdef CHEAP_LEAK_DETECTION
     initLeakDetection();
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
 #ifdef _DEBUG
         // This parameter is used in debug phase to accelerate the starting
         // of a game and to jump directly to a mission
-        // Note : the argument is the index of the block in the structure g_MissionNumbers 
+        // Note : the argument is the index of the block in the structure g_MissionNumbers
         // as defined in briefmenu.cpp and not the mission number itself.
         if (0 == strcmp("-m", argv[i]) || 0 == strcmp("--mission", argv[i])) {
             int mission = atoi(argv[i + 1]);

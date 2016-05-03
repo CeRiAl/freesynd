@@ -222,6 +222,59 @@ void Map::patchMap(int x, int y, int z, uint8 tileNum)
     a_tiles_[(y * max_x_ + x) * max_z_ + z] = tile_manager_->getTile(tileNum);
 }
 
+
+/**
+ * Return true if tile at given position is traversable by a car.
+ * \param x int X coordinate
+ * \param y int Y coordinate
+ * \param z int Z coordinate
+ * \return bool
+ *
+ */
+bool Map::isTileWalkableByCar(int x, int y, int z)
+{
+    Tile *pTile = getTileAt(x, y, z);
+    uint8 tileId = pTile->id();
+
+    if(tileId == 80) {
+        Tile::EType near_type = getTileAt(x, y - 1, z)->type();
+        if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
+            && near_type != Tile::kRoadPedCross) {
+            return false;
+        }
+        near_type = getTileAt(x, y + 1, z)->type();
+         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
+             && near_type != Tile::kRoadPedCross)
+         {
+            return false;
+         }
+        return true;
+    }
+    if(tileId == 81) {
+        Tile::EType near_type = getTileAt(x - 1, y, z)->type();
+         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
+             && near_type != Tile::kRoadPedCross)
+         {
+            return false;
+         }
+        near_type = getTileAt(x + 1, y, z)->type();
+         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
+             && near_type != Tile::kRoadPedCross)
+         {
+            return false;
+         }
+        return true;
+    }
+    if(tileId == 72) {
+        return false;
+    }
+
+    if(tileId == 119) {
+        return false;
+    }
+    return  pTile->isRoad();
+}
+
 const uint8 MiniMap::kOverlayNone = 0;
 const uint8 MiniMap::kOverlayOurAgent = 1;
 const uint8 MiniMap::kOverlayEnemyAgent = 2;

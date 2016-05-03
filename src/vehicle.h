@@ -142,32 +142,30 @@ public:
     void dropPassenger(PedInstance *p);
 
     PedInstance *getDriver(void) {
-        return vehicle_driver_;
+        return pDriver_;
     }
-    void setDriver(PedInstance *vehicleDriver) {
-        if (vehicle_driver_ == NULL)
-            vehicle_driver_ = vehicleDriver;
-        passengers_.insert(vehicleDriver);
-    }
-    void forceSetDriver(PedInstance *vehicleDriver);
-    bool hasDriver() { return (vehicle_driver_ != NULL); }
-    bool isDriver(PedInstance *vehicleDriver) {
-        if (vehicle_driver_ == NULL)
-            return false;
-        return (vehicle_driver_ == vehicleDriver);
+    //! Set this ped as the new driver
+    void setDriver(PedInstance *pPed, bool forceDriver = true);
+
+    /*!
+     * Return true given ped is the driver of this vehicle.
+     * \param pPed a Ped.
+     */
+    bool isDriver(PedInstance *pPed) {
+        return (pPed != NULL && pDriver_ == pPed);
     }
 
     void handleHit(ShootableMapObject::DamageInflictType &d);
 
 protected:
     bool move_vehicle(int elapsed);
-    bool walkable(int x, int y, int z);
     uint16 tileDir(int x, int y, int z);
     bool dirWalkable(TilePoint *p, int x, int y, int z);
 
 protected:
     VehicleAnimation *vehicle_;
-    PedInstance *vehicle_driver_;
+    //! Vehicle driver
+    PedInstance *pDriver_;
 };
 
 #endif

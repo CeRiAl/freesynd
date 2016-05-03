@@ -1,4 +1,4 @@
-FreeSynd 0.7.5 : Release Notes
+FreeSynd 0.8 : Release Notes
 ----------------------------
 
 Description
@@ -11,14 +11,11 @@ Changes
 
 Fixed Bugs
 ----------
-  * When player changes its color, if an enemy syndicate already had that
-    color, change the enemy color.
+  * 
 
 Features added
 ----------
-  * Mission ownership on map menu changes to simulate syndicate fighting for terrotories.
-  * Animation for animated windows
-  * Agent's life is now restored automatically if he wears an upgraded chest
+  * 
 
 Known issues with this release
 ------------------------------
@@ -29,9 +26,16 @@ Known issues with this release
 
 History
 -------
+ v0.7.5
+ ------
+  * When player changes its color, if an enemy syndicate already had that
+    color, change the enemy color.
+  * Mission ownership on map menu changes to simulate syndicate fighting for terrotories.
+  * Animation for animated windows
+  * Agent's life is now restored automatically if he wears an upgraded chest
 
  v0.7.1
- ----
+ ------
   * Code refactoring
   * All tabs coverted to spaces
   * Better animation for impact or detonating explosions

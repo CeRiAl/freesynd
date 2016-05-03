@@ -60,8 +60,16 @@ void VehicleAnimation::set_base_anims(int anims) {
     anims_burnt_ = anims + 12;
 }
 
-void Vehicle::addPassenger(PedInstance *p) {
-    passengers_.insert(p);
+/**
+ * Adds given ped to the list of passengers.
+ * \param pPed PedInstance*
+ * \return void
+ *
+ */
+void Vehicle::addPassenger(PedInstance *pPed) {
+    if(!isInsideVehicle(pPed)) {
+        passengers_.insert(pPed);
+    }
 }
 
 /*!
@@ -72,7 +80,6 @@ void Vehicle::dropPassenger(PedInstance *pPed) {
     if(isInsideVehicle(pPed)) {
         pPed->leaveVehicle();
         passengers_.erase(passengers_.find(pPed));
-        pPed->setPosition(pos_);
     }
 }
 
@@ -109,8 +116,9 @@ bool Vehicle::containsHostilesForPed(PedInstance* p,
 }
 
 VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 anId, int m):
-    Vehicle(anId, m, true), vehicle_(vehicle), vehicle_driver_(NULL)
+    Vehicle(anId, m, true), vehicle_(vehicle)
 {
+    pDriver_ = NULL;
     hold_on_.wayFree = 0;
 }
 
@@ -145,51 +153,6 @@ void VehicleInstance::draw(int x, int y)
         return;
 
     vehicle_->draw(x, y, getDirection(4), frame_);
-}
-
-bool VehicleInstance::walkable(int x, int y, int z)
-{
-    Map *pMap = g_App.maps().map(map());
-    Tile *p_this_tile = pMap->getTileAt(x, y, z);
-    uint8 this_tile_id = p_this_tile->id();
-
-    if(this_tile_id == 80) {
-        Tile::EType near_type = pMap->getTileAt(x, y - 1, z)->type();
-        if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
-            && near_type != Tile::kRoadPedCross) {
-            return false;
-        }
-        near_type = pMap->getTileAt(x, y + 1, z)->type();
-         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
-             && near_type != Tile::kRoadPedCross)
-         {
-            return false;
-         }
-        return true;
-    }
-    if(this_tile_id == 81) {
-        Tile::EType near_type = pMap->getTileAt(x - 1, y, z)->type();
-         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
-             && near_type != Tile::kRoadPedCross)
-         {
-            return false;
-         }
-        near_type = pMap->getTileAt(x + 1, y, z)->type();
-         if((near_type < Tile::kRoadSideEW || near_type > Tile::kRoadSideNS)
-             && near_type != Tile::kRoadPedCross)
-         {
-            return false;
-         }
-        return true;
-    }
-    if(this_tile_id == 72) {
-        return false;
-    }
-
-    if(this_tile_id == 119) {
-        return false;
-    }
-    return  p_this_tile->isRoad();
 }
 
 uint16 VehicleInstance::tileDir(int x, int y, int z) {
@@ -358,8 +321,8 @@ uint16 VehicleInstance::tileDir(int x, int y, int z) {
 }
 
 bool VehicleInstance::dirWalkable(TilePoint *p, int x, int y, int z) {
-
-    if(!(walkable(x,y,z)))
+    Map *pMap = g_App.maps().map(map());
+    if(!(pMap->isTileWalkableByCar(x,y,z)))
         return false;
 
     uint16 dirStart = tileDir(p->tx,p->ty,p->tz);
@@ -419,7 +382,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
     dest_path_.clear();
     setSpeed(0);
 
-    if (map_ == -1 || health_ <= 0 || !(walkable(x, y, z))) {
+    if (map_ == -1 || health_ <= 0 || !(pMap->isTileWalkableByCar(x, y, z))) {
 #if 0
 #if _DEBUG
         if (!(map_ == -1 || health_ <= 0)) {
@@ -433,7 +396,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
         return;
     }
 
-    if (!walkable(pos_.tx, pos_.ty, z)) {
+    if (!pMap->isTileWalkableByCar(pos_.tx, pos_.ty, z)) {
         int dBest = 100000, dCur;
         std::vector < TilePoint > path2wtile;
         path2wtile.reserve(16);
@@ -444,7 +407,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                 break;
             pntile.tx = pos_.tx + i;
             path2wtile.push_back(pntile);
-            if (walkable(pos_.tx + i, pos_.ty, z)) {
+            if (pMap->isTileWalkableByCar(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
@@ -463,7 +426,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                 break;
             pntile.tx = (pos_.tx + i);
             path2wtile.push_back(pntile);
-            if (walkable(pos_.tx + i, pos_.ty, z)) {
+            if (pMap->isTileWalkableByCar(pos_.tx + i, pos_.ty, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
@@ -482,7 +445,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                 break;
             pntile.ty = (pos_.ty + i);
             path2wtile.push_back(pntile);
-            if (walkable(pos_.tx, pos_.ty + i, z)) {
+            if (pMap->isTileWalkableByCar(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
@@ -501,7 +464,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
                 break;
             pntile.ty = pos_.ty + i;
             path2wtile.push_back(pntile);
-            if (walkable(pos_.tx, pos_.ty + i, z)) {
+            if (pMap->isTileWalkableByCar(pos_.tx, pos_.ty + i, z)) {
                 dCur = i * i;
                 if(dCur < dBest) {
                     dBest = dCur;
@@ -818,7 +781,7 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
                 setTimeShowAnim(10000);
                 break;
         }
-        vehicle_driver_ = NULL;
+        pDriver_ = NULL;
         while (passengers_.size() != 0)
         {
             PedInstance *p = *(passengers_.begin());
@@ -838,13 +801,11 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
  */
 void VehicleInstance::addPassenger(PedInstance *p) {
     Vehicle::addPassenger(p);
-    if (hasDriver()) {
-        // There's already a driver
-        p->putInVehicle(this, PedInstance::pa_smInCar);
-    } else {
+    // TODO : move putInVehicle() in Vehicle::addPassenger()
+    p->putInVehicle(this, PedInstance::pa_smInCar);
+    if (pDriver_ == NULL) {
         // Ped becomes the driver
-        vehicle_driver_ = p;
-        p->putInVehicle(this, PedInstance::pa_smUsingCar);
+        pDriver_ = p;
     }
 }
 
@@ -854,23 +815,37 @@ void VehicleInstance::addPassenger(PedInstance *p) {
  */
 void VehicleInstance::dropPassenger(PedInstance *pPed) {
     Vehicle::dropPassenger(pPed);
-    if (vehicle_driver_ == pPed) {
-        vehicle_driver_ = NULL;
+    if (pDriver_ == pPed) {
+        pDriver_ = NULL;
         clearDestination();
 
         // find another driver in the remaining passengers
         for (std::set<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++) {
             // take the first one
-            vehicle_driver_ = *it;
+            pDriver_ = *it;
             break;
         }
     }
 }
 
-void VehicleInstance::forceSetDriver(PedInstance *vehicleDriver) {
-    vehicle_driver_ = vehicleDriver;
-    if (!isInsideVehicle(vehicleDriver)) {
-        Vehicle::addPassenger(vehicleDriver);
+/**
+ * Set this ped as the driver of the vehicle and add him as a passenger
+ * if he's not already in the vehicle.
+ * \param pPed PedInstance*
+ * \param forceDriver bool if true, set the driver even if there is already
+ * another driver
+ * \return void
+ *
+ */
+void VehicleInstance::setDriver(PedInstance *pPed, bool forceDriver) {
+    if (pPed != NULL) {
+        if (pDriver_ == NULL || forceDriver) {
+            pDriver_ = pPed;
+        }
+
+        if (!isInsideVehicle(pPed)) {
+            Vehicle::addPassenger(pPed);
+        }
     }
 }

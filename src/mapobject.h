@@ -511,8 +511,6 @@ protected:
     std::list<TilePoint> dest_path_;
 
     bool updatePlacement(int nOffX, int nOffY);
-
-    virtual bool walkable(int x, int y, int z) = 0;
 };
 
 /*!

@@ -1022,6 +1022,7 @@ void PedInstance::putInVehicle(VehicleInstance * v,
 void PedInstance::leaveVehicle() {
     assert(map_ == -1 && in_vehicle_);
     map_ = in_vehicle_->map();
+    setPosition(in_vehicle_->position());
     in_vehicle_ = NULL;
     switchActionStateFrom(state_ & (PedInstance::pa_smInCar
         | PedInstance::pa_smUsingCar));

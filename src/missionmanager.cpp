@@ -636,7 +636,7 @@ void MissionManager::createPeds(const LevelData::LevelDataAll &level_data, DataI
                 pVehicle->addPassenger(p);
                 if (setDriver) {
                     VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(pVehicle);
-                    pCar->forceSetDriver(p);
+                    pCar->setDriver(p);
                 }
             }
 

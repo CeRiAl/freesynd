@@ -66,6 +66,8 @@ public:
     Tile * getTileAt(int x, int y, int z);
     int tileAt(int x, int y, int z);
     void patchMap(int x, int y, int z, uint8 tileNum);
+    //! Return true if tile at given position is traversable by car
+    bool isTileWalkableByCar(int x, int y, int z);
 
 protected:
     /*!  Every map has a unique ID which is used to identify the
