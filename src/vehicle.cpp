@@ -69,6 +69,7 @@ void VehicleAnimation::set_base_anims(int anims) {
 void Vehicle::addPassenger(PedInstance *pPed) {
     if(!isInsideVehicle(pPed)) {
         passengers_.insert(pPed);
+        pPed->putInVehicle(this);
     }
 }
 
@@ -801,8 +802,6 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
  */
 void VehicleInstance::addPassenger(PedInstance *p) {
     Vehicle::addPassenger(p);
-    // TODO : move putInVehicle() in Vehicle::addPassenger()
-    p->putInVehicle(this, PedInstance::pa_smInCar);
     if (pDriver_ == NULL) {
         // Ped becomes the driver
         pDriver_ = p;

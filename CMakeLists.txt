@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (FreeSynd)
-set (FREESYND_VERSION "0.7.5")
+set (FREESYND_VERSION "0.8")
 
 if (WIN32)
 	# Search the bundled libs directory when using MSVC.
@@ -11,7 +11,7 @@ if (WIN32)
 		${CMAKE_SOURCE_DIR}/../libs/MSVC/include
 	)
 endif ()
-	
+
 if (MSVC)
 	# Add extra definitions just for MSVC.
 	add_definitions (-D_CONSOLE -D_CRT_SECURE_NO_WARNINGS)
@@ -26,9 +26,9 @@ else ()
     else ()
         set (EXTRA_C_FLAGS "-Wall -Wshadow -Wno-multichar")
     endif ()
-	
+
 	set (EXTRA_CXX_FLAGS "${EXTRA_C_FLAGS} -Wreorder -Wnon-virtual-dtor")
-		
+
 	# Set debug flag.
 	set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG")
 	set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")

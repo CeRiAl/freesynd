@@ -212,12 +212,12 @@ bool PedInstance::switchActionStateTo(uint32 as) {
             break;
         case pa_smStanding:
             state_ &= (pa_smAll ^(pa_smFollowing
-                | pa_smUsingCar | pa_smInCar));
+                | pa_smInCar));
             state_ |= pa_smStanding;
             break;
         case pa_smWalking:
             state_ &= (pa_smAll ^(pa_smFollowing
-                | pa_smUsingCar | pa_smInCar));
+                | pa_smInCar));
             state_ |= pa_smWalking;
             break;
         case pa_smWalkingBurning:
@@ -247,12 +247,6 @@ bool PedInstance::switchActionStateTo(uint32 as) {
             break;
         case pa_smBurning:
             state_ = pa_smBurning;
-            break;
-        case pa_smGetInCar:
-            state_ = pa_smStanding | pa_smGetInCar;
-            break;
-        case pa_smUsingCar:
-            state_ = pa_smStanding | pa_smUsingCar;
             break;
         case pa_smInCar:
             state_ = pa_smStanding | pa_smInCar;
@@ -307,12 +301,6 @@ bool PedInstance::switchActionStateFrom(uint32 as) {
         case pa_smWalkingBurning:
             state_ = pa_smStanding;
             break;
-        case pa_smGetInCar:
-            state_ &= pa_smAll ^ (pa_smStanding | pa_smGetInCar);
-            break;
-        case pa_smUsingCar:
-            state_ &= pa_smAll ^ (pa_smStanding | pa_smUsingCar);
-            break;
         case pa_smInCar:
             state_ &= pa_smAll ^ (pa_smStanding | pa_smInCar);
             break;
@@ -354,7 +342,7 @@ void PedInstance::synchDrawnAnimWithActionState(void) {
         setDrawnAnim(PedInstance::ad_PickupAnim);
     } else if ((state_ & pa_smPutDown) != 0) {
         setDrawnAnim(PedInstance::ad_PutdownAnim);
-    } else if ((state_ & (pa_smUsingCar | pa_smInCar)) != 0) {
+    } else if ((state_ & pa_smInCar) != 0) {
         setDrawnAnim(PedInstance::ad_StandAnim);
     } else if ((state_ & pa_smHit) != 0) {
         setDrawnAnim(PedInstance::ad_HitAnim);
@@ -1005,18 +993,15 @@ bool PedInstance::wePickupWeapon() {
     return (state_ & pa_smPickUp) != 0;
 }
 
-VehicleInstance *PedInstance::inVehicle() const
-{
-    return (state_ & (PedInstance::pa_smInCar
-        | PedInstance::pa_smUsingCar)) != 0 ? in_vehicle_ : NULL;
+Vehicle *PedInstance::inVehicle() const {
+    return in_vehicle_;
 }
 
-void PedInstance::putInVehicle(VehicleInstance * v,
-    pedActionStateMasks add_state)
+void PedInstance::putInVehicle(Vehicle * pVehicle)
 {
     map_ = -1;
-    in_vehicle_ = v;
-    switchActionStateTo((uint32)add_state);
+    in_vehicle_ = pVehicle;
+    switchActionStateTo(PedInstance::pa_smInCar);
 }
 
 void PedInstance::leaveVehicle() {
@@ -1024,8 +1009,7 @@ void PedInstance::leaveVehicle() {
     map_ = in_vehicle_->map();
     setPosition(in_vehicle_->position());
     in_vehicle_ = NULL;
-    switchActionStateFrom(state_ & (PedInstance::pa_smInCar
-        | PedInstance::pa_smUsingCar));
+    switchActionStateFrom(state_ & PedInstance::pa_smInCar);
 }
 
 int PedInstance::map() {

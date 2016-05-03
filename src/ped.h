@@ -254,10 +254,6 @@ public:
         pa_smPickUp = 0x0020,
         pa_smPutDown = 0x0040,
         pa_smBurning = 0x0080,
-        pa_smGetInCar = 0x0100,
-        // only driver can have this set after finished
-        pa_smUsingCar = 0x0200,
-        // passenger only
         pa_smInCar = 0x0400,
         pa_smHitByPersuadotron = 0x0800,
         pa_smDead = 0x1000,
@@ -411,9 +407,9 @@ public:
     void setNewOwner(PedInstance *pPed);
 
     bool inSightRange(MapObject *t);
-    VehicleInstance * inVehicle() const;
+    Vehicle * inVehicle() const;
 
-    void putInVehicle(VehicleInstance *v, pedActionStateMasks add_state);
+    void putInVehicle(Vehicle *v);
     void leaveVehicle();
 
     int map();
@@ -717,7 +713,7 @@ protected:
     uint32 obj_group_id_;
     uint32 old_obj_group_id_;
 
-    //! time wait before checking enviroment (enemies, friends etc)
+    //! time wait before checking environment (enemies, friends etc)
     int32 tm_before_check_;
 
     //! base value that influences accuracy during fire
@@ -726,7 +722,7 @@ protected:
     AnimationDrawn drawn_anim_;
 
     int sight_range_;
-    VehicleInstance *in_vehicle_;
+    Vehicle *in_vehicle_;
     //! This flag tells if this is our agent, assuming it's an agent.
     bool is_our_;
     //! controller of ped - for persuaded

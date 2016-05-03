@@ -289,11 +289,12 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
     for (SquadSelection::Iterator it = begin(); it != end(); ++it, i++)
     {
         PedInstance *pAgent = *it;
-        if (pAgent->inVehicle()) {
-            if (pAgent->inVehicle()->isDrivable()) {
+        Vehicle *pVehicle = pAgent->inVehicle();
+        if (pVehicle) {
+            if (pVehicle->isDrivable()) {
                 // Agent is in drivable vehicle
-                VehicleInstance *pVehicle = pAgent->inVehicle();
-                if (pVehicle->isDriver(pAgent))
+                VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(pVehicle);
+                if (pCar->isDriver(pAgent))
                 {
                     int stx = mapPt.tx;
                     int sty = mapPt.ty;
@@ -306,7 +307,7 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
                     //soy = sty % 256;
                     sty = sty / 256;
                     TilePoint posT = TilePoint(stx, sty, 0, 128, 128);
-                    pAgent->addActionDriveVehicle(pVehicle, posT, addAction);
+                    pAgent->addActionDriveVehicle(pCar, posT, addAction);
                 }
             }
         } else {
