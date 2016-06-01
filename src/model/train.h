@@ -35,27 +35,25 @@
 /*!
  * .
  */
-class TrainElement : public Vehicle {
+class TrainBody : public Vehicle {
 public:
-    TrainElement();
-    ~TrainElement();
+    TrainBody(uint16 id, uint8 aType);
+    ~TrainBody();
 
 };
 
 /*!
  * .
  */
-class Train {
+class TrainHead : public TrainBody {
 public:
-    Train();
-    ~Train();
-
-    std::list<TrainElement *> & elements() { return elements_; }
+    TrainHead(uint16 id, uint8 aType);
+    ~TrainHead();
 
     //! Animates the train
     bool animate(int elapsed);
 private:
-    std::list<TrainElement *> elements_;
+
 };
 
 #endif // MODEL_TRAIN_H_

@@ -88,8 +88,8 @@ SelectMenu::~SelectMenu()
 
 /*!
  * Draws a dashed line around the currently selected agent selector.
- * \param x Coordinates of the top left corner 
- * \param y Coordinates of the top left corner 
+ * \param x Coordinates of the top left corner
+ * \param y Coordinates of the top left corner
  */
 void SelectMenu::drawAgentSelector(int x, int y) {
     // First create a transparent sprite
@@ -259,7 +259,7 @@ void SelectMenu::handleTick(int elapsed)
     tick_count_ += elapsed;
     // Updates the moving agent selector
     if (tick_count_ > 300) {
-        rnd_ = ++rnd_ % 8;
+        rnd_ = (rnd_ + 1) % 8;
         tick_count_ = 0;
         needRendering();
     }
@@ -270,7 +270,7 @@ void SelectMenu::handleTick(int elapsed)
     }
 }
 
-/*! 
+/*!
  * Update the game time display
  */
 void SelectMenu::updateClock() {
@@ -347,7 +347,7 @@ void SelectMenu::drawSelectedModInfos(int x, int y)
     g_Screen.drawRect(502, 268, 124, 2, fs_cmn::kColorDarkGreen);
     g_Screen.drawRect(502, 292, 124, 2, fs_cmn::kColorDarkGreen);
     g_Screen.drawRect(502, 318, 124, 2, fs_cmn::kColorDarkGreen);
-    
+
     getMenuFont(FontManager::SIZE_1)->drawText(x, y, pSelectedMod_->getName(), true);
     char tmp[100];
     sprintf(tmp, "COST   :%d", pSelectedMod_->cost());
@@ -693,7 +693,7 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
         // get the selected agent from the team listbox
         std::pair<int, void *> * pPair = static_cast<std::pair<int, void *> *> (ctx);
         Agent *pNewAgent = static_cast<Agent *> (pPair->second);
-        
+
         bool found = false;
         // check if selected agent is already part of the mission squad
         for (size_t j = 0; j < AgentManager::kMaxSlot; j++) {
@@ -717,7 +717,7 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
             // redraw agent buttons
             dirtyAgentSelector();
         }
-        
+
     } else if (actionId == pModsLBox_->getId()) {
         std::pair<int, void *> * pPair = static_cast<std::pair<int, void *> *> (ctx);
         pSelectedMod_ = static_cast<Mod *> (pPair->second);
@@ -785,7 +785,7 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
             }
             showItemList();
         }
-    
+
     } else if (actionId == sellButId_ && selectedWInstId_) {
         addDirtyRect(360, 305, 135, 70);
         Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);

@@ -28,7 +28,7 @@
 #include "common.h"
 #include "utils/log.h"
 #include "app.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "core/gamesession.h"
 #include "mission.h"
 

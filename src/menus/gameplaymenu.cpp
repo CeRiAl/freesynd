@@ -33,7 +33,7 @@
 #include "menus/gamemenuid.h"
 #include "gfx/fliplayer.h"
 #include "utils/file.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "mission.h"
 #include "model/shot.h"
 
@@ -993,7 +993,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
         uint8 weapon_idx = (uint8) key.keyFunc - (uint8) KFC_F5;
         handleWeaponSelection(weapon_idx, ctrl);
         return true;
-    } else if (isLetterD(key.unicode) && ctrl) { // selected agents are killed with 'd'
+    } else if ((isLetterD(key.unicode)) && ctrl) { // selected agents are killed with 'd'
         // save current selection as it will be modified when agents die
         std::vector<PedInstance *> agents_suicide;
         for (SquadSelection::Iterator it = selection_.begin();
@@ -1431,9 +1431,9 @@ void GameplayMenu::handleGameEvent(GameEvent evt) {
         if (mission_->getSquad()->isAllDead()) {
             mission_->endWithStatus(Mission::kMissionStatusFailed);
             // clear signal on minimap
-            GameEvent evt;
-            evt.type = GameEvent::kObjFailed;
-            mm_renderer_.handleGameEvent(evt);
+            GameEvent sigEvt;
+            sigEvt.type = GameEvent::kObjFailed;
+            mm_renderer_.handleGameEvent(sigEvt);
         }
 
         // Anyway update selection

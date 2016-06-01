@@ -33,7 +33,6 @@
 #include "utils/log.h"
 #include "weapon.h"
 #include "ped.h"
-#include "vehicle.h"
 #include "mission.h"
 #include "model/shot.h"
 #include "core/gamesession.h"

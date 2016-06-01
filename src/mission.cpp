@@ -35,7 +35,7 @@
 #include "app.h"
 #include "model/objectivedesc.h"
 #include "utils/log.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "core/squad.h"
 #include "model/shot.h"
 

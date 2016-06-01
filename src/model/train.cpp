@@ -1,24 +1,19 @@
 #include "train.h"
 
-Train::Train() {
+TrainHead::TrainHead(uint16 anId, uint8 aType) : TrainBody(anId, aType) {
 }
 
-Train::~Train() {
-    for (std::list < TrainElement * >::iterator it = elements_.begin();
-         it != elements_.end(); it++) {
-        TrainElement *elem = *it;
-        delete elem;
-    }
-    elements_.clear();
+TrainHead::~TrainHead() {
+
 }
 
-bool Train::animate(int elapsed) {
+bool TrainHead::animate(int elapsed) {
     return false;
 }
 
-TrainElement::TrainElement() : Vehicle(-1, false) {
-//TrainElement::TrainElement() : Vehicle(-1) {
+TrainBody::TrainBody(uint16 anId, uint8 aType) : Vehicle(anId, aType, -1) {
+
 }
 
-TrainElement::~TrainElement() {
+TrainBody::~TrainBody() {
 }

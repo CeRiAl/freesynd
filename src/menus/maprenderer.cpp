@@ -28,7 +28,7 @@
 #include "menus/maprenderer.h"
 #include "common.h"
 #include "mission.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "agentmanager.h"
 #include "mapobject.h"
 #include "core/squad.h"

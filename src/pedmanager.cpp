@@ -183,16 +183,6 @@ PedInstance *PedManager::loadInstance(const LevelData::People & gamdata, uint16 
     } else {
         newped->setHealth(hp);
         newped->setStateMasks(PedInstance::pa_smStanding);
-        if (gamdata.state == 0x10) {
-            LOG(Log::k_FLG_GAME, "PedManager","loadInstance", ("Unhandled gamedata state for ped %d", newped->id()))
-/*            PedInstance::actionQueueGroupType as;
-            newped->createActQWalking(as, NULL, NULL, gamdata.orientation);
-            as.main_act = as.actions.size() - 1;
-            as.group_desc = PedInstance::gd_mStandWalk;
-            as.origin_desc = fs_action::kOrigDefault;
-            newped->addActQToQueue(as);
-*/
-        }
     }
     // this is tile based Z we get, realword Z is in gamdata,
     // for correct calculations of viewpoint, target hit etc.
@@ -247,7 +237,7 @@ PedInstance *PedManager::loadInstance(const LevelData::People & gamdata, uint16 
  * \param pPed The ped to initialize
  */
 void PedManager::initOurAgent(Agent *pAgent, unsigned int obj_group_id, PedInstance *pPed) {
-    LOG(Log::k_FLG_GAME, "PedManager","initOurAgent", ("Create player agent with id %d", pAgent->getId()))
+    LOG(Log::k_FLG_GAME, "PedManager","initOurAgent", ("Create player agent with id %d", pPed->id()))
 
     while (pAgent->numWeapons()) {
         WeaponInstance *wi = pAgent->removeWeaponAtIndex(0);

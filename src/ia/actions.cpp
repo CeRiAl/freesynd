@@ -29,7 +29,7 @@
 #include "app.h"
 #include "ped.h"
 #include "weapon.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "mission.h"
 #include "agentmanager.h"
 #include "core/squad.h"
@@ -601,7 +601,7 @@ DriveVehicleAction::DriveVehicleAction(VehicleInstance *pVehicle, const TilePoin
 }
 
 void DriveVehicleAction::doStart(Mission *pMission, PedInstance *pPed) {
-    if (pVehicle_->isDead() || !pVehicle_->isInsideVehicle(pPed)) {
+    if (pVehicle_->isDead() || !pVehicle_->containsPed(pPed)) {
         setFailed();
     }
 

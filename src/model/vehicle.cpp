@@ -35,6 +35,16 @@
 #include "vehicle.h"
 #include "model/shot.h"
 
+const uint8 Vehicle::kVehicleTypeLargeArmored = 0x01;
+const uint8 Vehicle::kVehicleTypeLargeArmoredDamaged = 0x04;
+const uint8 Vehicle::kVehicleTypeTrainHead = 0x05;
+const uint8 Vehicle::kVehicleTypeTrainBody = 0x09;
+const uint8 Vehicle::kVehicleTypeRegularCar = 0x0D;
+const uint8 Vehicle::kVehicleTypeFireFighter = 0x11;
+const uint8 Vehicle::kVehicleTypeSmallArmored = 0x1C;
+const uint8 Vehicle::kVehicleTypePolice = 0x24;
+const uint8 Vehicle::kVehicleTypeMedics = 0x28;
+
 VehicleAnimation::VehicleAnimation() {
     vehicle_anim_ = kNormalAnim;
 }
@@ -67,7 +77,7 @@ void VehicleAnimation::set_base_anims(int anims) {
  *
  */
 void Vehicle::addPassenger(PedInstance *pPed) {
-    if(!isInsideVehicle(pPed)) {
+    if(!containsPed(pPed)) {
         passengers_.insert(pPed);
         pPed->putInVehicle(this);
     }
@@ -78,7 +88,7 @@ void Vehicle::addPassenger(PedInstance *pPed) {
  * \param pPed Ped to remove
  */
 void Vehicle::dropPassenger(PedInstance *pPed) {
-    if(isInsideVehicle(pPed)) {
+    if(containsPed(pPed)) {
         pPed->leaveVehicle();
         passengers_.erase(passengers_.find(pPed));
     }
@@ -116,8 +126,8 @@ bool Vehicle::containsHostilesForPed(PedInstance* p,
     return false;
 }
 
-VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 anId, int m):
-    Vehicle(anId, m, true), vehicle_(vehicle)
+VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 anId, uint8 aType, int m):
+    Vehicle(anId, aType, m), vehicle_(vehicle)
 {
     pDriver_ = NULL;
     hold_on_.wayFree = 0;
@@ -843,7 +853,7 @@ void VehicleInstance::setDriver(PedInstance *pPed, bool forceDriver) {
             pDriver_ = pPed;
         }
 
-        if (!isInsideVehicle(pPed)) {
+        if (!containsPed(pPed)) {
             Vehicle::addPassenger(pPed);
         }
     }

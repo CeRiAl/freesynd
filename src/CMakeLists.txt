@@ -14,6 +14,8 @@ set (SOURCES
 	model/objectivedesc.cpp
 	model/weaponholder.cpp
 	model/shot.cpp
+	model/vehicle.cpp
+	model/train.cpp
 	core/squad.cpp
 	core/gamesession.cpp
 	core/gamecontroller.cpp
@@ -79,7 +81,6 @@ set (SOURCES
 	utils/log.cpp
 	utils/portablefile.cpp
 	utils/seqmodel.cpp
-	vehicle.cpp
 	weapon.cpp
 	weaponmanager.cpp
 )
@@ -115,7 +116,7 @@ set(HEADERS
 	resources.h
 	system.h
 	system_sdl.h
-	vehicle.h
+	model/vehicle.h
 	version.h
 	weapon.h
 	weaponmanager.h
@@ -142,6 +143,7 @@ set(HEADERS
 	model/leveldata.h
 	model/shot.h
 	model/weaponholder.h
+	model/train.h
 	menus/agentselectorrenderer.h
 	menus/maprenderer.h
 	menus/minimaprenderer.h
@@ -218,7 +220,7 @@ if (BUILD_DEV_TOOLS)
 		editor/animmenu.h
 		editor/searchmissionmenu.h
 		editor/listmissionmenu.h)
-	
+
 	add_executable (dump
 		dump.cpp
 		gfx/dirtylist.cpp
@@ -253,7 +255,7 @@ if (BUILD_DEV_TOOLS)
 		mod.cpp
 		modmanager.cpp
 		missionmanager.cpp
-		vehicle.cpp
+		model/vehicle.cpp
 		weapon.cpp
 		weaponmanager.cpp
 		core/gamecontroller.cpp
@@ -287,7 +289,7 @@ if (BUILD_DEV_TOOLS)
 		${DEV_TOOLS_HEADERS}
 	)
 	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL_LIBRARY} ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY})
-	
+
 	target_compile_definitions (dump PRIVATE EDITOR_)
 else ()
 	# We only define an install target if we're doing a release build.

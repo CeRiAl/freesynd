@@ -25,7 +25,7 @@
 #include "core/missionbriefing.h"
 #include "mission.h"
 #include "gfx/screen.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "ped.h"
 
 const int MinimapRenderer::kMiniMapSizePx = 128;

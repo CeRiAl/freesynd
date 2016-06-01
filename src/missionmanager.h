@@ -81,7 +81,7 @@ private:
     void createVehicles(const LevelData::LevelDataAll &level_data,
                             DataIndex &di, Mission *pMission);
     //! Creates a vehicle from the game data
-    VehicleInstance * createVehicleInstance(const LevelData::Cars &gamdata, uint16 id, uint16 map);
+    Vehicle * createVehicleInstance(const LevelData::Cars &gamdata, uint16 id, uint16 map);
     //! Creates all peds
     void createPeds(const LevelData::LevelDataAll &level_data,
                             DataIndex &di, Mission *pMission);

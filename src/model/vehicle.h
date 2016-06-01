@@ -80,14 +80,24 @@ protected:
  */
 class Vehicle : public ShootableMovableMapObject{
 public:
-    Vehicle(uint16 anId, int m, bool drivable) : ShootableMovableMapObject(anId, m, MapObject::kNatureVehicle) {
-        isDrivable_ = drivable;
+    static const uint8 kVehicleTypeLargeArmored;
+    static const uint8 kVehicleTypeLargeArmoredDamaged;
+    static const uint8 kVehicleTypeTrainHead;
+    static const uint8 kVehicleTypeTrainBody;
+    static const uint8 kVehicleTypeRegularCar;
+    static const uint8 kVehicleTypeFireFighter;
+    static const uint8 kVehicleTypeSmallArmored;
+    static const uint8 kVehicleTypePolice;
+    static const uint8 kVehicleTypeMedics;
+
+    Vehicle(uint16 anId, uint8 aType, int m) : ShootableMovableMapObject(anId, m, MapObject::kNatureVehicle) {
+        type_ = aType;
     }
 
-    //! Return true if vehicle can be driven by a ped
-    bool isDrivable() { return isDrivable_; }
+    //! Return true if vehicle is a car
+    bool isCar() { return type_ != kVehicleTypeTrainHead && type_ != kVehicleTypeTrainBody; }
 
-    void setType(uint8 type) { type_ = type; }
+    //void setType(uint8 type) { type_ = type; }
 
     //! Adds the given ped to the list of passengers
     virtual void addPassenger(PedInstance *p);
@@ -95,7 +105,7 @@ public:
     virtual void dropPassenger(PedInstance *p);
 
     //! Returns true if given ped is in the vehicle
-    bool isInsideVehicle(PedInstance *p) {
+    bool containsPed(PedInstance *p) {
         return (passengers_.find(p) != passengers_.end());
     }
     //! Returns true if the vehicle contains one of our agent
@@ -107,8 +117,6 @@ protected:
     std::set <PedInstance *> passengers_;
 
 private:
-    /*! A vehicle can be driven (car) or not (train).*/
-    bool isDrivable_;
     /*! Type of vehicle.*/
     uint8 type_;
 };
@@ -119,7 +127,7 @@ private:
 class VehicleInstance : public Vehicle
 {
 public:
-    VehicleInstance(VehicleAnimation *vehicle, uint16 id, int m);
+    VehicleInstance(VehicleAnimation *vehicle, uint16 id, uint8 aType, int m);
     virtual ~VehicleInstance() { delete vehicle_;}
 
     bool animate(int elapsed);

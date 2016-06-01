@@ -22,7 +22,7 @@
 
 #include "menus/squadselection.h"
 #include "ped.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
 #include "core/gameevent.h"
 #include "mission.h"
 
@@ -245,22 +245,21 @@ void SquadSelection::followPed(PedInstance *pPed, bool addAction) {
  */
 void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
     // true means every one get in the vehicle
-    bool getIn = leader()->inVehicle() == NULL;
+    bool leaderIsInVehicle = leader()->inVehicle() == NULL;
 
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
 
-        if (getIn && !pAgent->inVehicle()) {
-            // Agent is out and everybody must get in
+        if (leaderIsInVehicle && !pAgent->inVehicle()) {
+            // Agent is out and leader is in
             MovementAction *pAction =
                 pAgent->createActionEnterVehicle(pVehicle);
             pAgent->addMovementAction(pAction, addAction);
-            //pAgent->addActionEnterVehicle(kOrigUser, pVehicle, addAction);
-        } else if (!getIn && pAgent->inVehicle() == pVehicle) {
-            // Agent is in the given car and everybody must get out
+        } else if (!leaderIsInVehicle && pAgent->inVehicle() == pVehicle) {
+            // Agent is in the given car and leader is out
             // first stops the vehicle if it's a car
-            if (pVehicle->speed() != 0 && pVehicle->isDrivable()) {
+            if (pVehicle->speed() != 0 && pVehicle->isCar()) {
                 pVehicle->clearDestination();
                 // tells the driver to stop
                 VehicleInstance *pVi = dynamic_cast<VehicleInstance *>(pVehicle);
@@ -291,7 +290,7 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
         PedInstance *pAgent = *it;
         Vehicle *pVehicle = pAgent->inVehicle();
         if (pVehicle) {
-            if (pVehicle->isDrivable()) {
+            if (pVehicle->isCar()) {
                 // Agent is in drivable vehicle
                 VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(pVehicle);
                 if (pCar->isDriver(pAgent))
