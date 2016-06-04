@@ -37,9 +37,15 @@
  */
 class TrainBody : public Vehicle {
 public:
-    TrainBody(uint16 id, uint8 aType);
+    TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation);
     ~TrainBody();
 
+    bool move_vehicle(int elapsed);
+
+    //! Set the destination to reach at given speed
+    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1) {
+        return false;
+    }
 };
 
 /*!
@@ -47,7 +53,7 @@ public:
  */
 class TrainHead : public TrainBody {
 public:
-    TrainHead(uint16 id, uint8 aType);
+    TrainHead(uint16 id, uint8 aType, VehicleAnimation *pAnimation);
     ~TrainHead();
 
     //! Animates the train

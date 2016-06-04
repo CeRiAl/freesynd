@@ -34,6 +34,7 @@
 #include "core/missionbriefing.h"
 #include "model/objectivedesc.h"
 #include "model/vehicle.h"
+#include "model/train.h"
 #include "mission.h"
 #include "core/squad.h"
 #include "pedmanager.h"
@@ -510,93 +511,87 @@ void MissionManager::createVehicles(const LevelData::LevelDataAll &level_data, D
 /*!
  *
  */
-Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, uint16 id, uint16 map)
-{
-    // TODO: check all maps
-    // TODO: train, join somehow
+Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, uint16 id, uint16 map) {
 
     int hp = READ_LE_INT16(gamdata.health);
     int dir = gamdata.orientation >> 5;
 
-    VehicleAnimation *vehicleanim = new VehicleAnimation();
     int cur_anim = READ_LE_UINT16(gamdata.index_current_anim) - dir;
-    //setVehicleBaseAnim(vehicleanim, cur_anim);
+    VehicleAnimation *vehicleanim = new VehicleAnimation();
     vehicleanim->set_base_anims(cur_anim);
-    Vehicle *vehicle_new = new VehicleInstance(vehicleanim, id, gamdata.sub_type, map);
-    vehicle_new->setHealth(hp);
-    vehicle_new->setStartHealth(hp);
 
-    switch (gamdata.sub_type) {
-        case 0x01:
-            // large armored
-            break;
-        case 0x04:
-            // large armored damaged
-            // it is actually base animation and they have 8 directions
-            //setVehicleBaseAnim(vehicleanim, cur_anim - 12 + (dir >> 1));
-            vehicleanim->set_base_anims(cur_anim - 12 + (dir >> 1));
-            vehicle_new->setStartHealth(0);
-            vehicle_new->setHealth(-1);
-            vehicleanim->set_animation_type(VehicleAnimation::kBurntAnim);
-            break;
-        case 0x05:
-            // train head
-            LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Head %d", id))
-            break;
-        case 0x09:
-            // train body
-            LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Body %d", id))
-            break;
-        case 0x0D:
-            // grey vehicle
-            break;
-        case 0x11:
-            // firefighters vehicle
-            break;
-        case 0x1C:
-            // small armored vehicle
-            break;
-        case 0x24:
-            // police vehicle
-            break;
-        case 0x28:
-            // medical vehicle
-            break;
-#if _DEBUG
-        default:
-            printf("uknown vehicle type %02X , %02X, %X\n", gamdata.sub_type,
-                gamdata.orientation,
-                READ_LE_UINT16(gamdata.index_current_frame));
-            printf("x = %i, xoff = %i, ", gamdata.mapposx[1],
-                gamdata.mapposx[0]);
-            printf("y = %i, yoff = %i, ", gamdata.mapposy[1],
-                gamdata.mapposy[0]);
-            printf("z = %i, zoff = %i\n", gamdata.mapposz[1],
-                gamdata.mapposz[0]);
-            break;
-#endif
+    Vehicle *pVehicle = NULL;
+    if (gamdata.sub_type == Vehicle::kVehicleTypeTrainHead) {
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Head %d", id))
+        pVehicle = new TrainHead(id, Vehicle::kVehicleTypeTrainHead, vehicleanim);
+    } else if (gamdata.sub_type == Vehicle::kVehicleTypeTrainBody) {
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Body %d", id))
+        pVehicle = new TrainBody(id, Vehicle::kVehicleTypeTrainHead, vehicleanim);
+    } else {
+        // standard car
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create generic car %d", id))
+        pVehicle = new GenericCar(vehicleanim, id, gamdata.sub_type, map);
+        pVehicle->setHealth(hp);
+        pVehicle->setStartHealth(hp);
+
+        switch (gamdata.sub_type) {
+            case 0x04:
+                // large armored damaged
+                // it is actually base animation and they have 8 directions
+                //setVehicleBaseAnim(vehicleanim, cur_anim - 12 + (dir >> 1));
+                vehicleanim->set_base_anims(cur_anim - 12 + (dir >> 1));
+                pVehicle->setStartHealth(0);
+                pVehicle->setHealth(-1);
+                vehicleanim->set_animation_type(VehicleAnimation::kBurntAnim);
+                break;
+            // remaining cases are just here to detect unknown vehicle types
+            case 0x01: // large armored
+            case 0x0D: // grey vehicle
+            case 0x11: // firefighters vehicle
+            case 0x1C: // small armored vehicle
+            case 0x24: // police vehicle
+            case 0x28: // medical vehicle
+                break;
+            default:
+        #if _DEBUG
+                printf("uknown vehicle type %02X , %02X, %X\n", gamdata.sub_type,
+                    gamdata.orientation,
+                    READ_LE_UINT16(gamdata.index_current_frame));
+                printf("x = %i, xoff = %i, ", gamdata.mapposx[1],
+                    gamdata.mapposx[0]);
+                printf("y = %i, yoff = %i, ", gamdata.mapposy[1],
+                    gamdata.mapposy[0]);
+                printf("z = %i, zoff = %i\n", gamdata.mapposz[1],
+                    gamdata.mapposz[0]);
+        #endif
+                break;
+
+        }
     }
-    int z = READ_LE_UINT16(gamdata.mapposz) >> 7;
 
-    // TODO: the size should be adjusted on orientation/direction change
-    // and it should be different per vehicle type
-    vehicle_new->setSizeX(256);
-    vehicle_new->setSizeY(256);
-    vehicle_new->setSizeZ(192);
+    if (pVehicle) {
+        int z = READ_LE_UINT16(gamdata.mapposz) >> 7;
 
-    int oz = gamdata.mapposz[0] & 0x7F;
-    vehicle_new->setPosition(gamdata.mapposx[1], gamdata.mapposy[1],
-                            z, gamdata.mapposx[0],
-                            gamdata.mapposy[0], oz);
-    vehicle_new->setDirection(gamdata.orientation);
+        // TODO: the size should be adjusted on orientation/direction change
+        // and it should be different per vehicle type
+        pVehicle->setSizeX(256);
+        pVehicle->setSizeY(256);
+        pVehicle->setSizeZ(192);
 
-    LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 1 %u", gamdata.unkn1))
-    LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 2 %u", gamdata.unkn2))
-    LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 3 %u", gamdata.unkn3))
-    LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 4 %u", gamdata.unkn4))
-    LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 6 %u", gamdata.unkn6))
+        int oz = gamdata.mapposz[0] & 0x7F;
+        pVehicle->setPosition(gamdata.mapposx[1], gamdata.mapposy[1],
+                                z, gamdata.mapposx[0],
+                                gamdata.mapposy[0], oz);
+        pVehicle->setDirection(gamdata.orientation);
 
-    return vehicle_new;
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 1 %u", gamdata.unkn1))
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 2 %u", gamdata.unkn2))
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 3 %u", gamdata.unkn3))
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 4 %u", gamdata.unkn4))
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 6 %u", gamdata.unkn6))
+    }
+
+    return pVehicle;
 }
 
 void MissionManager::createPeds(const LevelData::LevelDataAll &level_data, DataIndex &di, Mission *pMission) {
@@ -655,7 +650,7 @@ void MissionManager::createPeds(const LevelData::LevelDataAll &level_data, DataI
 
                 pVehicle->addPassenger(p);
                 if (setDriver) {
-                    VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(pVehicle);
+                    GenericCar *pCar = dynamic_cast<GenericCar *>(pVehicle);
                     pCar->setDriver(p);
                 }
             }
@@ -720,7 +715,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             if (v) {
                 if (v->isCar()) {
                     LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive car %d to (%d, %d, %d) (%d, %d)", v->id(), locT.tx, locT.ty, locT.tz, locT.ox, locT.oy))
-                    VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
+                    GenericCar *pCar = dynamic_cast<GenericCar *>(v);
                     pPed->addToDefaultActions(new DriveVehicleAction(pCar, locT));
                 } else {
                     LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive train %d to (%d, %d, %d) (%d, %d)", v->id(), locT.tx, locT.ty, locT.tz, locT.ox, locT.oy))
@@ -752,7 +747,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             } else {
                 if (v->isCar()) {
                     LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive car %d to (%d, %d, %d) (%d, %d)", v->id(), v->tileX(), v->tileY(), v->tileZ(), v->offX(), v->offY()))
-                    VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(v);
+                    GenericCar *pCar = dynamic_cast<GenericCar *>(v);
                     pPed->addToDefaultActions(
                         new DriveVehicleAction(pCar, v->position()));
                 } else {

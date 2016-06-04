@@ -44,7 +44,7 @@
 class Agent;
 class Mission;
 class Squad;
-class VehicleInstance;
+class GenericCar;
 class Vehicle;
 
 #define NUM_ANIMS 10
@@ -335,7 +335,7 @@ public:
     MovementAction * createActionEnterVehicle(Vehicle *pVehicle);
     //! Adds action to drive vehicle to destination
     void addActionDriveVehicle(
-           VehicleInstance *pVehicle, const TilePoint &destination, bool appendAction);
+           GenericCar *pVehicle, const TilePoint &destination, bool appendAction);
     //! Return true if ped can use a weapon
     bool canAddUseWeaponAction(WeaponInstance *pWeapon = NULL);
     //! Adds action to shoot somewhere

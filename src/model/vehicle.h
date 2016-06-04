@@ -90,9 +90,17 @@ public:
     static const uint8 kVehicleTypePolice;
     static const uint8 kVehicleTypeMedics;
 
-    Vehicle(uint16 anId, uint8 aType, int m) : ShootableMovableMapObject(anId, m, MapObject::kNatureVehicle) {
+    Vehicle(uint16 anId, uint8 aType, int m, VehicleAnimation *pAnimation) : ShootableMovableMapObject(anId, m, MapObject::kNatureVehicle) {
         type_ = aType;
+        animation_ = pAnimation;
     }
+
+    virtual ~Vehicle() {
+        delete animation_;
+    }
+
+    bool animate(int elapsed);
+    void draw(int x, int y);
 
     //! Return true if vehicle is a car
     bool isCar() { return type_ != kVehicleTypeTrainHead && type_ != kVehicleTypeTrainBody; }
@@ -112,9 +120,14 @@ public:
     bool containsOurAgents();
     //! Returns true if the vehicle contains peds considered hostile by the given ped
     bool containsHostilesForPed(PedInstance *p, unsigned int hostile_desc_alt);
+
+protected:
+    virtual bool move_vehicle(int elapsed) = 0;
 protected:
     /*! The passengers of the vehicle.*/
     std::set <PedInstance *> passengers_;
+    /*! Animation for vehicle.*/
+    VehicleAnimation *animation_;
 
 private:
     /*! Type of vehicle.*/
@@ -122,16 +135,13 @@ private:
 };
 
 /*!
- * This class represents a Vehicle on a map.
+ * This class represents a playable car on a map.
  */
-class VehicleInstance : public Vehicle
+class GenericCar : public Vehicle
 {
 public:
-    VehicleInstance(VehicleAnimation *vehicle, uint16 id, uint8 aType, int m);
-    virtual ~VehicleInstance() { delete vehicle_;}
-
-    bool animate(int elapsed);
-    void draw(int x, int y);
+    GenericCar(VehicleAnimation *pAnimation, uint16 id, uint8 aType, int m);
+    virtual ~GenericCar() {}
 
     //! Set the destination to reach at given speed (todo : replace setDestinationV())
     bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1);
@@ -171,7 +181,6 @@ protected:
     bool dirWalkable(TilePoint *p, int x, int y, int z);
 
 protected:
-    VehicleAnimation *vehicle_;
     //! Vehicle driver
     PedInstance *pDriver_;
 };

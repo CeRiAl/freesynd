@@ -127,7 +127,7 @@ ObjDestroyVehicle::ObjDestroyVehicle(MapObject * pVehicle) : TargetObjective(pVe
  * \param pMission
  */
 void ObjDestroyVehicle::evaluate(Mission *pMission) {
-    VehicleInstance *pVehicle = static_cast<VehicleInstance *>(p_target_);
+    Vehicle *pVehicle = static_cast<Vehicle *>(p_target_);
 
     if (pVehicle->isDead()) {
         endObjective(true);
@@ -148,7 +148,7 @@ ObjUseVehicle::ObjUseVehicle(MapObject * pVehicle) : TargetObjective(pVehicle) {
  * \param pMission
  */
 void ObjUseVehicle::evaluate(Mission *pMission) {
-    VehicleInstance *pVehicle = static_cast<VehicleInstance *>(p_target_);
+    GenericCar *pVehicle = static_cast<GenericCar *>(p_target_);
 
     if (pVehicle->isDead()) {
         endObjective(false);

@@ -1370,7 +1370,7 @@ void PedInstance::verifyHostilesFound(Mission *m) {
         if (smo->isDead() || (smo->nature() == MapObject::kNaturePed
             && isFriendWith((PedInstance *)(smo)))
             || (smo->nature() == MapObject::kNatureVehicle
-            && ((VehicleInstance *)smo)->containsHostilesForPed(this, hostile_desc_))
+            && ((Vehicle *)smo)->containsHostilesForPed(this, hostile_desc_))
             || (m->checkIfBlockersInShootingLine(cur_xyz, &smo, NULL, false, false,
             check_rng, &distTo) != 1))
         {

@@ -32,7 +32,7 @@ class Mission;
 class PedInstance;
 class WeaponInstance;
 class Vehicle;
-class VehicleInstance;
+class GenericCar;
 
 
 /*!
@@ -456,14 +456,14 @@ protected:
  */
 class DriveVehicleAction : public MovementAction {
 public:
-    DriveVehicleAction(VehicleInstance *pVehicle, const TilePoint &dest);
+    DriveVehicleAction(GenericCar *pVehicle, const TilePoint &dest);
 
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 protected:
     /*! Vehicle to drive.*/
-    VehicleInstance *pVehicle_;
+    GenericCar *pVehicle_;
     /*! Destination point.*/
     TilePoint dest_;
 };

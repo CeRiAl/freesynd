@@ -262,7 +262,7 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
             if (pVehicle->speed() != 0 && pVehicle->isCar()) {
                 pVehicle->clearDestination();
                 // tells the driver to stop
-                VehicleInstance *pVi = dynamic_cast<VehicleInstance *>(pVehicle);
+                GenericCar *pVi = dynamic_cast<GenericCar *>(pVehicle);
                 pVi->getDriver()->destroyAllActions();
             }
             // Ped can get off only if vehicle is stopped
@@ -292,7 +292,7 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
         if (pVehicle) {
             if (pVehicle->isCar()) {
                 // Agent is in drivable vehicle
-                VehicleInstance *pCar = dynamic_cast<VehicleInstance *>(pVehicle);
+                GenericCar *pCar = dynamic_cast<GenericCar *>(pVehicle);
                 if (pCar->isDriver(pAgent))
                 {
                     int stx = mapPt.tx;

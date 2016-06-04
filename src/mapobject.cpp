@@ -135,48 +135,48 @@ void MapObject::setDirection(int dir) {
  */
 void MapObject::setDirection(int posx, int posy, int * dir) {
 
-    int direction = -1;
+    int newDirection = -1;
 
     if (posx == 0) {
         if (posy < 0) {
-            direction = 128;
+            newDirection = 128;
         } else if (posy > 0) {
-            direction = 0;
+            newDirection = 0;
         }
     } else if (posy == 0) {
         if (posx > 0) {
-            direction = 64;
+            newDirection = 64;
         } else if (posx < 0) {
-            direction = 192;
+            newDirection = 192;
         }
     } else if (posx < 0) {
         if (posy > 0) {
             posx = -posx;
-            direction = (int)((128.0
+            newDirection = (int)((128.0
                 * atan((double)posy / (double)posx)) / PI + 192.0);
         } else { // posy < 0
             int swapx = -posx;
             posx = -posy;
             posy = swapx;
-            direction = (int)((128.0
+            newDirection = (int)((128.0
                 * atan((double)posy / (double)posx)) / PI + 128.0);
         }
     } else if (posx > 0 && posy < 0) {
         posy = -posy;
-        direction = (int)((128.0
+        newDirection = (int)((128.0
             * atan((double)posy / (double)posx)) / PI + 64.0);
     } else { // posx > 0 && posy > 0
         int swapx = posx;
         posx = posy;
         posy = swapx;
-        direction = (int)((128.0
+        newDirection = (int)((128.0
             * atan((double)posy / (double)posx)) / PI);
     }
-    if (direction != -1) {
+    if (newDirection != -1) {
         if (dir == NULL)
-            dir_ = direction;
+            dir_ = newDirection;
         else
-            *dir = direction;
+            *dir = newDirection;
     }
 }
 
@@ -198,21 +198,21 @@ void MapObject::setDirectionTowardPosition(const WorldPoint &pos) {
 int MapObject::getDirection(int snum) {
     assert(snum > 0);
 
-    int direction = 0;
+    int newDirection = 0;
     int sinc = 256 / snum;
     int sdec = sinc / 2;
     do {
-        int s = direction * sinc;
-        if (direction == 0) {
+        int s = newDirection * sinc;
+        if (newDirection == 0) {
             if ((256 - sdec) <= dir_ || (s + sdec) > dir_)
                 break;
         } else if ((s - sdec) <= dir_ && (s + sdec) > dir_)
             break;
-        direction++;
-    } while (direction < snum);
-    assert(direction < snum);
+        newDirection++;
+    } while (newDirection < snum);
+    assert(newDirection < snum);
 
-    return direction;
+    return newDirection;
 }
 
 /*
@@ -953,7 +953,7 @@ bool Door::animate(int elapsed, Mission *obj)
     int x = tileX();
     int y = tileY();
     int z = tileZ();
-    MapObject::ObjectNature nature;
+    MapObject::ObjectNature aNature;
     int si;
     char inc_rel = 0, rel_inc = 0;
     char *i = 0, *j = 0;
@@ -971,10 +971,10 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             assert(i != 0 && j != 0);
             for(*i = 0; *i < 2; *i += 1) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                        y + rel_inc, z, &nature, &si, true));
+                        y + rel_inc, z, &aNature, &si, true));
                     if (!p && state_ == Static::sttdoor_Open && (!found)) {
                         state_ = Static::sttdoor_Closing;
                         setExcludedFromBlockers(false);
@@ -998,10 +998,10 @@ bool Door::animate(int elapsed, Mission *obj)
             }
             assert(i != 0 && j != 0);
             *i = 1;
-            nature = MapObject::kNaturePed; si = 0;
+            aNature = MapObject::kNaturePed; si = 0;
             do {
                 p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                    y + rel_inc, z, &nature, &si, true));
+                    y + rel_inc, z, &aNature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
@@ -1019,10 +1019,10 @@ bool Door::animate(int elapsed, Mission *obj)
                 }
             } while (p);
             *i = 0;
-            nature = MapObject::kNaturePed; si = 0;
+            aNature = MapObject::kNaturePed; si = 0;
             do {
                 p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                    y + rel_inc, z, &nature, &si, true));
+                    y + rel_inc, z, &aNature, &si, true));
                 if (p && p->isAlive()) {
                     if (!found) {
                         state_ = Static::sttdoor_Opening;
@@ -1091,12 +1091,12 @@ void LargeDoor::draw(int x, int y)
 bool LargeDoor::animate(int elapsed, Mission *obj)
 {
     // TODO: there must be somewhere locked door
-    VehicleInstance *v = NULL;
+    GenericCar *v = NULL;
     PedInstance *p = NULL;
     int x = tileX();
     int y = tileY();
     int z = tileZ();
-    MapObject::ObjectNature nature;
+    MapObject::ObjectNature aNature;
     int si;
     char inc_rel = 0, rel_inc = 0;
     char *i = 0, *j = 0;
@@ -1122,9 +1122,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             assert(i != 0 && j != 0);
             *j = -1;
             for(*i = -2; *i < 3; (*i)++) {
-                nature = MapObject::kNatureVehicle; si = 0;
-                v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                    y + rel_inc,z, &nature, &si, true));
+                aNature = MapObject::kNatureVehicle; si = 0;
+                v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                    y + rel_inc,z, &aNature, &si, true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
                     setExcludedFromBlockers(false);
@@ -1137,9 +1137,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for(*i = -2; *i < 3; (*i)++) {
-                nature = MapObject::kNatureVehicle; si = 0;
-                v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                    y + rel_inc,z,&nature,&si,true));
+                aNature = MapObject::kNatureVehicle; si = 0;
+                v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                    y + rel_inc,z,&aNature,&si,true));
                 if (!v && !found) {
                     state_ = Static::sttdoor_Closing;
                     setExcludedFromBlockers(false);
@@ -1152,10 +1152,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1168,10 +1168,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1184,10 +1184,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 0;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds_mid.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1253,9 +1253,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             assert(i != 0 && j != 0);
             *j = -1 * sign;
             *i = -2;
-            nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                y + rel_inc,z, &nature, &si,true));
+            aNature = MapObject::kNatureVehicle; si = 0;
+            v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                y + rel_inc,z, &aNature, &si,true));
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
@@ -1267,9 +1267,9 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1 * sign;
             *i = 2;
-            nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                y + rel_inc,z, &nature, &si,true));
+            aNature = MapObject::kNatureVehicle; si = 0;
+            v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                y + rel_inc,z, &aNature, &si,true));
             if (v) {
                 if (!found) {
                     state_ = Static::sttdoor_Opening;
@@ -1281,10 +1281,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1297,10 +1297,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                         if (!found && p->hasAccessCard()) {
@@ -1355,28 +1355,28 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             *j = -1 * sign;
             *i = -2;
             set_wayFree = state_ == Static::sttdoor_Opening ? 1 : 2;
-            nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                y + rel_inc,z, &nature, &si,true));
+            aNature = MapObject::kNatureVehicle; si = 0;
+            v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                y + rel_inc,z, &aNature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
                 v->hold_on_.pathBlocker = this;
             }
             *j = 1 * sign;
             *i = 2;
-            nature = MapObject::kNatureVehicle; si = 0;
-            v = (VehicleInstance *)(obj->findObjectWithNatureAtPos(x + inc_rel,
-                y + rel_inc,z, &nature, &si,true));
+            aNature = MapObject::kNatureVehicle; si = 0;
+            v = (GenericCar *)(obj->findObjectWithNatureAtPos(x + inc_rel,
+                y + rel_inc,z, &aNature, &si,true));
             if (v) {
                 v->hold_on_.wayFree = 1;
                 v->hold_on_.pathBlocker = this;
             }
             *j = -1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                     }
@@ -1384,10 +1384,10 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
             }
             *j = 1;
             for (*i = -1; *i <= 1; (*i)++ ) {
-                nature = MapObject::kNaturePed; si = 0;
+                aNature = MapObject::kNaturePed; si = 0;
                 do {
                     p = (PedInstance *)(obj->findObjectWithNatureAtPos(x + rel_inc,
-                        y + inc_rel, z, &nature, &si, true));
+                        y + inc_rel, z, &aNature, &si, true));
                     if (p) {
                         found_peds.push_back(p);
                     }

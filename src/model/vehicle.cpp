@@ -70,6 +70,39 @@ void VehicleAnimation::set_base_anims(int anims) {
     anims_burnt_ = anims + 12;
 }
 
+void Vehicle::draw(int x, int y)
+{
+    y += TILE_HEIGHT / 3;
+    addOffs(x, y);
+
+    // ensure on map
+    if (x < 90 || y < -20)
+        return;
+
+    animation_->draw(x, y, getDirection(4), frame_);
+}
+
+bool Vehicle::animate(int elapsed)
+{
+    bool updated = false;
+
+    if (health_ > 0) {
+        updated = move_vehicle(elapsed);
+    }
+
+    if (animation_->animation_type() == VehicleAnimation::kOnFireAnim) {
+        if (leftTimeShowAnim(elapsed))
+            updated |= MapObject::animate(elapsed);
+        else {
+            animation_->set_animation_type(VehicleAnimation::kBurntAnim);
+            frame_ = 0;
+            updated = true;
+        }
+    }
+
+    return updated;
+}
+
 /**
  * Adds given ped to the list of passengers.
  * \param pPed PedInstance*
@@ -126,47 +159,14 @@ bool Vehicle::containsHostilesForPed(PedInstance* p,
     return false;
 }
 
-VehicleInstance::VehicleInstance(VehicleAnimation * vehicle, uint16 anId, uint8 aType, int m):
-    Vehicle(anId, aType, m), vehicle_(vehicle)
+GenericCar::GenericCar(VehicleAnimation * pAnimation, uint16 anId, uint8 aType, int m):
+    Vehicle(anId, aType, m, pAnimation)
 {
     pDriver_ = NULL;
     hold_on_.wayFree = 0;
 }
 
-bool VehicleInstance::animate(int elapsed)
-{
-    bool updated = false;
-
-    if (health_ > 0) {
-        updated = move_vehicle(elapsed);
-    }
-
-    if (vehicle_->animation_type() == VehicleAnimation::kOnFireAnim) {
-        if (leftTimeShowAnim(elapsed))
-            updated |= MapObject::animate(elapsed);
-        else {
-            vehicle_->set_animation_type(VehicleAnimation::kBurntAnim);
-            frame_ = 0;
-            updated = true;
-        }
-    }
-
-    return updated;
-}
-
-void VehicleInstance::draw(int x, int y)
-{
-    y += TILE_HEIGHT / 3;
-    addOffs(x, y);
-
-    // ensure on map
-    if (x < 90 || y < -20)
-        return;
-
-    vehicle_->draw(x, y, getDirection(4), frame_);
-}
-
-uint16 VehicleInstance::tileDir(int x, int y, int z) {
+uint16 GenericCar::tileDir(int x, int y, int z) {
     uint16 dir = 0x0;
     int near_tile;
     Map *pMap = g_App.maps().map(map());
@@ -331,7 +331,7 @@ uint16 VehicleInstance::tileDir(int x, int y, int z) {
     return dir;
 }
 
-bool VehicleInstance::dirWalkable(TilePoint *p, int x, int y, int z) {
+bool GenericCar::dirWalkable(TilePoint *p, int x, int y, int z) {
     Map *pMap = g_App.maps().map(map());
     if(!(pMap->isTileWalkableByCar(x,y,z)))
         return false;
@@ -370,13 +370,13 @@ bool VehicleInstance::dirWalkable(TilePoint *p, int x, int y, int z) {
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-bool VehicleInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
+bool GenericCar::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
     speed_ = newSpeed;
     setDestinationV(locT.tx, locT.ty, locT.tz, locT.ox, locT.oy, newSpeed);
     return !dest_path_.empty();
 }
 
-void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int new_speed)
+void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_speed)
 {
     std::map < TilePoint, uint16 > open;
     std::set < TilePoint > closed;
@@ -665,7 +665,7 @@ void VehicleInstance::setDestinationV(int x, int y, int z, int ox, int oy, int n
  * Moves a vehicle on the map.
  * \param elapsed Elapsed time sine last frame.
  */
-bool VehicleInstance::move_vehicle(int elapsed)
+bool GenericCar::move_vehicle(int elapsed)
 {
     bool updated = false;
     int used_time = elapsed;
@@ -776,7 +776,7 @@ bool VehicleInstance::move_vehicle(int elapsed)
  * Method called when object is hit by a weapon shot.
  * \param d Damage description
  */
-void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
+void GenericCar::handleHit(ShootableMapObject::DamageInflictType &d) {
     if (health_ <= 0)
         return;
 
@@ -788,7 +788,7 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
             case MapObject::dmg_Laser:
             case MapObject::dmg_Burn:
             case MapObject::dmg_Explosion:
-                vehicle_->set_animation_type(VehicleAnimation::kOnFireAnim);
+                animation_->set_animation_type(VehicleAnimation::kOnFireAnim);
                 setTimeShowAnim(10000);
                 break;
         }
@@ -810,7 +810,7 @@ void VehicleInstance::handleHit(ShootableMapObject::DamageInflictType &d) {
  * has no driver, ped becomes the driver.
  * \param p The ped
  */
-void VehicleInstance::addPassenger(PedInstance *p) {
+void GenericCar::addPassenger(PedInstance *p) {
     Vehicle::addPassenger(p);
     if (pDriver_ == NULL) {
         // Ped becomes the driver
@@ -822,7 +822,7 @@ void VehicleInstance::addPassenger(PedInstance *p) {
  * Overload initial method to manage driver.
  * \param pPed The ped to remove.
  */
-void VehicleInstance::dropPassenger(PedInstance *pPed) {
+void GenericCar::dropPassenger(PedInstance *pPed) {
     Vehicle::dropPassenger(pPed);
     if (pDriver_ == pPed) {
         pDriver_ = NULL;
@@ -847,7 +847,7 @@ void VehicleInstance::dropPassenger(PedInstance *pPed) {
  * \return void
  *
  */
-void VehicleInstance::setDriver(PedInstance *pPed, bool forceDriver) {
+void GenericCar::setDriver(PedInstance *pPed, bool forceDriver) {
     if (pPed != NULL) {
         if (pDriver_ == NULL || forceDriver) {
             pDriver_ = pPed;

@@ -594,7 +594,7 @@ bool EnterVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
-DriveVehicleAction::DriveVehicleAction(VehicleInstance *pVehicle, const TilePoint &dest) :
+DriveVehicleAction::DriveVehicleAction(GenericCar *pVehicle, const TilePoint &dest) :
     MovementAction(kActTypeUndefined, false, true) {
     pVehicle_ = pVehicle;
     dest_ = dest;

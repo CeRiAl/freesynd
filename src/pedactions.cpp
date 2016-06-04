@@ -281,7 +281,7 @@ MovementAction * PedInstance::createActionEnterVehicle(Vehicle *pVehicle) {
 
 //! Adds action to drive vehicle to destination
 void PedInstance::addActionDriveVehicle(
-        VehicleInstance *pVehicle, const TilePoint &destination, bool appendAction) {
+        GenericCar *pVehicle, const TilePoint &destination, bool appendAction) {
     DriveVehicleAction *pAction = new DriveVehicleAction(pVehicle, destination);
     addMovementAction(pAction, appendAction);
 }
