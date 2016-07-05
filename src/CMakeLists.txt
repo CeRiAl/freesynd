@@ -256,6 +256,7 @@ if (BUILD_DEV_TOOLS)
 		modmanager.cpp
 		missionmanager.cpp
 		model/vehicle.cpp
+		model/train.cpp
 		weapon.cpp
 		weaponmanager.cpp
 		core/gamecontroller.cpp

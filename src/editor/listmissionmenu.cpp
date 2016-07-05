@@ -47,7 +47,12 @@ ListMissionMenu::ListMissionMenu(MenuManager * m):
 
              int missionId = *it;
              char label[50];
-             sprintf(label, "MISSION %d", missionId);
+
+             if (missionId < 10) {
+                sprintf(label, "#CNTRY_0%d", missionId);
+             } else {
+                sprintf(label, "#CNTRY_%d", missionId);
+             }
 
              if (nbRes % 10 == 0) {
                 y = topY;

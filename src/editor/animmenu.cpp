@@ -31,11 +31,23 @@
 #include "editor/editorapp.h"
 
 AnimMenu::AnimMenu(MenuManager * m):
-    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdMain, "", "")
+    Menu(m, fs_edit_menus::kMenuIdFont, fs_edit_menus::kMenuIdMain, "mscrenup.dat", "")
 {
     isCachable_ = false;
-    animId_ = 1960;
+    animId_ = 416;
     frameId_ = 0;
+
+    addStatic(0, 40, g_Screen.gameScreenWidth(), "ANIMATIONS", FontManager::SIZE_4, false);
+    // Accept button
+    addOption(17, 347, 128, 25, "BACK", FontManager::SIZE_2, fs_edit_menus::kMenuIdMain);
+
+    // Animation id
+    addStatic(180, 300, "ANIMATION:", FontManager::SIZE_2, true);
+    txtAnimId_ = addStatic(300, 300, "416", FontManager::SIZE_2, true);
+
+    // frame id
+    addStatic(180, 350, "FRAME:", FontManager::SIZE_2, true);
+    txtFrameId_ = addStatic(300, 350, "0", FontManager::SIZE_2, true);
 }
 
 void AnimMenu::handleShow()
@@ -46,12 +58,15 @@ void AnimMenu::handleShow()
     g_System.showCursor();
 
     menu_manager_->setDefaultPalette();
+
+    menu_manager_->saveBackground();
 }
 
 void AnimMenu::handleRender(DirtyList &dirtyList)
 {
-    g_Screen.clear(0);
-    g_App.gameSprites().drawFrame(animId_, frameId_, 100, 100);
+    g_Screen.drawRect(150, 110, 350, 150);
+    //GameSpriteFrame sprite = g_App.gameSprites().
+    g_App.gameSprites().drawFrame(animId_, frameId_, 310, 180);
 }
 
 void AnimMenu::handleLeave() {
@@ -92,7 +107,14 @@ bool AnimMenu::handleUnknownKey(Key key, const int modKeys) {
     }
 
     if (change) {
-        printf("Animation #%d, frame #%d\n", animId_, frameId_);
+        //printf("Animation #%d, frame #%d\n", animId_, frameId_);
+        char tmp[100];
+        sprintf(tmp, "%d", animId_);
+        getStatic(txtAnimId_)->setText(tmp);
+
+        sprintf(tmp, "%d", frameId_);
+        getStatic(txtFrameId_)->setText(tmp);
+
         needRendering();
     }
 

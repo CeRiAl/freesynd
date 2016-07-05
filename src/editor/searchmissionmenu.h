@@ -26,19 +26,70 @@
  *                                                                      *
  ************************************************************************/
 
+#include "utils/seqmodel.h"
+#include "ped.h"
+
+class Mission;
+
+class PedTypeAdapter {
+public:
+    PedTypeAdapter(PedInstance::PedType type) {
+        type_ = type;
+    }
+
+    PedInstance::PedType getType() { return type_; }
+    std::string getName();
+
+private:
+    PedInstance::PedType type_;
+};
+
+class VehicleTypeAdapter {
+public:
+    VehicleTypeAdapter(uint8 type) {
+        type_ = type;
+    }
+
+    uint8 getType() { return type_; }
+    std::string getName();
+
+private:
+    uint8 type_;
+};
+
 /*!
  * Search mission menu.
  */
 class SearchMissionMenu : public Menu {
 public:
     SearchMissionMenu(MenuManager *m);
+    ~SearchMissionMenu();
 
     void handleShow();
     void handleLeave();
     void handleAction(const int actionId, void *ctx, const int modKeys);
 
 protected:
+    void initPedTypeListAndWidget();
+    void initSearchCriterias();
+    void initVehicleTypeListAndWidget();
+
+    bool matchMissionWithPedType(Mission *pMission);
+    bool matchMissionWithVehicleType(Mission *pMission);
+
+protected:
     int searchButId_;
+    ListBox *pPedTypeListBox_;
+    ListBox *pVehicleTypeListBox_;
+
+    VectorModel<PedTypeAdapter *> pedTypeList_;
+    VectorModel<VehicleTypeAdapter *> vehicleTypeList_;
+
+    bool searchOnPedType_;
+    PedInstance::PedType pedTypeCriteria_;
+
+    bool searchOnVehicleType_;
+    uint8 vehicleTypeCriteria_;
 };
 
 #endif // SEARCHMISSIONMENU_H_

@@ -108,10 +108,10 @@ protected:
     int last_motion_tick_, last_motion_x_, last_motion_y_;
     int mission_hint_ticks_, mission_hint_;
     Mission *mission_;
-    /*! Holds the X coordinate of the screen origin (top left corner) in the world coordinate.*/
-    int world_x_;
-    /*! Holds the Y coordinate of the screen origin (top left corner) in the world coordinate.*/
-    int world_y_;
+
+    /*! This is a projection in 2D of a point on a the map. This point represents the top
+     * left corner of the screen and it moves inside the map's borders.*/
+    ScreenPoint displayOriginPt_;
     /*! Holds the amount of scroll on the X axis.*/
     int scroll_x_;
     /*! Holds the amount of scroll on the Y axis.*/

@@ -46,6 +46,9 @@ protected:
 protected:
     int animId_;
     int frameId_;
+
+    int txtAnimId_;
+    int txtFrameId_;
 };
 
 #endif // EDITOR_ANIMMENU_H_

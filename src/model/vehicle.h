@@ -102,6 +102,8 @@ public:
     bool animate(int elapsed);
     void draw(int x, int y);
 
+    //! Return type of vehicle
+    uint8 getType() { return type_; }
     //! Return true if vehicle is a car
     bool isCar() { return type_ != kVehicleTypeTrainHead && type_ != kVehicleTypeTrainBody; }
 

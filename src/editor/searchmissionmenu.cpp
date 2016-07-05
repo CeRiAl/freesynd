@@ -32,7 +32,32 @@
 #include "system.h"
 #include "missionmanager.h"
 #include "mission.h"
-#include "ped.h"
+#include "model/vehicle.h"
+
+std::string PedTypeAdapter::getName() {
+    switch (type_) {
+    case PedInstance::kPedTypeAgent:
+        return "AGENT";
+    case PedInstance::kPedTypeCivilian:
+        return "CIVILIAN";
+    case PedInstance::kPedTypeCriminal:
+        return "CRIMINAL";
+    case PedInstance::kPedTypeGuard:
+        return "GUARD";
+    case PedInstance::kPedTypePolice:
+        return "POLICE";
+    default:
+        return "UNKOWN";
+    }
+}
+
+std::string VehicleTypeAdapter::getName() {
+    if (type_ == Vehicle::kVehicleTypeTrainHead) {
+        return "TRAIN";
+    }
+
+    return "UNKOWN";
+}
 
 SearchMissionMenu::SearchMissionMenu(MenuManager * m):
     Menu(m, fs_edit_menus::kMenuIdSrchMis, fs_edit_menus::kMenuIdMain, "mscrenup.dat", "")
@@ -40,12 +65,46 @@ SearchMissionMenu::SearchMissionMenu(MenuManager * m):
     isCachable_ = false;
     addStatic(0, 40, g_Screen.gameScreenWidth(), "SEARCH MISSION", FontManager::SIZE_4, false);
 
+    initPedTypeListAndWidget();
 
+    initVehicleTypeListAndWidget();
 
     // Accept button
     addOption(17, 347, 128, 25, "BACK", FontManager::SIZE_2, fs_edit_menus::kMenuIdMain);
     // Main menu button
     searchButId_ = addOption(500, 347,  128, 25, "SEARCH", FontManager::SIZE_2);
+}
+
+SearchMissionMenu::~SearchMissionMenu() {
+    for (unsigned int i=0; i<pedTypeList_.size(); i++) {
+        PedTypeAdapter *pType = pedTypeList_.get(i);
+        delete pType;
+    }
+}
+
+void SearchMissionMenu::initPedTypeListAndWidget() {
+    pedTypeList_.add(new PedTypeAdapter(PedInstance::kPedTypeAgent));
+    pedTypeList_.add(new PedTypeAdapter(PedInstance::kPedTypeCivilian));
+    pedTypeList_.add(new PedTypeAdapter(PedInstance::kPedTypeCriminal));
+    pedTypeList_.add(new PedTypeAdapter(PedInstance::kPedTypeGuard));
+    pedTypeList_.add(new PedTypeAdapter(PedInstance::kPedTypePolice));
+
+    pPedTypeListBox_ = addListBox(20, 84,  70, 120, true);
+    pPedTypeListBox_->setModel(&pedTypeList_);
+}
+
+void SearchMissionMenu::initVehicleTypeListAndWidget() {
+    vehicleTypeList_.add(new VehicleTypeAdapter(Vehicle::kVehicleTypeTrainHead));
+
+    pVehicleTypeListBox_ = addListBox(110, 84, 70, 120, true);
+    pVehicleTypeListBox_->setModel(&vehicleTypeList_);
+}
+
+void SearchMissionMenu::initSearchCriterias() {
+    searchOnPedType_ = false;
+    pedTypeCriteria_ = PedInstance::kPedTypeAgent;
+    searchOnVehicleType_ = false;
+    vehicleTypeCriteria_ = 0;
 }
 
 void SearchMissionMenu::handleShow()
@@ -54,10 +113,42 @@ void SearchMissionMenu::handleShow()
     // otherwise, it does no harm
     g_System.useMenuCursor();
     g_System.showCursor();
+
+    initSearchCriterias();
 }
 
 void SearchMissionMenu::handleLeave() {
     g_System.hideCursor();
+}
+
+bool SearchMissionMenu::matchMissionWithPedType(Mission *pMission) {
+    if (searchOnPedType_) {
+        for (size_t pedId = 0; pedId < pMission->numPeds(); pedId++) {
+            PedInstance *pPed = pMission->ped(pedId);
+
+            if (pPed->type() == pedTypeCriteria_) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool SearchMissionMenu::matchMissionWithVehicleType(Mission *pMission) {
+    if (searchOnVehicleType_) {
+        for (size_t vId = 0; vId < pMission->numVehicles(); vId++) {
+            Vehicle *pVehicle = pMission->vehicle(vId);
+
+            if (pVehicle->getType() == vehicleTypeCriteria_) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    return true;
 }
 
 void SearchMissionMenu::handleAction(const int actionId, void *ctx, const int modKeys) {
@@ -71,18 +162,32 @@ void SearchMissionMenu::handleAction(const int actionId, void *ctx, const int mo
             Mission *pMission = missionMgr.loadMission(misId);
 
             if (pMission) {
-                for (size_t pedId = 0; pedId < pMission->numPeds(); pedId++) {
-                    PedInstance *pPed = pMission->ped(pedId);
+                bool keepMission = matchMissionWithPedType(pMission);
 
-                    if (pPed->type() == PedInstance::kPedTypeCriminal) {
-                        g_App.getMissionResultList().push_back(misId);
-                        break;
-                    }
+                if (keepMission) {
+                    keepMission = matchMissionWithVehicleType(pMission);
                 }
+
+                if (keepMission) {
+                    g_App.getMissionResultList().push_back(misId);
+                }
+
                 delete pMission;
             }
         }
 
         menu_manager_->gotoMenu(fs_edit_menus::kMenuIdListMis);
+    } else if (actionId == pPedTypeListBox_->getId()) {
+        std::pair<int, void *> * pPair = static_cast<std::pair<int, void *> *> (ctx);
+        PedTypeAdapter *pType = static_cast<PedTypeAdapter *> (pPair->second);
+
+        searchOnPedType_ = true;
+        pedTypeCriteria_ = pType->getType();
+    } else if (actionId == pVehicleTypeListBox_->getId()) {
+        std::pair<int, void *> * pPair = static_cast<std::pair<int, void *> *> (ctx);
+        VehicleTypeAdapter *pType = static_cast<VehicleTypeAdapter *> (pPair->second);
+
+        searchOnVehicleType_ = true;
+        vehicleTypeCriteria_ = pType->getType();
     }
 }

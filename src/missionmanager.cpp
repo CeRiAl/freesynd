@@ -584,6 +584,7 @@ Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, 
                                 gamdata.mapposy[0], oz);
         pVehicle->setDirection(gamdata.orientation);
 
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - position %d, %d, %d, %d, %d, %d\n", gamdata.mapposx[1], gamdata.mapposy[1], z, gamdata.mapposx[0],gamdata.mapposy[0], oz))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 1 %u", gamdata.unkn1))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 2 %u", gamdata.unkn2))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 3 %u", gamdata.unkn3))

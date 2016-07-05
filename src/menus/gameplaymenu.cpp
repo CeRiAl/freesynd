@@ -53,11 +53,12 @@ GameplayMenu::GameplayMenu(MenuManager *m) :
 Menu(m, fs_game_menus::kMenuIdGameplay, fs_game_menus::kMenuIdDebrief, "", "mscrenup.dat"),
 tick_count_(0), last_animate_tick_(0), last_motion_tick_(0),
 last_motion_x_(320), last_motion_y_(240), mission_hint_ticks_(0),
-mission_hint_(0), mission_(NULL), world_x_(0),
-world_y_(0), selection_(),
+mission_hint_(0), mission_(NULL), selection_(),
 target_(NULL),
 mm_renderer_(), warningTimer_(20000)
 {
+    displayOriginPt_.x = 0;
+    displayOriginPt_.y = 0;
     scroll_x_ = 0;
     scroll_y_ = 0;
     ipa_chng_.ipa_chng = -1;
@@ -75,44 +76,44 @@ mm_renderer_(), warningTimer_(20000)
 bool GameplayMenu::scrollOnX() {
     bool change = false;
 
-    int newWorldX = world_x_ + scroll_x_;
+    int newOriginX = displayOriginPt_.x + scroll_x_;
 
-    TilePoint mpt = mission_->get_map()->screenToTilePoint(newWorldX, world_y_);
+    TilePoint mpt = mission_->get_map()->screenToTilePoint(newOriginX, displayOriginPt_.y);
 
     // Scroll to the right
     if (scroll_x_ > 0) {
         if (mpt.ty < mission_->minY()) {
             // we hit the upper right border of the map
             // so we scroll down until the far right corner
-            int newWorldY = world_y_ + SCROLL_STEP;
-            newWorldX += SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newWorldY = displayOriginPt_.y + SCROLL_STEP;
+            newOriginX += SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty < mission_->minY() || mpt.tx > mission_->maxX()) {
                 // We hit the corner so don't scroll
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else if (mpt.tx > mission_->maxX()) {
             // we hit the lower right border of the map
             // so we scroll up until the far right corner
-            int newWorldY = world_y_ - SCROLL_STEP;
-            newWorldX += SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newWorldY = displayOriginPt_.y - SCROLL_STEP;
+            newOriginX += SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty < mission_->minY() || mpt.tx > mission_->maxX()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else {
             // This is a regular right scroll
-            world_x_ = newWorldX;
+            displayOriginPt_.x = newOriginX;
             change = true;
         }
 
@@ -120,33 +121,33 @@ bool GameplayMenu::scrollOnX() {
         if (mpt.tx < mission_->minX()) {
             // we hit the upper left border of the map
             // so we scroll down until the far left corner
-            int newWorldY = world_y_ + SCROLL_STEP;
-            newWorldX -= SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newWorldY = displayOriginPt_.y + SCROLL_STEP;
+            newOriginX -= SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.tx < mission_->minX() || mpt.ty > mission_->maxY()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else if (mpt.ty > mission_->maxY()) {
             // we hit the lower left border of the map
             // so we scroll up until the far left corner
-            int newWorldY = world_y_ - SCROLL_STEP;
-            newWorldX -= SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newWorldY = displayOriginPt_.y - SCROLL_STEP;
+            newOriginX -= SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.tx < mission_->minX() || mpt.ty > mission_->maxY()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else {
-            world_x_ = newWorldX;
+            displayOriginPt_.x = newOriginX;
             change = true;
         }
     }
@@ -164,40 +165,40 @@ bool GameplayMenu::scrollOnX() {
 bool GameplayMenu::scrollOnY() {
     bool change = false;
 
-    int newWorldY = world_y_ + scroll_y_;
+    int newWorldY = displayOriginPt_.y + scroll_y_;
 
-    TilePoint mpt = mission_->get_map()->screenToTilePoint(world_x_, newWorldY);
+    TilePoint mpt = mission_->get_map()->screenToTilePoint(displayOriginPt_.x, newWorldY);
 
     // Scroll down
     if (scroll_y_ > 0) {
         if (mpt.tx > mission_->maxX()) {
             // we hit the lower right border of the map
             // so we scroll down until the lower corner
-            int newWorldX = world_x_ - 2*SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newOriginX = displayOriginPt_.x - 2*SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty > mission_->maxY() || mpt.tx > mission_->maxX()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else if (mpt.ty > mission_->maxY()) {
             // we hit the lower left border of the map
             // so we scroll down until the lower corner
-            int newWorldX = world_x_ + 2*SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newOriginX = displayOriginPt_.x + 2*SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty > mission_->maxY() || mpt.tx > mission_->maxX()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else {
-            world_y_ = newWorldY;
+            displayOriginPt_.y = newWorldY;
             change = true;
         }
 
@@ -205,31 +206,31 @@ bool GameplayMenu::scrollOnY() {
         if (mpt.tx < mission_->minX()) {
             // we hit the upper right border of the map
             // so we scroll up until the upper corner
-            int newWorldX = world_x_ + 2*SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newOriginX = displayOriginPt_.x + 2*SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty < mission_->minY() || mpt.tx < mission_->minX()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else if (mpt.ty < mission_->minY()) {
             // we hit the upper left border of the map
             // so we scroll up until the upper corner
-            int newWorldX = world_x_ - 2*SCROLL_STEP;
-            mpt = mission_->get_map()->screenToTilePoint(newWorldX, newWorldY);
+            int newOriginX = displayOriginPt_.x - 2*SCROLL_STEP;
+            mpt = mission_->get_map()->screenToTilePoint(newOriginX, newWorldY);
 
             if (mpt.ty < mission_->minY() || mpt.tx < mission_->minX()) {
                 return false;
             } else {
-                world_x_ = newWorldX;
-                world_y_ = newWorldY;
+                displayOriginPt_.x = newOriginX;
+                displayOriginPt_.y = newWorldY;
                 change = true;
             }
         } else {
-            world_y_ = newWorldY;
+            displayOriginPt_.y = newWorldY;
             change = true;
         }
     }
@@ -275,8 +276,8 @@ void GameplayMenu::initWorldCoords()
     ScreenPoint msp;
     mission_->get_map()->tileToScreenPoint(mpt.tx, mpt.ty,
         mission_->mmax_z_ + 1, 0, 0, &msp);
-    world_x_ = msp.x;
-    world_y_ = msp.y;
+    displayOriginPt_.x = msp.x;
+    displayOriginPt_.y = msp.y;
 }
 
 /*!
@@ -399,7 +400,7 @@ void GameplayMenu::handleTick(int elapsed)
 void GameplayMenu::handleRender(DirtyList &dirtyList)
 {
     g_Screen.clear(0);
-    map_renderer_.render(world_x_, world_y_, &selection_);
+    map_renderer_.render(displayOriginPt_.x, displayOriginPt_.y, &selection_);
     g_Screen.drawRect(0,0, 129, GAME_SCREEN_HEIGHT);
     agt_sel_renderer_.render(selection_, mission_->getSquad());
     drawSelectAllButton();
@@ -481,8 +482,8 @@ void GameplayMenu::handleLeave()
     last_motion_y_ = 240;
     mission_hint_ticks_ = 0;
     mission_hint_ = 0;
-    world_x_ = 0;
-    world_y_ = 0;
+    displayOriginPt_.x = 0;
+    displayOriginPt_.y = 0;
     target_ = NULL;
     mission_ = NULL;
     scroll_x_ = 0;
@@ -550,8 +551,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y - (1 + p->tileZ()) * TILE_HEIGHT/3
                     - (p->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
-                    x - 129 + world_x_ < px + 21 && y + world_y_ < py + 34)
+                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - 129 + displayOriginPt_.x < px + 21 && y + displayOriginPt_.y < py + 34)
                 {
                     // mouse pointer is on the object, so it's the new target
                     target_ = p;
@@ -569,8 +570,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int px = scPt.x - 20;
                 int py = scPt.y - 10 - v->tileZ() * TILE_HEIGHT/3;
 
-                if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
-                    x - 129 + world_x_ < px + 40 && y + world_y_ < py + 32)
+                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - 129 + displayOriginPt_.x < px + 40 && y + displayOriginPt_.y < py + 32)
                 {
                     target_ = v;
                     inrange = selection_.isTargetInRange(mission_, target_);
@@ -589,8 +590,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y + 4 - w->tileZ() * TILE_HEIGHT/3
                     - (w->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
-                    x - 129 + world_x_ < px + 20 && y + world_y_ < py + 15)
+                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - 129 + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
                 {
                     target_ = w;
                     break;
@@ -609,8 +610,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y + 4 - s->tileZ() * TILE_HEIGHT/3
                     - (s->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + world_x_ >= px && y + world_y_ >= py &&
-                    x - 129 + world_x_ < px + 20 && y + world_y_ < py + 15)
+                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - 129 + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
                 {
                     target_ = s;
                     break;
@@ -765,8 +766,8 @@ void GameplayMenu::updateIPALevelMeters(int elapsed)
 }
 
 void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys) {
-    TilePoint mapPt = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
-                    world_y_ + y);
+    TilePoint mapPt = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - 129,
+                    displayOriginPt_.y + y);
 #ifdef _DEBUG
     if ((modKeys & KMD_ALT) != 0) {
         printf("Tile x:%d, y:%d, z:%d, ox:%d, oy:%d\n",
@@ -850,8 +851,8 @@ bool GameplayMenu::getAimedAt(int x, int y, WorldPoint *pLocWToSet) {
         locationSet = true;
     } else {
         // Player is shooting on the ground
-        TilePoint mapLocT = mission_->get_map()->screenToTilePoint(world_x_ + x - 129,
-                    world_y_ + y);
+        TilePoint mapLocT = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - 129,
+                    displayOriginPt_.y + y);
         mapLocT.tz = 0;
         if (mission_->getShootableTile(&mapLocT)) {
             locationSet = true;
