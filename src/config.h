@@ -36,4 +36,17 @@
 // Define this to display frame rate during gameplay
 //define TRACK_FPS  1
 
+// Set this to enable speed measurement of code execution
+// 0 > disable
+// 1 > map renderer
+#define EXEC_SPEED_TIME 0
+
+#if EXEC_SPEED_TIME == 1
+#define DEBUG_SPEED_INIT int start_mesure_ticks = SDL_GetTicks();
+#define DEBUG_SPEED_LOG(module) printf("%s - speed : %i\n", module, SDL_GetTicks() - start_mesure_ticks);
+#else
+#define DEBUG_SPEED_INIT
+#define DEBUG_SPEED_LOG(module)
+#endif
+
 #endif

@@ -170,6 +170,14 @@ inline void boxify(int &left, int &width, int x1, int x2)
     left = (x1 < x2) ? x1 : x2;
 }
 
+/*!
+ * A structure to store a point defined with 2 coordinates.
+ */
+struct Point2D {
+    int x;
+    int y;
+};
+
 #define IS_FLAG_SET(field, flags) (field & flags) != 0
 #define SET_FLAG(field, flags) field |= flags
 

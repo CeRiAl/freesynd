@@ -116,13 +116,27 @@ void Map::adjXYZ(int &x, int &y, int &z) {
         y = maxY() - 1;
 }
 
+void Map::clip(Point2D *pPoint) {
+    if (pPoint->x < 0) {
+        pPoint->x = 0;
+    } else if (pPoint->x >= maxX()) {
+        pPoint->x = maxX();
+    }
+
+    if (pPoint->y < 0) {
+        pPoint->y = 0;
+    } else if (pPoint->y >= maxY()) {
+        pPoint->y = maxY();
+    }
+}
+
 float scalexPx = 256.0f;
 float scalexPy = 256.0f;
 float scaleyPx = 256.0f;
 float scaleyPy = 256.0f;
 
 
-void Map::tileToScreenPoint(int x, int y, int z, int pX, int pY, ScreenPoint *pScp)
+void Map::tileToScreenPoint(int x, int y, int z, int pX, int pY, Point2D *pScp)
 {
     float fx = x + pX / scalexPx;
     float fy = y + pY / scalexPy;
@@ -133,7 +147,7 @@ void Map::tileToScreenPoint(int x, int y, int z, int pX, int pY, ScreenPoint *pS
     pScp->y = (int) ((max_z_ + 1) * TILE_HEIGHT / 3 + (fx + fy) * TILE_HEIGHT / 3);
 }
 
-void Map::tileToScreenPoint(const TilePoint &tPt, ScreenPoint *pScp) {
+void Map::tileToScreenPoint(const TilePoint &tPt, Point2D *pScp) {
     tileToScreenPoint(tPt.tx, tPt.ty, tPt.tz, tPt.ox, tPt.oy, pScp);
 }
 

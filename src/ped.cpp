@@ -613,7 +613,7 @@ bool isOnScreen(int scrollX, int scrollY, int x, int y) {
             && y < scrollY + GAME_SCREEN_HEIGHT;
 }
 
-bool getOnScreen(int scrollX, int scrollY, ScreenPoint &scPt, const ScreenPoint &tScPt) {
+bool getOnScreen(int scrollX, int scrollY, Point2D &scPt, const Point2D &tScPt) {
     bool off = false;
 
     // get x, y on screen
@@ -631,14 +631,14 @@ bool getOnScreen(int scrollX, int scrollY, ScreenPoint &scPt, const ScreenPoint 
 }
 
 void PedInstance::showPath(int scrollX, int scrollY) {
-    ScreenPoint pedScPt;
+    Point2D pedScPt;
     g_App.maps().map(map())->tileToScreenPoint(pos_, &pedScPt);
     pedScPt.y = pedScPt.y - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
     for (std::list<TilePoint>::iterator it = dest_path_.begin();
             it != dest_path_.end(); ++it) {
         TilePoint & d = *it;
-        ScreenPoint pathSp;
+        Point2D pathSp;
         g_App.maps().map(map())->tileToScreenPoint(d, &pathSp);
         pathSp.y = pathSp.y - d.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 

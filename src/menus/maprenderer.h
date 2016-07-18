@@ -31,6 +31,9 @@
 #include <vector>
 #include <set>
 
+#include "common.h"
+#include "model/position.h"
+
 class Mission;
 class Map;
 class MapObject;
@@ -43,22 +46,24 @@ class SquadSelection;
 
 class MapRenderer {
 public:
-    void init(Mission *pMission);
+    void init(Mission *pMission, SquadSelection *pSelection);
 
-    void render(int worldX, int worldY, SquadSelection *pSelection);
+    void render(const Point2D &worldPos);
 
 private:
-    static int fastKey(int tx, int ty, int tz) {
-        return tx | (ty << 8) | (tz << 16);
+    static int fastKey(const TilePoint & tilePos) {
+        return tilePos.tx | (tilePos.ty << 8) | (tilePos.tz << 16);
     }
 
     static int fastKey(MapObject * m);
 
-    void createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley);
-    void drawAt(int tilex, int tiley, int tilez, int x, int y);
+    void createFastKeys(const Point2D &startPos, const Point2D &endPos);
+    int drawObjectsOnTile(const TilePoint & tilePos, const Point2D &screenPos);
+
 private:
     Mission *pMission_;
     Map *pMap_;
+    SquadSelection *pSelection_;
 
     std::vector<Vehicle *> cache_vehicles_;
     std::vector<PedInstance *> cache_peds_;

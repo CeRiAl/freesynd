@@ -111,7 +111,7 @@ protected:
 
     /*! This is a projection in 2D of a point on a the map. This point represents the top
      * left corner of the screen and it moves inside the map's borders.*/
-    ScreenPoint displayOriginPt_;
+    Point2D displayOriginPt_;
     /*! Holds the amount of scroll on the X axis.*/
     int scroll_x_;
     /*! Holds the amount of scroll on the Y axis.*/

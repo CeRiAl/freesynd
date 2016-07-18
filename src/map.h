@@ -51,10 +51,12 @@ public:
     void mapDimensions(int *x, int *y, int *z);
     //! Clip x,y,z to map dimensions
     void adjXYZ(int &x, int &y, int &z);
+    //! Clip x and y to map dimensions.
+    void clip(Point2D *point);
 
     //! Converts a Map tile position to a screen position
-    void tileToScreenPoint(int x, int y, int z, int pX, int pY, ScreenPoint *pScp);
-    void tileToScreenPoint(const TilePoint &tPt, ScreenPoint *pScp);
+    void tileToScreenPoint(int x, int y, int z, int pX, int pY, Point2D *pScp);
+    void tileToScreenPoint(const TilePoint &tPt, Point2D *pScp);
     //! Converts a screen position in pixel into a Map tile position
     TilePoint screenToTilePoint(int x, int y);
 
