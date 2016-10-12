@@ -53,40 +53,33 @@ bool Map::loadMap(uint8 * mapData)
     LOG(Log::k_FLG_GFX, "Map", "loadMap", ("Loading Map %d.", i_id_));
     max_x_ = READ_LE_UINT32(mapData + 0);
     max_y_ = READ_LE_UINT32(mapData + 4);
-    max_z_ = READ_LE_UINT32(mapData + 8);
+    // NOTE : increased map height by 1 to enable range check on higher tiles
+    max_z_ = READ_LE_UINT32(mapData + 8) + 1;
 
     LOG(Log::k_FLG_GFX, "Map", "loadMap",
-        ("Map size in tiles: max_x = %d, max_y = %d, max_z = %d.", max_x_, max_y_, max_z_));
+        ("Map size in tiles: max_x = %d, max_y = %d, max_z = %d.", max_x_, max_y_, max_z_ - 1));
 
     uint32 *lookup = new uint32[max_x_ * max_y_];
-    // NOTE : increased map height by 1 to enable range check on higher tiles
-    a_tiles_ = new Tile*[max_x_ * max_y_ * (max_z_ + 1)];
+    a_tiles_ = new Tile*[max_x_ * max_y_ * max_z_];
 
     for (int i = 0; i < max_x_ * max_y_; i++)
         lookup[i] = READ_LE_UINT32(mapData + 12 + i * 4);
-    for (int h = 0, z_real = max_z_ + 1; h < max_y_; h++)
-        for (int w = 0; w < max_x_; w++) {
-            int idx = h * max_x_ + w;
 
-            for (int z = 0; z < max_z_; z++) {
-                uint8 tileNum = *(mapData + 12 + lookup[idx] + z);
-                a_tiles_[idx * z_real + z] = tile_manager_->getTile(tileNum);
-
+    for (int z = max_z_ - 1; z >= 0; z--) {
+        for (int y = max_y_ - 1; y >= 0; y--) {
+            for (int x = max_x_ - 1; x >= 0; x--) {
+                int idx = y * max_x_ + x;
+                if (z == max_z_ - 1) {
+                    a_tiles_[idx * max_z_ + z] = tile_manager_->getTile(0);
+                } else {
+                    uint8 tileNum = *(mapData + 12 + lookup[idx] + z);
+                    a_tiles_[idx * max_z_ + z] = tile_manager_->getTile(tileNum);
+                }
             }
-        }
-    delete[] lookup;
-
-    max_z_++;
-    for (int h = 0, z = max_z_ - 1; h < max_y_; h++) {
-        for (int w = 0; w < max_x_; w++) {
-            a_tiles_[(h * max_x_ + w) * max_z_ + z] = tile_manager_->getTile(0);
         }
     }
 
-    map_width_ = (max_x_ + max_y_) * (TILE_WIDTH / 2);
-    map_height_ = (max_x_ + max_y_ + max_z_) * TILE_HEIGHT / 3;
-    LOG(Log::k_FLG_GFX, "Map", "loadMap",
-        ("Map size in pixels: width = %d, height = %d.", map_width_, map_height_));
+    delete[] lookup;
 
     LOG(Log::k_FLG_GFX, "Map", "loadMap", ("Loading finished"));
 
@@ -128,6 +121,36 @@ void Map::clip(Point2D *pPoint) {
     } else if (pPoint->y >= maxY()) {
         pPoint->y = maxY();
     }
+}
+
+/*!
+ * Clip x,y,z to map dimensions.
+ * \return true if tile has been clipped
+ */
+bool Map::clip(TilePoint *pTile) {
+    int tx = pTile->tx;
+    int ty = pTile->ty;
+    int tz = pTile->tz;
+
+    if (pTile->tx < 0) {
+        pTile->tx = 0;
+    } else if (pTile->tx > maxX()) {
+        pTile->tx = maxX();
+    }
+
+    if (pTile->ty < 0) {
+        pTile->ty = 0;
+    } else if (pTile->ty > maxY()) {
+        pTile->ty = maxY();
+    }
+
+    if (pTile->tz < 0) {
+        pTile->tz = 0;
+    } else if (pTile->tz > maxZ()) {
+        pTile->tz = maxZ();
+    }
+
+    return tx != pTile->tx || ty != pTile->ty || tz != pTile->tz;
 }
 
 float scalexPx = 256.0f;
@@ -181,6 +204,29 @@ TilePoint Map::screenToTilePoint(int x, int y)
     mtp.oy = (int) ((f_ty - mtp.ty) * 256.0f);
 
     return mtp;
+}
+
+void Map::tileToViewportCoords(const TilePoint &tilePt, Point2D *pViewportPt) {
+    pViewportPt->x = (max_y_ + tilePt.tx - tilePt.ty) * TILE_WIDTH / 2;
+    pViewportPt->y = (tilePt.tx + tilePt.ty - tilePt.tz) * TILE_HEIGHT / 3;
+
+    //Add offsets
+    pViewportPt->x += ((tilePt.ox - tilePt.oy) * (TILE_WIDTH / 2)) / 256;
+    pViewportPt->y += ((tilePt.ox + tilePt.oy) * (TILE_HEIGHT / 3)) / 256;
+    pViewportPt->y -= (tilePt.oz * (TILE_HEIGHT / 3)) / 128;
+}
+
+void Map::viewportToTileCoordsWithAltitudeZero(const Point2D &pViewportPt, TilePoint *pTilePt) {
+    float fx = ((pViewportPt.x - max_y_* Tile::kHalfTileWidth_f) / Tile::kHalfTileWidth_f +
+                    pViewportPt.y / Tile::kThirdTileHeight_f) / 2.0f;
+    float fy = (float) pViewportPt.y / Tile::kThirdTileHeight_f - fx;
+
+    pTilePt->tx = (int) fx;
+    pTilePt->ox = (int) ((fx - pTilePt->tx) * 256.0f);
+    pTilePt->ty = (int) fy;
+    pTilePt->oy = (int) ((fy - pTilePt->ty) * 256.0f);
+    pTilePt->tz = 0;
+    pTilePt->oz = 0;
 }
 
 int Map::maxZAt(int x, int y)

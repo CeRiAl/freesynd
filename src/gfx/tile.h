@@ -49,6 +49,10 @@
  */
 class Tile {
 public:
+    static const int kHalfTileWidth;
+    static const int kThirdTileHeight;
+    static const float kHalfTileWidth_f;
+    static const float kThirdTileHeight_f;
 
     /*!
      * A tile type.
@@ -77,7 +81,7 @@ public:
     Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set);
     ~Tile();
 
-    //! Returns the tile id 
+    //! Returns the tile id
     uint8 id() { return i_id_; }
     //! Returns the tile type
     EType type() { return e_type_; }

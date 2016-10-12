@@ -73,6 +73,8 @@ Mission::Mission(const LevelData::MapInfos & map_infos)
     cur_objective_ = 0;
     p_minimap_ = NULL;
     p_squad_ = new Squad();
+
+    LOG(Log::k_FLG_GAME, "Mission", "Mission()", ("Map min x : %d, min y : %d, max x : %d, max y %d", min_x_, min_y_, max_x_, max_y_));
 }
 
 Mission::~Mission()
@@ -148,16 +150,6 @@ void Mission::set_map(Map *p_map) {
         }
         p_minimap_ = new MiniMap(p_map_);
     }
-}
-
-int Mission::mapWidth()
-{
-    return p_map_->width();
-}
-
-int Mission::mapHeight()
-{
-    return p_map_->height();
 }
 
 void Mission::start()

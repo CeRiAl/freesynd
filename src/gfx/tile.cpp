@@ -29,6 +29,10 @@
 #include "tile.h"
 #include "gfx/screen.h"
 
+const int Tile::kHalfTileWidth = 32;
+const int Tile::kThirdTileHeight = 16;
+const float Tile::kHalfTileWidth_f = 32.0f;
+const float Tile::kThirdTileHeight_f = 16.0f;
 
 Tile::Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set)
 {
@@ -39,7 +43,7 @@ Tile::Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set)
     not_alpha_ = not_alpha;
 }
 
-Tile::~Tile() 
+Tile::~Tile()
 {
     delete[] a_pixels_;
 }

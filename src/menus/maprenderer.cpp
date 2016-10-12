@@ -31,8 +31,6 @@
 #include "agentmanager.h"
 #include "mapobject.h"
 #include "core/squad.h"
-#include "gfx/screen.h"
-#include "gfx/tile.h"
 #include "system.h"
 #include "menus/squadselection.h"
 
@@ -43,105 +41,264 @@ void MapRenderer::init(Mission *pMission, SquadSelection *pSelection) {
 }
 
 /**
- * Draw tiles and map objects.
+ *
+ * \param viewPortPt const Point2D&
+ * \param viewPortTile const TilePoint&
+ * \param pFirstTile TilePoint*
+ * \param pFirstTilePos Point2D*
+ * \return bool
+ *
  */
-void MapRenderer::render(const Point2D &worldPos) {
-    // TODO: after a lot of attempts to fix this, map drawing remains buggy
-    TilePoint worldTilePos = pMap_->screenToTilePoint(worldPos.x, worldPos.y);
+bool MapRenderer::initRenderParams(const Point2D &viewPortPt, TilePoint *pFirstTile, Point2D *pFirstTilePos) {
+    TilePoint viewPortTile;
+    pMap_->viewportToTileCoordsWithAltitudeZero(viewPortPt, &viewPortTile);
+    TilePoint vpTile0 (viewPortTile);
+    vpTile0.ox = 0;
+    vpTile0.oy = 0;
+    vpTile0.oz = 0;
 
-    int boardSize = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
-        + g_Screen.gameScreenHeight() / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;
-    //int chk = 1;
+    Point2D viewportOriPt;
+    pMap_->tileToViewportCoords(vpTile0, &viewportOriPt);
 
-    Point2D enclosingStartPos = {worldTilePos.tx, worldTilePos.ty - 8};
-    pMap_->clip(&enclosingStartPos);
+    Point2D screenPos = {
+        Screen::kScreenPanelWidth - (viewPortPt.x - viewportOriPt.x + Tile::kHalfTileWidth),
+        - viewPortPt.y + viewportOriPt.y};
 
-    Point2D enclosingEndPos = {enclosingStartPos.x + boardSize, enclosingStartPos.y + boardSize};
-    pMap_->clip(&enclosingEndPos);
+    bool nextLineLeft = false;
 
+    if (viewPortPt.x < viewportOriPt.x) {
+        if (viewPortPt.y < viewportOriPt.y + Tile::kThirdTileHeight) {
+            pFirstTile->tx = viewPortTile.tx - 1;
+            pFirstTile->ty = viewPortTile.ty;
+            pFirstTilePos->x = screenPos.x - Tile::kHalfTileWidth;
+            pFirstTilePos->y = screenPos.y - Tile::kThirdTileHeight;
+            nextLineLeft = false;
+
+        } else {
+            pFirstTile->tx = viewPortTile.tx;
+            pFirstTile->ty = viewPortTile.ty;
+            pFirstTilePos->x = screenPos.x;
+            pFirstTilePos->y = screenPos.y;
+            nextLineLeft = true;
+        }
+    } else {
+        if (viewPortPt.y < viewportOriPt.y + Tile::kThirdTileHeight) {
+            pFirstTile->tx = viewPortTile.tx - 1;
+            pFirstTile->ty = viewPortTile.ty;
+            pFirstTilePos->x = screenPos.x - Tile::kHalfTileWidth;
+            pFirstTilePos->y = screenPos.y - Tile::kThirdTileHeight;
+            nextLineLeft = true;
+        } else {
+            pFirstTile->tx = viewPortTile.tx;
+            pFirstTile->ty = viewPortTile.ty;
+            pFirstTilePos->x = screenPos.x;
+            pFirstTilePos->y = screenPos.y;
+            nextLineLeft = false;
+        }
+    }
+
+    return nextLineLeft;
+}
+
+/**
+ * Rendering is made
+ * \param viewPortPt const Point2D&
+ * \return void
+ *
+ */
+void MapRenderer::render(const Point2D &viewPortPt) {
     DEBUG_SPEED_INIT
 
-    createFastKeys(enclosingStartPos, enclosingEndPos);
-    int cmw = worldPos.x + g_Screen.gameScreenWidth() -
-                g_Screen.gameScreenLeftMargin() + 128;
-    int cmh = worldPos.y + g_Screen.gameScreenHeight() + 128;
-    int cmx = worldPos.x - g_Screen.gameScreenLeftMargin();
-     //  z = 0 - is minimap data and mapdata
-    int zr = enclosingEndPos.y + pMap_->maxZ() + 1;
+    TilePoint tileToDraw;
+    // when drawing a line of tiles, position of the tile to draw is computed
+    // based on the first tile of the line
+    TilePoint firstTileOnLine;
+    Point2D firstTileOnLinePos;
+    // true means the first tile of the next line to draw is starting from the left of
+    // current first tile. False means the right
+    bool incrLeftOrRight = initRenderParams(viewPortPt, &firstTileOnLine, &firstTileOnLinePos);
 
-    int nbobject = 0;
+    listObjectsToDraw(viewPortPt);
 
-    for (int inc = 0; inc < zr; ++inc) {
-        int ye = enclosingStartPos.y + inc;
-        int ys = ye - pMap_->maxZ() - 2;
-        int tile_z = pMap_->maxZ() + 1;  // the Z coord of the next tile to draw
-        for (int yb = ys; yb < ye; ++yb) {
-            if (yb < 0 || yb < enclosingStartPos.y || yb >= enclosingEndPos.y) {
-                --tile_z;
-                continue;
-            }
-            int tile_y = yb;  // The Y coord of the tile to draw
-            for (int tile_x = enclosingStartPos.x;
-                    tile_y >= enclosingStartPos.y && tile_x < pMap_->maxX();
-                    ++tile_x) {
-                if (tile_x < 0 || tile_y >= pMap_->maxY()) {
-                    --tile_y;
-                    continue;
-                }
+    for (int j=0; j<35; j++) {
+        for(int i=0; i<10; i++) {
+            tileToDraw.tx = firstTileOnLine.tx + i;
+            tileToDraw.ty = firstTileOnLine.ty - i;
+            tileToDraw.tz = 0;
 
-                int screen_w = (pMap_->maxX() + (tile_x - tile_y)) * (TILE_WIDTH / 2);
-                // int screen_h = (max_z_ + w + h) * (TILE_HEIGHT / 3);
-                int coord_h = ((pMap_->maxZ() + tile_x + tile_y) - (tile_z - 1)) * (TILE_HEIGHT / 3);
-                if (screen_w >= worldPos.x - TILE_WIDTH * 2
-                    && screen_w + TILE_WIDTH * 2 < cmw
-                    && coord_h >= worldPos.y - TILE_HEIGHT * 2
-                    && coord_h + TILE_HEIGHT * 2 < cmh) {
-#if 0
-                    if (z > 2)
-                        continue;
-#endif
-                    // draw a tile
-                    if (tile_z < pMap_->maxZ()) {
-                        Tile *p_tile = pMap_->getTileAt(tile_x, tile_y, tile_z);
-                        if (p_tile->notTransparent()) {
-                            int dx = 0, dy = 0;
-                            if (screen_w - worldPos.x < 0)
-                                dx = -(screen_w - worldPos.x);
-                            if (coord_h - worldPos.y < 0)
-                                dy = -(coord_h - worldPos.y);
-                            if (dx < TILE_WIDTH && dy < TILE_HEIGHT) {
-                                p_tile->drawToScreen(screen_w - cmx, coord_h - worldPos.y);
-                            }
+            // as we draw a fixed number of lines of tiles, some tiles might fall out of the map
+            // so check before drawing them.
+            if (!pMap_->clip(&tileToDraw)) {
+                for (tileToDraw.tz = 0; tileToDraw.tz < pMap_->maxZ(); tileToDraw.tz++) {
+                    Point2D tileToDrawScreenPos = {
+                                firstTileOnLinePos.x + i * TILE_WIDTH,
+                                firstTileOnLinePos.y - tileToDraw.tz * Tile::kThirdTileHeight };
+
+                    if (isTileVisibleOnScreen(tileToDrawScreenPos)) {
+                        Tile *pTile = pMap_->getTileAt(tileToDraw.tx, tileToDraw.ty, tileToDraw.tz);
+
+                        if (pTile->notTransparent()) {
+                            pTile->drawToScreen(tileToDrawScreenPos.x, tileToDrawScreenPos.y);
                         }
-                    }
 
-                    // draw everything that's on the tile
-                    if (tile_z - 1 >= 0) {
-                        TilePoint currentTile(tile_x, tile_y, tile_z - 1);
-
-                        Point2D screenPos = {
-                            screen_w - cmx + TILE_WIDTH / 2,
-                            coord_h - worldPos.y + TILE_HEIGHT / 3 * 2};
-
-                        nbobject += drawObjectsOnTile(currentTile, screenPos);
+                        drawObjectsOnTile2(tileToDraw, tileToDrawScreenPos);
                     }
                 }
-                --tile_y;
             }
-            --tile_z;
         }
+
+        if (incrLeftOrRight) { // left
+            firstTileOnLine.ty++;
+            firstTileOnLinePos.x -= Tile::kHalfTileWidth;
+        } else { // right
+            firstTileOnLine.tx++;
+            firstTileOnLinePos.x += Tile::kHalfTileWidth;
+        }
+        firstTileOnLinePos.y += Tile::kThirdTileHeight;
+        incrLeftOrRight = !incrLeftOrRight;
     }
 
-#ifdef _DEBUG
-    if (g_System.getKeyModState() & KMD_LALT) {
-        for (SquadSelection::Iterator it = pSelection_->begin();
-            it != pSelection_->end(); ++it) {
-            (*it)->showPath(worldPos.x, worldPos.y);
-        }
-    }
-#endif
+    freeUnreleasedResources();
+
+    /*if (debugScreenPos.x != 0) {
+        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y, 11);
+        g_Screen.drawLine(debugScreenPos.x + TILE_WIDTH, debugScreenPos.y, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y + TILE_HEIGHT, 11);
+        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y, debugScreenPos.x, debugScreenPos.y + TILE_HEIGHT, 11);
+        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y + TILE_HEIGHT, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y + TILE_HEIGHT, 11);
+    }*/
 
     DEBUG_SPEED_LOG("MapRenderer::render")
+
+/*    TilePoint vpTilePos;
+    pMap_->viewportToTileCoordsWithAltitudeZero(viewPortPt, &vpTilePos);
+    vpTilePos.ox = 0;
+    vpTilePos.oy = 0;
+    vpTilePos.oz = 0;
+
+    Point2D screenOffset;
+    pMap_->tileToViewportCoords(vpTilePos, &screenOffset);
+
+    // The values used to calculate the borders have been found by testing
+    // different values
+    TilePoint enclosingStartTile(vpTilePos.tx, vpTilePos.ty - 8, 0, 0, 0, 0);
+    pMap_->clip(&enclosingStartTile);
+
+    TilePoint enclosingEndTile(enclosingStartTile.tx + 25, enclosingStartTile.ty + 26, 0, 0, 0, 0);
+    pMap_->clip(&enclosingEndTile);
+
+    // this point is used to compute the tile positions for drawing them
+    Point2D enclosingViewport;
+    pMap_->tileToViewportCoords(enclosingStartTile, &enclosingViewport);
+
+    //DEBUG_SPEED_INIT
+
+    listObjectsToDraw(enclosingStartTile, enclosingEndTile);
+    TilePoint currentTile(0, 0, 0, 0, 0, 0);
+
+    for (currentTile.ty = enclosingStartTile.ty; currentTile.ty <= enclosingEndTile.ty; ++currentTile.ty) {
+        for (currentTile.tx = enclosingStartTile.tx; currentTile.tx <= enclosingEndTile.tx; ++currentTile.tx) {
+            for (currentTile.tz = 0; currentTile.tz < pMap_->maxZ(); currentTile.tz++) {
+
+                Point2D currentTileViewport = {
+                        enclosingViewport.x + (currentTile.tx - enclosingStartTile.tx) * (TILE_WIDTH / 2) - (currentTile.ty - enclosingStartTile.ty) * (TILE_WIDTH / 2),
+                        enclosingViewport.y + (currentTile.tx - enclosingStartTile.tx) * (TILE_HEIGHT / 3) + (currentTile.ty - enclosingStartTile.ty) * (TILE_HEIGHT / 3) - currentTile.tz * (TILE_HEIGHT / 3)};
+
+                Point2D screenPos = {
+                        Screen::kScreenPanelWidth + currentTileViewport.x - viewPortPt.x,
+                        currentTileViewport.y - viewPortPt.y
+                };
+
+                if (isTileVisibleOnScreen(screenPos)) {
+                    Tile *pTile = pMap_->getTileAt(currentTile.tx, currentTile.ty, currentTile.tz);
+
+                    if (currentTile.tx == 100 && currentTile.ty == 10 && currentTile.tz == 2) {
+                        if (pTile->notTransparent()) {
+                            pTile->drawToScreen(screenPos.x, screenPos.y);
+                        }
+                        g_Screen.drawLine(screenPos.x, screenPos.y, screenPos.x + TILE_WIDTH, screenPos.y, 11);
+                        g_Screen.drawLine(screenPos.x + TILE_WIDTH, screenPos.y, screenPos.x + TILE_WIDTH, screenPos.y + TILE_HEIGHT, 11);
+                        g_Screen.drawLine(screenPos.x, screenPos.y, screenPos.x, screenPos.y + TILE_HEIGHT, 11);
+                        g_Screen.drawLine(screenPos.x, screenPos.y + TILE_HEIGHT, screenPos.x + TILE_WIDTH, screenPos.y + TILE_HEIGHT, 11);
+                    }
+
+                    drawObjectsOnTile2(currentTile, screenPos);
+                  if (currentTile.tz - 1 >= 0) {
+                            Point2D screenPos = {
+                                screen_w - cmx + TILE_WIDTH / 2,
+                                coord_h - worldPos.y + TILE_HEIGHT / 3 * 2};
+
+                            nbobject += drawObjectsOnTile(currentTile, screenPos);
+                    }
+                }
+            } // fin for tileZ
+        } // Fin for tileX
+    } // Fin for tileY
+
+    //DEBUG_SPEED_LOG("MapRenderer::render")*/
+}
+
+void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
+    // Include peds
+    for (size_t i = 0; i < pMission_->numPeds(); i++) {
+        PedInstance *pPed = pMission_->ped(i);
+        if (pPed->map() != -1) {
+            if (isObjectInsideDrawingArea(pPed, viewport)) {
+                addObjectToDraw(pPed);
+            }
+        }
+    }
+}
+
+bool MapRenderer::isObjectInsideDrawingArea(MapObject *pObject, const Point2D &viewport) {
+    Point2D objectViewport;
+    pMission_->get_map()->tileToViewportCoords(pObject->position(), &objectViewport);
+
+    return objectViewport.x > viewport.x && objectViewport.y > viewport.y &&
+            objectViewport.x <= (viewport.x + Screen::kScreenWidth - Screen::kScreenPanelWidth) &&
+            objectViewport.y <= (viewport.y + Screen::kScreenHeight);
+}
+
+/**
+ * Add the given object to the list of objects that need to be drawn.
+ * Objects are put in a list associated with the tile they're on.
+ * They are put in order from farthest to closest so they can be drawn in that order.
+ * \param pObjectToAdd MapObject*
+ * \return void
+ *
+ */
+void MapRenderer::addObjectToDraw(MapObject *pObjectToAdd) {
+    int tileKey = fastKey(pObjectToAdd);
+    ObjectToDraw *pNewEntry = pool_.getResource();
+    pNewEntry->setObject(pObjectToAdd);
+
+    std::map<int, ObjectToDraw *>::iterator element = objectsByTile_.find(tileKey);
+    if(element == objectsByTile_.end()) {
+        // no element has been set with the tile so add the first element
+        objectsByTile_[tileKey] = pNewEntry;
+    } else {
+        // there is at leastone element already set with the tile
+        ObjectToDraw *pObjectInList = element->second;
+        if (pObjectToAdd->isBehindObjectOnSameTile(pObjectInList->getObject())) {
+            // first case is when the new object should be first in the list
+            pNewEntry->setNext(pObjectInList);
+            objectsByTile_[tileKey] = pNewEntry;
+        } else {
+            // second case is when new object is somewhere in the list
+            while (pObjectInList != NULL) {
+                if (pObjectInList->getNext() != NULL) {
+                    if (pObjectToAdd->isBehindObjectOnSameTile(pObjectInList->getNext()->getObject())) {
+                        pObjectInList->insertNext(pNewEntry);
+                        break;
+                    } else {
+                        pObjectInList = pObjectInList->getNext();
+                    }
+                } else {
+                    pObjectInList->setNext(pNewEntry);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 int MapRenderer::fastKey(MapObject * m) {
@@ -251,6 +408,52 @@ void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos)
             nbobject++;
         }
     }
+}
+
+/*!
+ * Draw on screen all objects that have their position on the given tile.
+ * \param tilePos const TilePoint& Tile's position
+ * \param screenPos const Point2D& Screen position to draw the objects
+ * \return int
+ *
+ */
+int MapRenderer::drawObjectsOnTile2(const TilePoint & tilePos, const Point2D &screenPos) {
+    int tileKey = fastKey(tilePos);
+    int nbDrawnObjects = 0;
+
+    std::map<int, ObjectToDraw *>::iterator it = objectsByTile_.find(tileKey);
+    if(it != objectsByTile_.end()) {
+        ObjectToDraw *pObj = it->second;
+        objectsByTile_.erase(it);
+        while(pObj != NULL) {
+            pObj->getObject()->draw(screenPos.x + TILE_WIDTH / 2, screenPos.y + TILE_HEIGHT / 3);
+            ObjectToDraw *pNext = pObj->getNext();
+            pool_.releaseResource(pObj);
+            pObj = pNext;
+            nbDrawnObjects++;
+        }
+    }
+
+    return nbDrawnObjects;
+}
+
+void MapRenderer::freeUnreleasedResources() {
+    int nbFreed = 0;
+    std::map<int, ObjectToDraw *>::iterator itr = objectsByTile_.begin();
+    while (itr != objectsByTile_.end()) {
+        std::map<int, ObjectToDraw *>::iterator toErase = itr;
+        ++itr;
+        ObjectToDraw *pObj = toErase->second;
+        while(pObj != NULL) {
+            ObjectToDraw *pNext = pObj->getNext();
+            pool_.releaseResource(pObj);
+            nbFreed++;
+            pObj = pNext;
+        }
+        objectsByTile_.erase(toErase);
+    }
+
+    //printf("Nb ressources liberees : %d\n", nbFreed);
 }
 
 /*!

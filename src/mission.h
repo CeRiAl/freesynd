@@ -174,13 +174,16 @@ public:
     int map() { return i_map_id_; }
     uint16 mapId() { return i_map_id_; }
 
-    int mapWidth();
-    int mapHeight();
-
-    int minX() { return min_x_; }
-    int minY() { return min_y_; }
-    int maxX() { return max_x_; }
-    int maxY() { return max_y_; }
+    /*!
+     * Returns the minimum X on which the top left corner of the screen can scroll.
+     */
+    int scrollMinX() { return min_x_; }
+    int scrollMinY() { return min_y_; }
+    /*!
+     * Returns the maximum X on which the top left corner of the screen can scroll.
+     */
+    int scrollMaxX() { return max_x_; }
+    int scrollMaxY() { return max_y_; }
 
     //*************************************
     // Map objects
@@ -346,6 +349,11 @@ protected:
      */
     Status status_;
 
+    /*!
+     * Each map has a min and max value for the world origin coords and this
+     * method moves that point between those limits. If scrolling hits the
+     * map border, the scrolling is made along that border.
+     */
     int min_x_, min_y_, max_x_, max_y_;
     /*!
      * The id of the map for that mission.

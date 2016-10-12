@@ -66,15 +66,23 @@ protected:
     //! Handles the user's click on the minimap
     void handleClickOnMinimap(int x, int y);
 
+    //! Converts a point on the screen to a tilepoint
+    void convertScreenToTilePoint(int x, int y, TilePoint *pTilePt);
+
+    bool isMouseOnObject(const Point2D &mousePosInViewport, const Point2D &objectPosInViewport, int offsetLeft, int offsetTop, int width, int height);
+
     void drawSelectAllButton();
     void drawMissionHint(int elapsed);
     void drawWeaponSelectors();
     //! Scroll the map horizontally.
-    bool scrollOnX();
+    bool scrollRight(const TilePoint &vpTile);
+    bool scrollLeft(const TilePoint &vpTile);
+    bool scrollUp(const TilePoint &vpTile);
+    bool scrollDown(const TilePoint &vpTile);
     //! Scroll the map vertically.
     bool scrollOnY();
     //void improveScroll(int &newScrollX, int &newScrollY);
-    void initWorldCoords();
+    void centerViewPortOnLeader();
     //! Selects/deselects an agent
     void selectAgent(size_t agentNo, bool addToGroup);
     //! Selects/deselects all agents
@@ -99,9 +107,9 @@ protected:
     void updateIPALevelMeters(int elapsed);
 
 protected:
-    /*! Origin of the minimap on the screen.*/
+    /*! Where to draw the minimap on the screen.*/
     static const int kMiniMapScreenX;
-    /*! Origin of the minimap on the screen.*/
+    /*! Where to draw the minimap on the screen.*/
     static const int kMiniMapScreenY;
 
     int tick_count_, last_animate_tick_;
@@ -109,9 +117,9 @@ protected:
     int mission_hint_ticks_, mission_hint_;
     Mission *mission_;
 
-    /*! This is a projection in 2D of a point on a the map. This point represents the top
-     * left corner of the screen and it moves inside the map's borders.*/
-    Point2D displayOriginPt_;
+    /*! The viewport is the projection in 2D of the map. This point represents the top
+     * left corner of the viewport and it moves inside the map's borders.*/
+    Point2D viewPortOrigin_;
     /*! Holds the amount of scroll on the X axis.*/
     int scroll_x_;
     /*! Holds the amount of scroll on the Y axis.*/

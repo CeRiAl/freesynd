@@ -34,7 +34,6 @@ class Tile;
 class TileManager;
 class MapObject;
 
-
 /*!
  * Map class.
  */
@@ -46,19 +45,24 @@ public:
     bool loadMap(uint8 *mapData);
 
     uint16 id() { return i_id_; }
-    int width() { return map_width_; }
-    int height() { return map_height_; }
+
     void mapDimensions(int *x, int *y, int *z);
     //! Clip x,y,z to map dimensions
     void adjXYZ(int &x, int &y, int &z);
     //! Clip x and y to map dimensions.
     void clip(Point2D *point);
+    //! Clip x,y,z to map dimensions
+    bool clip(TilePoint *pTile);
 
     //! Converts a Map tile position to a screen position
     void tileToScreenPoint(int x, int y, int z, int pX, int pY, Point2D *pScp);
     void tileToScreenPoint(const TilePoint &tPt, Point2D *pScp);
     //! Converts a screen position in pixel into a Map tile position
     TilePoint screenToTilePoint(int x, int y);
+    //! converts a Tilepoint into a point in viewport coordinates
+    void tileToViewportCoords(const TilePoint &tPt, Point2D *pViewportPt);
+    //! The result point is a tile with z = 0
+    void viewportToTileCoordsWithAltitudeZero(const Point2D &pViewportPt, TilePoint *pTilePt);
 
     int maxX() { return max_x_; }
     int maxY() { return max_y_; }
@@ -78,7 +82,6 @@ protected:
     int max_x_, max_y_, max_z_;
     Tile **a_tiles_;
     TileManager *tile_manager_;
-    int map_width_, map_height_;
 };
 
 /*!

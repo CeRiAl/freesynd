@@ -207,6 +207,10 @@ public:
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
     }
 
+    bool isBehindObjectOnSameTile(MapObject *pOther) {
+        return pos_.ox < pOther->position().ox;
+    }
+
     virtual bool animate(int elapsed);
 
     void setFramesPerSec(int framesPerSec)
