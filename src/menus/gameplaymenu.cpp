@@ -215,7 +215,8 @@ void GameplayMenu::handleShow() {
     menu_manager_->setPaletteForMission(g_Session.getSelectedBlock().mis_id);
     g_Screen.clear(0);
 
-    updtAgentsMarker();
+    highlightLeaderMarker();
+    updateMarkersPosition();
 
     // Init renderers
     map_renderer_.init(mission_, &selection_);
@@ -290,6 +291,8 @@ void GameplayMenu::handleTick(int elapsed)
         for (size_t i = 0; i < mission_->numPeds(); i++)
             change |= mission_->ped(i)->animate(diff, mission_);
 
+        updateMarkersPosition();
+
         for (size_t i = 0; i < mission_->numVehicles(); i++)
             change |= mission_->vehicle(i)->animate(diff);
 
@@ -325,7 +328,7 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
 {
     g_Screen.clear(0);
     map_renderer_.render(viewPortOrigin_);
-    g_Screen.drawRect(0,0, 129, GAME_SCREEN_HEIGHT);
+    g_Screen.drawRect(0,0, Screen::kScreenPanelWidth, Screen::kScreenHeight);
     agt_sel_renderer_.render(selection_, mission_->getSquad());
     drawSelectAllButton();
     drawMissionHint(0);
@@ -345,7 +348,7 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
     for (int i = 1756; i < g_App.gameSprites().spriteCount(); i++) {
         Sprite *s = g_App.gameSprites().sprite(i);
 
-        if (y + s->height() > GAME_SCREEN_HEIGHT) {
+        if (y + s->height() > Screen::kScreenHeight) {
             printf("last sprite %i\n", i - 1);
             break;
         }
@@ -523,19 +526,12 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
         for (size_t i = 0; mission_ && i < mission_->numWeapons(); ++i) {
             WeaponInstance *w = mission_->weapon(i);
 
-            if (w->map() != -1) {
-                Point2D scPt;
-                mission_->get_map()->tileToScreenPoint(w->position(), &scPt);
-                int px = scPt.x - 10;
-                int py = scPt.y + 4 - w->tileZ() * TILE_HEIGHT/3
-                    - (w->offZ() * TILE_HEIGHT/3) / 128;
+            mission_->get_map()->tileToViewportCoords(w->position(), &objPosInViewportPt);
 
-                if (x - 129 + viewPortOrigin_.x >= px && y + viewPortOrigin_.y >= py &&
-                    x - 129 + viewPortOrigin_.x < px + 20 && y + viewPortOrigin_.y < py + 15)
-                {
-                    target_ = w;
-                    break;
-                }
+            if (isMouseOnObject(mouseInViewport, objPosInViewportPt, 4, -12, 10, 5)) {
+                // mouse pointer is on the object, so it's the new target
+                target_ = w;
+                break;
             }
         }
 #if 0
@@ -1254,7 +1250,7 @@ void GameplayMenu::selectAgent(size_t agentNo, bool addToGroup) {
     if (selection_.selectAgent(agentNo, addToGroup)) {
         updateSelectAll();
         centerMinimapOnLeader();
-        updtAgentsMarker();
+        highlightLeaderMarker();
         g_App.gameSounds().play(snd::SPEECH_SELECTED);
 
         // redraw agent selectors
@@ -1283,14 +1279,35 @@ void GameplayMenu::selectAllAgents() {
  * Make the current leader marker blinks.
  * All other agents not.
  */
-void GameplayMenu::updtAgentsMarker()
+void GameplayMenu::highlightLeaderMarker()
 {
     for (size_t i = AgentManager::kSlot1; i < AgentManager::kMaxSlot; i++) {
-        // draw animation only for leader
-        mission_->sfxObjects(4 + i)->setDrawAllFrames(selection_.getLeaderSlot() == i);
+        PedInstance *pAgent = mission_->getSquad()->member(i);
+        if (pAgent == NULL || pAgent->isDead()) {
+            mission_->sfxObjects(4 + i)->setVisible(false);
+        } else {
+            // draw animation only for leader
+            mission_->sfxObjects(4 + i)->setDrawAllFrames(selection_.getLeaderSlot() == i);
+        }
     }
 }
 
+/**
+ * Updating position for visual markers for all agents.
+ * \return void
+ *
+ */
+void GameplayMenu::updateMarkersPosition() {
+    for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
+        if (mission_->sfxObjects(i + 4)->isVisible()) {
+            TilePoint agentPos = mission_->getSquad()->member(i)->position();
+            agentPos.ox -= 16;
+            agentPos.oz += 256;
+
+            mission_->sfxObjects(i + 4)->setPosition(agentPos);
+        }
+    }
+}
 /*!
  * This method checks among the squad to see if an agent died and deselects him.
  */
@@ -1310,7 +1327,7 @@ void GameplayMenu::updateSelectionForDeadAgent(PedInstance *p_ped) {
     }
 
     // anyway updates markers
-    updtAgentsMarker();
+    highlightLeaderMarker();
     updateSelectAll();
 }
 

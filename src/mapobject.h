@@ -67,6 +67,19 @@ public:
     //! Return the object's id
     uint16 id() { return id_; }
 
+    void setVisible(bool visible) {
+        isVisible_ = visible;
+        // TODO : remove when isVisible is active
+        if (!isVisible_) {
+            map_ = -1;
+        }
+    }
+
+    bool isVisible() {
+        // TODO : replace with isvisible_
+        return map_ != -1;
+    }
+
     virtual void draw(int x, int y) = 0;
     enum DamageType {
         dmg_None = 0x0000,
@@ -274,6 +287,9 @@ public:
     void offzOnStairs(uint8 twd);
 
 protected:
+    void addOffs(int &x, int &y);
+
+protected:
     //! the nature of this object
     ObjectNature nature_;
     //! Id of the object. Id is unique within a nature
@@ -286,6 +302,8 @@ protected:
     int size_x_, size_y_, size_z_;
     //! if equal -1 object is not on map and should not be drawn
     int map_;
+    //! Object should be drawn only if visible
+    bool isVisible_;
     //! animation frame changing
     int frame_;
     /*!
@@ -307,8 +325,6 @@ protected:
      */
     bool is_frame_drawn_;
     uint32 state_;
-
-    void addOffs(int &x, int &y);
 };
 
 /*!

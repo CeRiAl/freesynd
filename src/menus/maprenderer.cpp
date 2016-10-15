@@ -160,11 +160,11 @@ void MapRenderer::render(const Point2D &viewPortPt) {
 
     freeUnreleasedResources();
 
-    /*if (debugScreenPos.x != 0) {
-        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y, 11);
-        g_Screen.drawLine(debugScreenPos.x + TILE_WIDTH, debugScreenPos.y, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y + TILE_HEIGHT, 11);
-        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y, debugScreenPos.x, debugScreenPos.y + TILE_HEIGHT, 11);
-        g_Screen.drawLine(debugScreenPos.x, debugScreenPos.y + TILE_HEIGHT, debugScreenPos.x + TILE_WIDTH, debugScreenPos.y + TILE_HEIGHT, 11);
+    /*if (point != NULL) {
+        g_Screen.drawLine(point.x, point.y, point.x + 5, point.y, 11);
+        g_Screen.drawLine(point.x + 5, point.y, point.x + 5, point.y + 5, 11);
+        g_Screen.drawLine(point.x, point.y, point.x, point.y + 5, 11);
+        g_Screen.drawLine(point.x, point.y + 5, point.x + 5, point.y + 5, 11);
     }*/
 
     DEBUG_SPEED_LOG("MapRenderer::render")
@@ -241,10 +241,24 @@ void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
     // Include peds
     for (size_t i = 0; i < pMission_->numPeds(); i++) {
         PedInstance *pPed = pMission_->ped(i);
-        if (pPed->map() != -1) {
-            if (isObjectInsideDrawingArea(pPed, viewport)) {
-                addObjectToDraw(pPed);
-            }
+        if (pPed->isVisible() && isObjectInsideDrawingArea(pPed, viewport)) {
+            addObjectToDraw(pPed);
+        }
+    }
+
+    // weapons
+    for (size_t i = 0; i < pMission_->numWeapons(); i++) {
+        WeaponInstance *pWeapon = pMission_->weapon(i);
+        if (pWeapon->isVisible() && isObjectInsideDrawingArea(pWeapon, viewport)) {
+            addObjectToDraw(pWeapon);
+        }
+    }
+
+    // sfx objects
+    for (size_t i = 0; i < pMission_->numSfxObjects(); i++) {
+        SFXObject *pSfx = pMission_->sfxObjects(i);
+        if (pSfx->isVisible() && isObjectInsideDrawingArea(pSfx, viewport)) {
+            addObjectToDraw(pSfx);
         }
     }
 }

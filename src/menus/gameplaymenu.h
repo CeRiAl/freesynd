@@ -92,8 +92,10 @@ protected:
 
     //! Deselect agent if he died
     void updateSelectionForDeadAgent(PedInstance *p_ped);
-    //! updates visual markers for our agents
-    void updtAgentsMarker();
+    //! Make leader's marker blink
+    void highlightLeaderMarker();
+    //! Make markers aligned with each agent position
+    void updateMarkersPosition();
     //! Set pLocWToSet param with point on the map where player clicked to shoot
     bool getAimedAt(int x, int y, WorldPoint *pLocWToSet);
     void stopShootingEvent();
