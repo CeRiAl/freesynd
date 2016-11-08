@@ -57,8 +57,8 @@ private:
 
     static int fastKey(MapObject * m);
 
-    void createFastKeys(const Point2D &startPos, const Point2D &endPos);
-    int drawObjectsOnTile(const TilePoint & tilePos, const Point2D &screenPos);
+    void createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley);
+    void drawAt(const TilePoint & tilePos, int x, int y);
 
 private:
     Mission *pMission_;

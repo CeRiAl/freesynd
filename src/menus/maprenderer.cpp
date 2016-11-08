@@ -47,48 +47,44 @@ void MapRenderer::init(Mission *pMission, SquadSelection *pSelection) {
  */
 void MapRenderer::render(const Point2D &worldPos) {
     // TODO: after a lot of attempts to fix this, map drawing remains buggy
-    TilePoint worldTilePos = pMap_->screenToTilePoint(worldPos.x, worldPos.y);
-
-    int boardSize = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
+    TilePoint mtp = pMap_->screenToTilePoint(worldPos.x, worldPos.y);
+    int sw = mtp.tx;
+    int chk = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
         + g_Screen.gameScreenHeight() / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;
-    //int chk = 1;
+    int swm = sw + chk;
+    int sh = mtp.ty - 8;
 
-    Point2D enclosingStartPos = {worldTilePos.tx, worldTilePos.ty - 8};
-    pMap_->clip(&enclosingStartPos);
+    int shm = sh + chk;
 
-    Point2D enclosingEndPos = {enclosingStartPos.x + boardSize, enclosingStartPos.y + boardSize};
-    pMap_->clip(&enclosingEndPos);
+#ifdef EXECUTION_SPEED_TIME
+    printf("---------------------------");
+    int measure_ticks = SDL_GetTicks();
+    printf("start time %i.%i\n", measure_ticks/1000, measure_ticks%1000);
+#endif
 
-    DEBUG_SPEED_INIT
-
-    createFastKeys(enclosingStartPos, enclosingEndPos);
+    createFastKeys(sw, sh, swm, shm);
     int cmw = worldPos.x + g_Screen.gameScreenWidth() -
                 g_Screen.gameScreenLeftMargin() + 128;
     int cmh = worldPos.y + g_Screen.gameScreenHeight() + 128;
     int cmx = worldPos.x - g_Screen.gameScreenLeftMargin();
      //  z = 0 - is minimap data and mapdata
-    int zr = enclosingEndPos.y + pMap_->maxZ() + 1;
-
-    int nbobject = 0;
-
+    int chky = sh < 0 ? 0 : sh;
+    int zr = shm + pMap_->maxZ() + 1;
     for (int inc = 0; inc < zr; ++inc) {
-        int ye = enclosingStartPos.y + inc;
+        int ye = sh + inc;
         int ys = ye - pMap_->maxZ() - 2;
         int tile_z = pMap_->maxZ() + 1;  // the Z coord of the next tile to draw
         for (int yb = ys; yb < ye; ++yb) {
-            if (yb < 0 || yb < enclosingStartPos.y || yb >= enclosingEndPos.y) {
+            if (yb < 0 || yb < sh || yb >= shm) {
                 --tile_z;
                 continue;
             }
             int tile_y = yb;  // The Y coord of the tile to draw
-            for (int tile_x = enclosingStartPos.x;
-                    tile_y >= enclosingStartPos.y && tile_x < pMap_->maxX();
-                    ++tile_x) {
+            for (int tile_x = sw; tile_y >= chky && tile_x < pMap_->maxX(); ++tile_x) {
                 if (tile_x < 0 || tile_y >= pMap_->maxY()) {
                     --tile_y;
                     continue;
                 }
-
                 int screen_w = (pMap_->maxX() + (tile_x - tile_y)) * (TILE_WIDTH / 2);
                 // int screen_h = (max_z_ + w + h) * (TILE_HEIGHT / 3);
                 int coord_h = ((pMap_->maxZ() + tile_x + tile_y) - (tile_z - 1)) * (TILE_HEIGHT / 3);
@@ -119,11 +115,9 @@ void MapRenderer::render(const Point2D &worldPos) {
                     if (tile_z - 1 >= 0) {
                         TilePoint currentTile(tile_x, tile_y, tile_z - 1);
 
-                        Point2D screenPos = {
+                        drawAt(currentTile,
                             screen_w - cmx + TILE_WIDTH / 2,
-                            coord_h - worldPos.y + TILE_HEIGHT / 3 * 2};
-
-                        nbobject += drawObjectsOnTile(currentTile, screenPos);
+                            coord_h - worldPos.y + TILE_HEIGHT / 3 * 2);
                     }
                 }
                 --tile_y;
@@ -148,8 +142,15 @@ int MapRenderer::fastKey(MapObject * m) {
     return fastKey(m->position());
 }
 
-void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos) {
-    int nbobject = 0;
+void MapRenderer::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
+    if (tilex < 0)
+        tilex = 0;
+    if (tiley < 0)
+        tiley = 0;
+    if (maxtilex >= pMap_->maxX())
+        maxtilex = pMap_->maxX();
+    if (maxtiley >= pMap_->maxY())
+        maxtiley = pMap_->maxY();
 
     cache_vehicles_.clear();
     cache_peds_.clear();
@@ -167,8 +168,8 @@ void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos)
     for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
         PedInstance *p = pMission_->getSquad()->member(i);
         if (p != NULL && p->isAlive()) {
-            if (p->tileX() >= startPos.x && p->tileX() < endPos.x
-                && p->tileY() >= startPos.y && p->tileY() < endPos.y) {
+            if (p->tileX() >= tilex && p->tileX() < maxtilex
+                && p->tileY() >= tiley && p->tileY() < maxtiley) {
                 // sfx_objects_[i]->setPosition(p->tileX(), p->tileY(), p->tileZ(),
                     // p->offX(), p->offY(), p->offZ() + 320);
                 pMission_->sfxObjects(i + 4)->setPosition(p->tileX(), p->tileY(),
@@ -183,14 +184,13 @@ void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos)
     // vehicles
     for (unsigned int i = 0; i < pMission_->numVehicles(); i++) {
         Vehicle *v = pMission_->vehicle(i);
-        if (v->tileX() >= startPos.x && v->tileX() < endPos.x
-            && v->tileY() >= startPos.y && v->tileY() < endPos.y) {
+        if (v->tileX() >= tilex && v->tileX() < maxtilex
+            && v->tileY() >= tiley && v->tileY() < maxtiley) {
             // NOTE: a trick to make vehicles be drawn correctly z+1
             TilePoint tilePos( v->position());
             tilePos.tz += 1;
             fast_vehicle_cache_.insert(fastKey(tilePos));
             cache_vehicles_.push_back(v);
-            nbobject++;
         }
     }
 
@@ -198,23 +198,20 @@ void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos)
     for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
         PedInstance *p = pMission_->getSquad()->member(i);
         if (p != NULL && p->map() != -1) {
-            if (p->tileX() >= startPos.x && p->tileX() < endPos.x
-                && p->tileY() >= startPos.y && p->tileY() < endPos.y) {
+            if (p->tileX() >= tilex && p->tileX() < maxtilex
+                && p->tileY() >= tiley && p->tileY() < maxtiley) {
                 fast_ped_cache_.insert(fastKey(p));
                 cache_peds_.push_back(p);
-
-                nbobject++;
             }
         }
     }
     for (size_t i = pMission_->getSquad()->size(); i < pMission_->numPeds(); i++) {
         PedInstance *p = pMission_->ped(i);
         if (p->map() != -1) {
-            if (p->tileX() >= startPos.x && p->tileX() < endPos.x
-                && p->tileY() >= startPos.y && p->tileY() < endPos.y) {
+            if (p->tileX() >= tilex && p->tileX() < maxtilex
+                && p->tileY() >= tiley && p->tileY() < maxtiley) {
                 fast_ped_cache_.insert(fastKey(p));
                 cache_peds_.push_back(p);
-                nbobject++;
             }
         }
     }
@@ -222,47 +219,36 @@ void MapRenderer::createFastKeys(const Point2D &startPos, const Point2D &endPos)
     // weapons
     for (unsigned int i = 0; i < pMission_->numWeapons(); i++) {
         WeaponInstance *w = pMission_->weapon(i);
-        if (w->map() != -1 && w->tileX() >= startPos.x && w->tileX() < endPos.x
-            && w->tileY() >= startPos.y && w->tileY() < endPos.y) {
+        if (w->map() != -1 && w->tileX() >= tilex && w->tileX() < maxtilex
+            && w->tileY() >= tiley && w->tileY() < maxtiley) {
             fast_weapon_cache_.insert(fastKey(w));
             cache_weapons_.push_back(w);
-            nbobject++;
         }
     }
 
     // statics
     for (unsigned int i = 0; i < pMission_->numStatics(); i++) {
         Static *s = pMission_->statics(i);
-        if (s->tileX() >= startPos.x && s->tileX() < endPos.x
-            && s->tileY() >= startPos.y && s->tileY() < endPos.y) {
+        if (s->tileX() >= tilex && s->tileX() < maxtilex
+            && s->tileY() >= tiley && s->tileY() < maxtiley) {
             fast_statics_cache_.insert(fastKey(s));
             cache_statics_.push_back(s);
-            nbobject++;
         }
     }
 
     // sfx objects
     for (unsigned int i = 0; i < pMission_->numSfxObjects(); i++) {
         SFXObject *so = pMission_->sfxObjects(i);
-        if (so->map() != -1 && so->tileX() >= startPos.x && so->tileX() < endPos.x
-            && so->tileY() >= startPos.y && so->tileY() < endPos.y) {
+        if (so->map() != -1 && so->tileX() >= tilex && so->tileX() < maxtilex
+            && so->tileY() >= tiley && so->tileY() < maxtiley) {
             fast_sfx_objects_cache_.insert(fastKey(so));
             cache_sfx_objects_.push_back(so);
-            nbobject++;
         }
     }
 }
 
-/*!
- * Draw on screen all objects that have their position on the given tile.
- * \param tilePos const TilePoint& Tile's position
- * \param screenPos const Point2D& Screen position to draw the objects
- * \return int
- *
- */
-int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &screenPos) {
+void MapRenderer::drawAt(const TilePoint & tilePos, int x, int y) {
     int key = fastKey(tilePos);
-    int nbobject = 0;
 
     if (fast_vehicle_cache_.find(key) != fast_vehicle_cache_.end()) {
         // draw vehicles
@@ -271,18 +257,14 @@ int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &scr
                 && cache_vehicles_[i]->tileY() == tilePos.ty
                 // NOTE: a trick to make vehicles be drawn correctly z+1
                 && (cache_vehicles_[i]->tileZ() + 1) == tilePos.tz)
-                cache_vehicles_[i]->draw(screenPos.x, screenPos.y);
-                nbobject++;
+                cache_vehicles_[i]->draw(x, y);
     }
 
     if (fast_ped_cache_.find(key) != fast_ped_cache_.end()) {
         // draw peds
         for (unsigned int i = 0; i < cache_peds_.size(); i++)
             if (cache_peds_[i]->sameTile(tilePos)) {
-                cache_peds_[i]->draw(screenPos.x, screenPos.y);
-
-                nbobject++;
-
+                cache_peds_[i]->draw(x, y);
 #if 0
                 g_Screen.drawLine(x - TILE_WIDTH / 2, y,
                                   x + TILE_WIDTH / 2, y, 11);
@@ -303,8 +285,7 @@ int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &scr
         for (unsigned int i = 0; i < cache_weapons_.size(); i++)
             if (cache_weapons_[i]->map() != -1
                 && cache_weapons_[i]->sameTile(tilePos)) {
-                cache_weapons_[i]->draw(screenPos.x, screenPos.y);
-                nbobject++;
+                cache_weapons_[i]->draw(x, y);
             }
     }
 
@@ -312,8 +293,7 @@ int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &scr
         // draw statics
         for (unsigned int i = 0; i < cache_statics_.size(); i++)
             if (cache_statics_[i]->sameTile(tilePos)) {
-                cache_statics_[i]->draw(screenPos.x, screenPos.y);
-                nbobject++;
+                cache_statics_[i]->draw(x, y);
             }
     }
 
@@ -321,10 +301,7 @@ int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &scr
         // draw sfx objects
         for (unsigned int i = 0; i < cache_sfx_objects_.size(); i++)
             if (cache_sfx_objects_[i]->sameTile(tilePos)) {
-                cache_sfx_objects_[i]->draw(screenPos.x, screenPos.y);
-                nbobject++;
+                cache_sfx_objects_[i]->draw(x, y);
             }
     }
-
-    return nbobject;
 }
