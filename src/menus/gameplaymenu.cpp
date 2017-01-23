@@ -465,7 +465,7 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
         last_time = current_time;
     }
     sprintf(tmp, "FPS : %.2f FRAMES PER SEC", fps);
-    gameFont()->drawText(10, g_Screen.gameScreenHeight() - 15, tmp, 14);
+    gameFont()->drawText(10, Screen::kScreenHeight - 15, tmp, 14);
 #endif
 }
 
@@ -904,9 +904,9 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
             std::string str_paused = getMessage("GAME_PAUSED");
             MenuFont *font_used = getMenuFont(FontManager::SIZE_1);
             int txt_width = font_used->textWidth(str_paused.c_str(), false);
-            int txt_posx = g_Screen.gameScreenWidth() / 2 - txt_width / 2;
+            int txt_posx = Screen::kScreenWidth / 2 - txt_width / 2;
             int txt_height = font_used->textHeight(false);
-            int txt_posy = g_Screen.gameScreenHeight() / 2 - txt_height / 2;
+            int txt_posy = Screen::kScreenHeight / 2 - txt_height / 2;
 
             g_Screen.drawRect(txt_posx - 10, txt_posy - 5,
                 txt_width + 20, txt_height + 10);

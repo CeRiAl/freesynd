@@ -234,7 +234,7 @@ bool WalkAction::suspend(PedInstance *pPed) {
 
 void WalkAction::doStart(Mission *pMission, PedInstance *pPed) {
     // Go to given location at given speed
-    if (!pPed->setDestination(pMission, destLocT_, newSpeed_)) {
+    if (!pPed->initMovementToDestination(pMission, destLocT_, newSpeed_)) {
         setFailed();
         return;
     }
@@ -250,7 +250,7 @@ void WalkAction::doStart(Mission *pMission, PedInstance *pPed) {
  * \param pPed The ped executing the action.
  */
 bool WalkAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    bool updated = pPed->movementP(pMission, elapsed);
+    bool updated = pPed->updatePosition(elapsed, pMission);
     if (!pPed->hasDestination()) {
         // Ped has arrived at destination
         setSucceeded();
@@ -408,7 +408,7 @@ void FollowAction::doStart(Mission *pMission, PedInstance *pPed) {
     updateLastTargetPos();
     // If target is not too close, then initiate movement.
     if (!pPed->isCloseTo(pTarget_, kFollowDistance)) {
-        if (!pPed->setDestination(pMission, targetLastPos_)) {
+        if (!pPed->initMovementToDestination(pMission, targetLastPos_)) {
             setFailed();
         }
     } else {
@@ -434,7 +434,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
                 pPed->clearDestination();
                 pPed->leaveState(targetState_);
             } else {
-                updated = pPed->movementP(pMission, elapsed);
+                updated = pPed->updatePosition(elapsed, pMission);
             }
         }
 
@@ -443,7 +443,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
         if (!pTarget_->sameTile(targetLastPos_)) {
             // resetting target position
             updateLastTargetPos();
-            if (pPed->setDestination(pMission, targetLastPos_)) {
+            if (pPed->initMovementToDestination(pMission, targetLastPos_)) {
                 targetState_ = PedInstance::pa_smWalking;
                 pPed->goToState(targetState_);
             } else {
@@ -494,7 +494,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
         if (!pTarget_->isCloseTo(targetLastPosW_, 128)) {
             // resetting target position
             targetLastPosW_.convertFromTilePoint(pTarget_->position());
-            if (!pPed->setDestination(pMission, pTarget_->position())) {
+            if (!pPed->initMovementToDestination(pMission, pTarget_->position())) {
                 setFailed();
                 return true;
             }
@@ -509,7 +509,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             setSucceeded();
             pPed->clearDestination();
         } else {
-            updated = pPed->movementP(pMission, elapsed);
+            updated = pPed->updatePosition(elapsed, pMission);
         }
 
     }
@@ -605,7 +605,7 @@ void DriveVehicleAction::doStart(Mission *pMission, PedInstance *pPed) {
         setFailed();
     }
 
-    if (!pVehicle_->setDestination(pMission, dest_, 1024)) {
+    if (!pVehicle_->initMovementToDestination(pMission, dest_, 1024)) {
         setFailed();
     }
 }

@@ -22,7 +22,7 @@ TrainBody::~TrainBody() {
  * Moves a vehicle on the map.
  * \param elapsed Elapsed time sine last frame.
  */
-bool TrainBody::move_vehicle(int elapsed)
+bool TrainBody::updatePosition(int elapsed, Mission *m)
 {
     return false;
 }

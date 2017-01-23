@@ -107,8 +107,6 @@ public:
     //! Return true if vehicle is a car
     bool isCar() { return type_ != kVehicleTypeTrainHead && type_ != kVehicleTypeTrainBody; }
 
-    //void setType(uint8 type) { type_ = type; }
-
     //! Adds the given ped to the list of passengers
     virtual void addPassenger(PedInstance *p);
     //! Removes the passenger from the vehicle
@@ -123,8 +121,6 @@ public:
     //! Returns true if the vehicle contains peds considered hostile by the given ped
     bool containsHostilesForPed(PedInstance *p, unsigned int hostile_desc_alt);
 
-protected:
-    virtual bool move_vehicle(int elapsed) = 0;
 protected:
     /*! The passengers of the vehicle.*/
     std::set <PedInstance *> passengers_;
@@ -145,8 +141,8 @@ public:
     GenericCar(VehicleAnimation *pAnimation, uint16 id, uint8 aType, int m);
     virtual ~GenericCar() {}
 
-    //! Set the destination to reach at given speed (todo : replace setDestinationV())
-    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1);
+    //! See ShootableMovableMapObject::initMovementToDestination()
+    bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1);
 
     void addDestinationV(int x, int y, int z, int ox = 128, int oy = 128,
             int new_speed = 160) {
@@ -154,7 +150,8 @@ public:
         speed_ = new_speed;
     }
 
-    void setDestinationV(int x, int y, int z, int ox = 128, int oy = 128, int new_speed = 160);
+    //! See ShootableMovableMapObject::updatePosition()
+    bool updatePosition(int elapsed, Mission *m);
 
     //! Adds the given ped to the list of passengers
     void addPassenger(PedInstance *p);

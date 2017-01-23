@@ -348,13 +348,11 @@ public:
     //*************************************
     // Movement management
     //*************************************
-    //! Set the destination to reach at given speed (todo : replace setDestinationP())
-    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1);
+    //! See ShootableMovableMapObject::initMovementToDestination()
+    bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1);
 
-    void setDestinationP(Mission *m, int x, int y, int z,
-        int ox = 128, int oy = 128);
-
-    bool movementP(Mission *m, int elapsed);
+    //! See ShootableMovableMapObject::updatePosition()
+    bool updatePosition(int elapsed, Mission *pMission);
 
     //*************************************
     // Weapon management

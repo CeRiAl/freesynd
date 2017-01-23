@@ -40,10 +40,10 @@ public:
     TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation);
     ~TrainBody();
 
-    bool move_vehicle(int elapsed);
+    bool updatePosition(int elapsed, Mission *m);
 
     //! Set the destination to reach at given speed
-    bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1) {
+    bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1) {
         return false;
     }
 };

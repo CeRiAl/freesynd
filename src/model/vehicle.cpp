@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include "app.h"
+#include "mission.h"
 #include "core/gamesession.h"
 #include "gfx/screen.h"
 #include "vehicle.h"
@@ -87,7 +88,7 @@ bool Vehicle::animate(int elapsed)
     bool updated = false;
 
     if (health_ > 0) {
-        updated = move_vehicle(elapsed);
+        updated = updatePosition(elapsed, NULL);
     }
 
     if (animation_->animation_type() == VehicleAnimation::kOnFireAnim) {
@@ -370,21 +371,19 @@ bool GenericCar::dirWalkable(TilePoint *p, int x, int y, int z) {
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-bool GenericCar::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
-    speed_ = newSpeed;
-    setDestinationV(locT.tx, locT.ty, locT.tz, locT.ox, locT.oy, newSpeed);
-    return !dest_path_.empty();
-}
-
-void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_speed)
-{
+bool GenericCar::initMovementToDestination(Mission *pMission, const TilePoint &destinationPt, int newSpeed) {
     std::map < TilePoint, uint16 > open;
     std::set < TilePoint > closed;
     std::map < TilePoint, TilePoint > parent;
     int basex = pos_.tx, basey = pos_.ty;
     std::vector < TilePoint > path2add;
     path2add.reserve(16);
-    Map *pMap = g_App.maps().map(map_);
+    Map *pMap = pMission->get_map();
+    int x = destinationPt.tx;
+    int y = destinationPt.ty;
+    int z = destinationPt.tz;
+    int ox = destinationPt.ox;
+    int oy = destinationPt.oy;
 
     pMap->adjXYZ(x, y, z);
     // NOTE: we will be using lower tiles, later will restore Z coord
@@ -404,7 +403,7 @@ void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_sp
         }
 #endif
 #endif
-        return;
+        return false;
     }
 
     if (!pMap->isTileWalkableByCar(pos_.tx, pos_.ty, z)) {
@@ -487,7 +486,7 @@ void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_sp
             }
         }
         if(dBest == 100000)
-            return;
+            return false;
     }
 
     TilePoint closest;
@@ -591,7 +590,7 @@ void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_sp
 
     if(!dest_path_.empty()) {
         // Adjusting offsets for correct positioning
-        speed_ = new_speed;
+        speed_ = newSpeed;
         int curox = pos_.ox;
         int curoy = pos_.oy;
         for(std::list < TilePoint >::iterator it = dest_path_.begin();
@@ -659,13 +658,15 @@ void GenericCar::setDestinationV(int x, int y, int z, int ox, int oy, int new_sp
             dest_path_.push_front(*it);
         }
     }
+
+    return !dest_path_.empty();
 }
 
 /*!
  * Moves a vehicle on the map.
  * \param elapsed Elapsed time sine last frame.
  */
-bool GenericCar::move_vehicle(int elapsed)
+bool GenericCar::updatePosition(int elapsed, Mission *m)
 {
     bool updated = false;
     int used_time = elapsed;

@@ -41,22 +41,16 @@
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-bool PedInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
+//bool PedInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
+bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed) {
     // if no speed was set, use ped's default speed
     speed_ = newSpeed != -1 ? newSpeed : getDefaultSpeed();
-    setDestinationP(m, locT.tx, locT.ty, locT.tz, locT.ox, locT.oy);
-    if (dest_path_.empty()) {
-        // destination was not set -> stop ped
-        speed_ = 0;
-        return false;
-    } else {
-        return true;
-    }
-}
+    int x = destinationPt.tx;
+    int y = destinationPt.ty;
+    int z = destinationPt.tz;
+    int ox = destinationPt.ox;
+    int oy = destinationPt.oy;
 
-void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
-                                    int ox, int oy)
-{
     // NOTE: this is a "flood" algorithm, it expands until it reaches other's
     // flood point, then it removes unrelated points
 #ifdef EXECUTION_SPEED_TIME
@@ -67,7 +61,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     dest_path_.clear();
 
     if (map_ == -1 || health_ <= 0)
-        return;
+        return false;
 
     floodPointDesc *targetd = &(m->mdpoints_[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
 
@@ -100,19 +94,19 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
         printf("==== unwalk target: x %i; y %i; z %i, ox %i, oy %i\n",
             x, y, z, ox, oy);
         printf("setDestinationP, Movement to nonwalkable postion\n");
-        return;
+        return false;
     }
 
     if(based->t == m_fdNonWalkable) {
         printf("==== unwalk pos: x %i; y %i; z %i, ox %i, oy %i, oz %i\n",
             pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy, pos_.oz);
         printf("setDestinationP, Movement from nonwalkable postion\n");
-        return;
+        return false;
     }
 
     if (pos_.tx == x && pos_.ty == y && pos_.tz == z) {
         dest_path_.push_back(TilePoint(x, y, z, ox, oy));
-        return;
+        return false;
     }
 #ifdef EXECUTION_SPEED_TIME
     printf("directions-map copy start %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
@@ -900,7 +894,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
     printf("target reached in %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
 #endif
     if (!nodeset && lnknr) {
-        return;
+        return false;
     }
     if (blvl == bn.size())
         blvl--;
@@ -2271,6 +2265,14 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
             }
         }
     }
+
+    if (dest_path_.empty()) {
+        // destination was not set -> stop ped
+        speed_ = 0;
+        return false;
+    } else {
+        return true;
+    }
 #ifdef EXECUTION_SPEED_TIME
     printf("smoothing time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
 #endif
@@ -2288,7 +2290,7 @@ void PedInstance::setDestinationP(Mission *m, int x, int y, int z,
 #endif
 }
 
-bool PedInstance::movementP(Mission *m, int elapsed)
+bool PedInstance::updatePosition(int elapsed, Mission *pMission)
 {
     bool updated = false;
     int used_time = elapsed;
@@ -2421,8 +2423,8 @@ bool PedInstance::movementP(Mission *m, int elapsed)
             }
         }
 
-        offzOnStairs(m->mtsurfaces_[pos_.tx + pos_.ty * m->mmax_x_
-            + pos_.tz * m->mmax_m_xy].twd);
+        offzOnStairs(pMission->mtsurfaces_[pos_.tx + pos_.ty * pMission->mmax_x_
+            + pos_.tz * pMission->mmax_m_xy].twd);
     }
 #ifdef _DEBUG
     if (dest_path_.empty() && speed_) {

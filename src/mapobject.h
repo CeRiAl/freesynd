@@ -522,8 +522,26 @@ public:
         speed_ = 0;
     }
 
-    //! Set the destination to reach at given speed
-    virtual bool setDestination(Mission *m, const TilePoint &locT, int newSpeed = -1) = 0;
+
+    /**
+     * Compute a path from the object current position to given destination using given speed.
+     * Subclasses must implement this method.
+     * \param m Mission* Mission data
+     * \param locT Destination for the movement
+     * \param newSpeed The speed at which the object will move. If speed is -1, use default speed.
+     * \return true if there is a path towards given destination
+     */
+    virtual bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1) = 0;
+
+    /**
+     * Update position of the object using the current path and speed.
+     * Subclasses must implement this method.
+     * \param elapsed int
+     * \param m Mission* Mission data
+     * \return True if the position has been updated.
+     *
+     */
+    virtual bool updatePosition(int elapsed, Mission *m) = 0;
 
     //! Return true if the ped is moving
     bool isMoving() { return speed_ != 0 || !dest_path_.empty();}

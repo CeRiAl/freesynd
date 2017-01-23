@@ -50,8 +50,8 @@ void MapRenderer::render(const Point2D &viewport) {
     //  - Some advert panels lack a corner
     TilePoint mtp = pMap_->screenToTilePoint(viewport.x, viewport.y);
     int sw = mtp.tx;
-    int chk = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
-        + g_Screen.gameScreenHeight() / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;
+    int chk = Screen::kScreenWidth / (TILE_WIDTH / 2) + 2
+        + Screen::kScreenHeight / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;
     int sh = mtp.ty - 8;
 
     int shm = sh + chk;
@@ -60,10 +60,10 @@ void MapRenderer::render(const Point2D &viewport) {
 
     listObjectsToDraw(viewport);
 
-    int cmw = viewport.x + g_Screen.gameScreenWidth() -
-                g_Screen.gameScreenLeftMargin() + 128;
-    int cmh = viewport.y + g_Screen.gameScreenHeight() + 128;
-    int cmx = viewport.x - g_Screen.gameScreenLeftMargin();
+    int cmw = viewport.x + Screen::kScreenWidth -
+                Screen::kScreenPanelWidth + 128;
+    int cmh = viewport.y + Screen::kScreenHeight + 128;
+    int cmx = viewport.x - Screen::kScreenPanelWidth;
      //  z = 0 - is minimap data and mapdata
     int chky = sh < 0 ? 0 : sh;
     int zr = shm + pMap_->maxZ() + 1;
