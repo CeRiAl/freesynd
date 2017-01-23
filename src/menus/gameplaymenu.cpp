@@ -298,7 +298,8 @@ void GameplayMenu::handleShow() {
     menu_manager_->setPaletteForMission(g_Session.getSelectedBlock().mis_id);
     g_Screen.clear(0);
 
-    updtAgentsMarker();
+    highlightLeaderMarker();
+    updateMarkersPosition();
 
     // Init renderers
     map_renderer_.init(mission_, &selection_);
@@ -365,6 +366,8 @@ void GameplayMenu::handleTick(int elapsed)
 
         for (size_t i = 0; i < mission_->numPeds(); i++)
             change |= mission_->ped(i)->animate(diff, mission_);
+
+        updateMarkersPosition();
 
         for (size_t i = 0; i < mission_->numVehicles(); i++)
             change |= mission_->vehicle(i)->animate(diff);
@@ -1307,7 +1310,7 @@ void GameplayMenu::selectAgent(size_t agentNo, bool addToGroup) {
     if (selection_.selectAgent(agentNo, addToGroup)) {
         updateSelectAll();
         centerMinimapOnLeader();
-        updtAgentsMarker();
+        highlightLeaderMarker();
         g_App.gameSounds().play(snd::SPEECH_SELECTED);
 
         // redraw agent selectors
@@ -1336,7 +1339,7 @@ void GameplayMenu::selectAllAgents() {
  * Make the current leader marker blinks.
  * All other agents not.
  */
-void GameplayMenu::updtAgentsMarker()
+void GameplayMenu::highlightLeaderMarker()
 {
     for (size_t i = AgentManager::kSlot1; i < AgentManager::kMaxSlot; i++) {
         // draw animation only for leader
@@ -1344,12 +1347,31 @@ void GameplayMenu::updtAgentsMarker()
     }
 }
 
+/**
+ * Updating position for visual markers for all agents.
+ * \return void
+ *
+ */
+void GameplayMenu::updateMarkersPosition() {
+    for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
+        if (mission_->sfxObjects(i + 4)->isVisible()) {
+            TilePoint agentPos = mission_->getSquad()->member(i)->position();
+            agentPos.ox -= 16;
+            agentPos.oz += 256;
+
+            mission_->sfxObjects(i + 4)->setPosition(agentPos);
+        }
+    }
+}
+
 /*!
  * This method checks among the squad to see if an agent died and deselects him.
  */
-void GameplayMenu::updateSelectionForDeadAgent(PedInstance *p_ped) {
+void GameplayMenu::updateSelectionForDeadAgent(PedInstance *pPed) {
     // Deselects dead agent
-    selection_.deselectAgent(p_ped);
+    selection_.deselectAgent(pPed);
+    // hide dead agent's marker
+    mission_->sfxObjects(pPed->id() + 4)->setVisible(false);
 
     // if selection is empty after agent's death
     // selects the first selectable agent
@@ -1363,7 +1385,7 @@ void GameplayMenu::updateSelectionForDeadAgent(PedInstance *p_ped) {
     }
 
     // anyway updates markers
-    updtAgentsMarker();
+    highlightLeaderMarker();
     updateSelectAll();
 }
 

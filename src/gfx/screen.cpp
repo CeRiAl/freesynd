@@ -28,6 +28,10 @@
 #include "screen.h"
 #include "utils/file.h"
 
+const int Screen::kScreenWidth = 640;
+const int Screen::kScreenHeight = 400;
+const int Screen::kScreenPanelWidth = 129;
+
 Screen::Screen(int width, int height)
 :width_(width)
 , height_(height)
@@ -298,7 +302,7 @@ void Screen::drawLine(int x1, int y1, int x2, int y2, uint8 color,
     uint8 *pixel;
 
     /*
-     * Variable setup 
+     * Variable setup
      */
     dx = x2 - x1;
     dy = y2 - y1;
@@ -306,11 +310,11 @@ void Screen::drawLine(int x1, int y1, int x2, int y2, uint8 color,
     sy = (dy >= 0) ? 1 : -1;
 
     /*
-     * No alpha blending - use fast pixel routines 
+     * No alpha blending - use fast pixel routines
      */
 
     /*
-     * More variable setup 
+     * More variable setup
      */
     dx = sx * dx + 1;
     dy = sy * dy + 1;
@@ -329,7 +333,7 @@ void Screen::drawLine(int x1, int y1, int x2, int y2, uint8 color,
     }
 
     /*
-     * Draw 
+     * Draw
      */
     x = 0;
     y = 0;

@@ -32,6 +32,13 @@
  */
 class Screen : public Singleton<Screen> {
 public:
+    /*! Width of the screen in pixels.*/
+    static const int kScreenWidth;
+    /*! Height of the screen in pixels.*/
+    static const int kScreenHeight;
+    /*! Width of the left control panel*/
+    static const int kScreenPanelWidth;
+
     explicit Screen(int width, int height);
     ~Screen();
 

@@ -67,6 +67,20 @@ public:
     //! Return the object's id
     uint16 id() { return id_; }
 
+    void setVisible(bool visible) {
+        isVisible_ = visible;
+        // TODO : remove when isVisible is active
+        if (!isVisible_) {
+            map_ = -1;
+        }
+    }
+
+    bool isVisible() {
+        // TODO : replace with isvisible_
+        return map_ != -1;
+    }
+
+
     virtual void draw(int x, int y) = 0;
     enum DamageType {
         dmg_None = 0x0000,
@@ -207,6 +221,18 @@ public:
         return sqrt((double) (cx * cx + cy * cy + cz * cz));
     }
 
+
+    /**
+     * Returns true if given object is farther than this object.
+     * Objects are considered on same tile. farther objects are drawn first.
+     * \param pOther MapObject*
+     * \return bool
+     *
+     */
+    bool isBehindObjectOnSameTile(MapObject *pOther) {
+        return pos_.ox < pOther->position().ox || pos_.oy < pOther->position().oy;
+    }
+
     virtual bool animate(int elapsed);
 
     void setFramesPerSec(int framesPerSec)
@@ -282,6 +308,8 @@ protected:
     int size_x_, size_y_, size_z_;
     //! if equal -1 object is not on map and should not be drawn
     int map_;
+    //! Object should be drawn only if visible
+    bool isVisible_;
     //! animation frame changing
     int frame_;
     /*!

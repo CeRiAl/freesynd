@@ -45,28 +45,25 @@ void MapRenderer::init(Mission *pMission, SquadSelection *pSelection) {
 /**
  * Draw tiles and map objects.
  */
-void MapRenderer::render(const Point2D &worldPos) {
-    // TODO: after a lot of attempts to fix this, map drawing remains buggy
-    TilePoint mtp = pMap_->screenToTilePoint(worldPos.x, worldPos.y);
+void MapRenderer::render(const Point2D &viewport) {
+    // TODO: list of bugs to fix in rendering
+    //  - Some advert panels lack a corner
+    TilePoint mtp = pMap_->screenToTilePoint(viewport.x, viewport.y);
     int sw = mtp.tx;
     int chk = g_Screen.gameScreenWidth() / (TILE_WIDTH / 2) + 2
         + g_Screen.gameScreenHeight() / (TILE_HEIGHT / 3) + pMap_->maxZ() * 2;
-    int swm = sw + chk;
     int sh = mtp.ty - 8;
 
     int shm = sh + chk;
 
-#ifdef EXECUTION_SPEED_TIME
-    printf("---------------------------");
-    int measure_ticks = SDL_GetTicks();
-    printf("start time %i.%i\n", measure_ticks/1000, measure_ticks%1000);
-#endif
+    DEBUG_SPEED_INIT
 
-    createFastKeys(sw, sh, swm, shm);
-    int cmw = worldPos.x + g_Screen.gameScreenWidth() -
+    listObjectsToDraw(viewport);
+
+    int cmw = viewport.x + g_Screen.gameScreenWidth() -
                 g_Screen.gameScreenLeftMargin() + 128;
-    int cmh = worldPos.y + g_Screen.gameScreenHeight() + 128;
-    int cmx = worldPos.x - g_Screen.gameScreenLeftMargin();
+    int cmh = viewport.y + g_Screen.gameScreenHeight() + 128;
+    int cmx = viewport.x - g_Screen.gameScreenLeftMargin();
      //  z = 0 - is minimap data and mapdata
     int chky = sh < 0 ? 0 : sh;
     int zr = shm + pMap_->maxZ() + 1;
@@ -86,11 +83,10 @@ void MapRenderer::render(const Point2D &worldPos) {
                     continue;
                 }
                 int screen_w = (pMap_->maxX() + (tile_x - tile_y)) * (TILE_WIDTH / 2);
-                // int screen_h = (max_z_ + w + h) * (TILE_HEIGHT / 3);
                 int coord_h = ((pMap_->maxZ() + tile_x + tile_y) - (tile_z - 1)) * (TILE_HEIGHT / 3);
-                if (screen_w >= worldPos.x - TILE_WIDTH * 2
+                if (screen_w >= viewport.x - TILE_WIDTH * 2
                     && screen_w + TILE_WIDTH * 2 < cmw
-                    && coord_h >= worldPos.y - TILE_HEIGHT * 2
+                    && coord_h >= viewport.y - TILE_HEIGHT * 2
                     && coord_h + TILE_HEIGHT * 2 < cmh) {
 #if 0
                     if (z > 2)
@@ -101,12 +97,12 @@ void MapRenderer::render(const Point2D &worldPos) {
                         Tile *p_tile = pMap_->getTileAt(tile_x, tile_y, tile_z);
                         if (p_tile->notTransparent()) {
                             int dx = 0, dy = 0;
-                            if (screen_w - worldPos.x < 0)
-                                dx = -(screen_w - worldPos.x);
-                            if (coord_h - worldPos.y < 0)
-                                dy = -(coord_h - worldPos.y);
+                            if (screen_w - viewport.x < 0)
+                                dx = -(screen_w - viewport.x);
+                            if (coord_h - viewport.y < 0)
+                                dy = -(coord_h - viewport.y);
                             if (dx < TILE_WIDTH && dy < TILE_HEIGHT) {
-                                p_tile->drawToScreen(screen_w - cmx, coord_h - worldPos.y);
+                                p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
                             }
                         }
                     }
@@ -114,10 +110,10 @@ void MapRenderer::render(const Point2D &worldPos) {
                     // draw everything that's on the tile
                     if (tile_z - 1 >= 0) {
                         TilePoint currentTile(tile_x, tile_y, tile_z - 1);
+                        Point2D screenPos = {screen_w - cmx + TILE_WIDTH / 2,
+                            coord_h - viewport.y + TILE_HEIGHT / 3 * 2};
 
-                        drawAt(currentTile,
-                            screen_w - cmx + TILE_WIDTH / 2,
-                            coord_h - worldPos.y + TILE_HEIGHT / 3 * 2);
+                        drawObjectsOnTile(currentTile, screenPos);
                     }
                 }
                 --tile_y;
@@ -126,11 +122,13 @@ void MapRenderer::render(const Point2D &worldPos) {
         }
     }
 
+    freeUnreleasedResources();
+
 #ifdef _DEBUG
     if (g_System.getKeyModState() & KMD_LALT) {
         for (SquadSelection::Iterator it = pSelection_->begin();
             it != pSelection_->end(); ++it) {
-            (*it)->showPath(worldPos.x, worldPos.y);
+            (*it)->showPath(viewport.x, viewport.y);
         }
     }
 #endif
@@ -138,170 +136,181 @@ void MapRenderer::render(const Point2D &worldPos) {
     DEBUG_SPEED_LOG("MapRenderer::render")
 }
 
-int MapRenderer::fastKey(MapObject * m) {
-    return fastKey(m->position());
+int MapRenderer::tileHashKey(MapObject * m) {
+    return tileHashKey(m->position());
 }
 
-void MapRenderer::createFastKeys(int tilex, int tiley, int maxtilex, int maxtiley) {
-    if (tilex < 0)
+void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
+    /*if (tilex < 0)
         tilex = 0;
     if (tiley < 0)
         tiley = 0;
     if (maxtilex >= pMap_->maxX())
         maxtilex = pMap_->maxX();
     if (maxtiley >= pMap_->maxY())
-        maxtiley = pMap_->maxY();
+        maxtiley = pMap_->maxY();*/
 
-    cache_vehicles_.clear();
-    cache_peds_.clear();
-    cache_weapons_.clear();
-    cache_statics_.clear();
-    cache_sfx_objects_.clear();
 
-    fast_vehicle_cache_.clear();
-    fast_ped_cache_.clear();
-    fast_weapon_cache_.clear();
-    fast_statics_cache_.clear();
-    fast_sfx_objects_cache_.clear();
-
-    // updating position for visual markers
-    for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
-        PedInstance *p = pMission_->getSquad()->member(i);
-        if (p != NULL && p->isAlive()) {
-            if (p->tileX() >= tilex && p->tileX() < maxtilex
-                && p->tileY() >= tiley && p->tileY() < maxtiley) {
-                // sfx_objects_[i]->setPosition(p->tileX(), p->tileY(), p->tileZ(),
-                    // p->offX(), p->offY(), p->offZ() + 320);
-                pMission_->sfxObjects(i + 4)->setPosition(p->tileX(), p->tileY(),
-                    p->tileZ(), p->offX() - 16, p->offY(), p->offZ() + 256);
-            }
-        } else {
-             // sfx_objects_[i]->setMap(-1);
-             pMission_->sfxObjects(i + 4)->setMap(-1);
+    // Include peds
+    for (size_t i = 0; i < pMission_->numPeds(); i++) {
+        PedInstance *pPed = pMission_->ped(i);
+        if (pPed->isVisible() && isObjectInsideDrawingArea(pPed, viewport)) {
+            addObjectToDraw(pPed);
         }
     }
 
     // vehicles
-    for (unsigned int i = 0; i < pMission_->numVehicles(); i++) {
-        Vehicle *v = pMission_->vehicle(i);
-        if (v->tileX() >= tilex && v->tileX() < maxtilex
-            && v->tileY() >= tiley && v->tileY() < maxtiley) {
-            // NOTE: a trick to make vehicles be drawn correctly z+1
-            TilePoint tilePos( v->position());
-            tilePos.tz += 1;
-            fast_vehicle_cache_.insert(fastKey(tilePos));
-            cache_vehicles_.push_back(v);
-        }
-    }
-
-    // peds
-    for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
-        PedInstance *p = pMission_->getSquad()->member(i);
-        if (p != NULL && p->map() != -1) {
-            if (p->tileX() >= tilex && p->tileX() < maxtilex
-                && p->tileY() >= tiley && p->tileY() < maxtiley) {
-                fast_ped_cache_.insert(fastKey(p));
-                cache_peds_.push_back(p);
-            }
-        }
-    }
-    for (size_t i = pMission_->getSquad()->size(); i < pMission_->numPeds(); i++) {
-        PedInstance *p = pMission_->ped(i);
-        if (p->map() != -1) {
-            if (p->tileX() >= tilex && p->tileX() < maxtilex
-                && p->tileY() >= tiley && p->tileY() < maxtiley) {
-                fast_ped_cache_.insert(fastKey(p));
-                cache_peds_.push_back(p);
-            }
+    for (size_t i = 0; i < pMission_->numVehicles(); i++) {
+        Vehicle *pVehicle = pMission_->vehicle(i);
+        if (isObjectInsideDrawingArea(pVehicle, viewport)) {
+            addObjectToDraw(pVehicle);
         }
     }
 
     // weapons
-    for (unsigned int i = 0; i < pMission_->numWeapons(); i++) {
-        WeaponInstance *w = pMission_->weapon(i);
-        if (w->map() != -1 && w->tileX() >= tilex && w->tileX() < maxtilex
-            && w->tileY() >= tiley && w->tileY() < maxtiley) {
-            fast_weapon_cache_.insert(fastKey(w));
-            cache_weapons_.push_back(w);
+    for (size_t i = 0; i < pMission_->numWeapons(); i++) {
+        WeaponInstance *pWeapon = pMission_->weapon(i);
+        if (pWeapon->isVisible() && isObjectInsideDrawingArea(pWeapon, viewport)) {
+            addObjectToDraw(pWeapon);
         }
     }
 
     // statics
-    for (unsigned int i = 0; i < pMission_->numStatics(); i++) {
-        Static *s = pMission_->statics(i);
-        if (s->tileX() >= tilex && s->tileX() < maxtilex
-            && s->tileY() >= tiley && s->tileY() < maxtiley) {
-            fast_statics_cache_.insert(fastKey(s));
-            cache_statics_.push_back(s);
+    for (size_t i = 0; i < pMission_->numStatics(); i++) {
+        Static *pStatic = pMission_->statics(i);
+        if (isObjectInsideDrawingArea(pStatic, viewport)) {
+            addObjectToDraw(pStatic);
         }
     }
 
     // sfx objects
-    for (unsigned int i = 0; i < pMission_->numSfxObjects(); i++) {
-        SFXObject *so = pMission_->sfxObjects(i);
-        if (so->map() != -1 && so->tileX() >= tilex && so->tileX() < maxtilex
-            && so->tileY() >= tiley && so->tileY() < maxtiley) {
-            fast_sfx_objects_cache_.insert(fastKey(so));
-            cache_sfx_objects_.push_back(so);
+    for (size_t i = 0; i < pMission_->numSfxObjects(); i++) {
+        SFXObject *pSfx = pMission_->sfxObjects(i);
+        if (pSfx->isVisible() && isObjectInsideDrawingArea(pSfx, viewport)) {
+            addObjectToDraw(pSfx);
         }
     }
 }
 
-void MapRenderer::drawAt(const TilePoint & tilePos, int x, int y) {
-    int key = fastKey(tilePos);
+/**
+ * Return true if the object appears on the screen and so should be drawn.
+ * \param pObject MapObject*
+ * \param viewport const Point2D&
+ * \return bool
+ *
+ */
+bool MapRenderer::isObjectInsideDrawingArea(MapObject *pObject, const Point2D &viewport) {
+    Point2D objectViewport;
+    pMission_->get_map()->tileToScreenPoint(pObject->position(), &objectViewport);
 
-    if (fast_vehicle_cache_.find(key) != fast_vehicle_cache_.end()) {
-        // draw vehicles
-        for (unsigned int i = 0; i < cache_vehicles_.size(); i++)
-            if (cache_vehicles_[i]->tileX() == tilePos.tx
-                && cache_vehicles_[i]->tileY() == tilePos.ty
-                // NOTE: a trick to make vehicles be drawn correctly z+1
-                && (cache_vehicles_[i]->tileZ() + 1) == tilePos.tz)
-                cache_vehicles_[i]->draw(x, y);
+    // Limits are larger than screen size in order to have a smooth display
+    // of appearance/disappearance of objects on screen. Otherwise they popup when
+    // entering the display screen.
+    return  objectViewport.x > (viewport.x - TILE_WIDTH / 2) && objectViewport.y > viewport.y &&
+            objectViewport.x <= (viewport.x + Screen::kScreenWidth - Screen::kScreenPanelWidth + 10) &&
+            objectViewport.y <= (viewport.y + Screen::kScreenHeight + pObject->position().tz * 48);
+}
+
+/**
+ * Draw all objects on the given tile.
+ * \param tilePos const TilePoint& tile coordinates
+ * \param screenPos const Point2D& position of tile on the screen
+ * \return int number of objects for debug
+ *
+ */
+int MapRenderer::drawObjectsOnTile(const TilePoint & tilePos, const Point2D &screenPos) {
+    int tileKey = tileHashKey(tilePos);
+    int nbDrawnObjects = 0;
+
+    std::map<int, ObjectToDraw *>::iterator it = objectsByTile_.find(tileKey);
+    if(it != objectsByTile_.end()) {
+        ObjectToDraw *pObj = it->second;
+        objectsByTile_.erase(it);
+        while(pObj != NULL) {
+            pObj->getObject()->draw(screenPos.x, screenPos.y);
+            ObjectToDraw *pNext = pObj->getNext();
+            pool_.releaseResource(pObj);
+            pObj = pNext;
+            nbDrawnObjects++;
+        }
     }
 
-    if (fast_ped_cache_.find(key) != fast_ped_cache_.end()) {
-        // draw peds
-        for (unsigned int i = 0; i < cache_peds_.size(); i++)
-            if (cache_peds_[i]->sameTile(tilePos)) {
-                cache_peds_[i]->draw(x, y);
-#if 0
-                g_Screen.drawLine(x - TILE_WIDTH / 2, y,
-                                  x + TILE_WIDTH / 2, y, 11);
-                g_Screen.drawLine(x + TILE_WIDTH / 2, y,
-                                  x + TILE_WIDTH / 2, y + TILE_HEIGHT,
-                                  11);
-                g_Screen.drawLine(x + TILE_WIDTH / 2, y + TILE_HEIGHT,
-                                  x - TILE_WIDTH / 2, y + TILE_HEIGHT,
-                                  11);
-                g_Screen.drawLine(x - TILE_WIDTH / 2, y + TILE_HEIGHT,
-                                  x - TILE_WIDTH / 2, y, 11);
-#endif
-            }
+    return nbDrawnObjects;
+}
+
+
+/**
+ * Adds an object to the list of objects to draw for the tile it's on.
+ * For a given tile object are sorted from back to front so that
+ * objects in the back are drawn first.
+ * \param pObjectToAdd MapObject* Object to add
+ * \return void
+ *
+ */
+void MapRenderer::addObjectToDraw(MapObject *pObjectToAdd) {
+    int tileKey;
+    ObjectToDraw *pNewEntry = pool_.getResource();
+    pNewEntry->setObject(pObjectToAdd);
+
+    if (pObjectToAdd->is(MapObject::kNatureVehicle)) {
+        // vehicle are associated with the tile just above (z+1)
+        // because it is bigger than a tile so all tiles below must be drawn first
+        TilePoint vehiclePos( pObjectToAdd->position());
+        vehiclePos.tz += 1;
+        tileKey = tileHashKey(vehiclePos);
+    } else {
+        tileKey = tileHashKey(pObjectToAdd);
     }
 
-    if (fast_weapon_cache_.find(key) != fast_weapon_cache_.end()) {
-        // draw weapons
-        for (unsigned int i = 0; i < cache_weapons_.size(); i++)
-            if (cache_weapons_[i]->map() != -1
-                && cache_weapons_[i]->sameTile(tilePos)) {
-                cache_weapons_[i]->draw(x, y);
+    std::map<int, ObjectToDraw *>::iterator element = objectsByTile_.find(tileKey);
+    if(element == objectsByTile_.end()) {
+        // no element has been set with the tile so add the first element
+        objectsByTile_[tileKey] = pNewEntry;
+    } else {
+        // there is at leastone element already set with the tile
+        ObjectToDraw *pObjectInList = element->second;
+        if (pObjectToAdd->isBehindObjectOnSameTile(pObjectInList->getObject())) {
+            // first case is when the new object should be first in the list
+            pNewEntry->setNext(pObjectInList);
+            objectsByTile_[tileKey] = pNewEntry;
+        } else {
+            // second case is when new object is somewhere in the list
+            while (pObjectInList != NULL) {
+                if (pObjectInList->getNext() != NULL) {
+                    if (pObjectToAdd->isBehindObjectOnSameTile(pObjectInList->getNext()->getObject())) {
+                        pObjectInList->insertNext(pNewEntry);
+                        break;
+                    } else {
+                        pObjectInList = pObjectInList->getNext();
+                    }
+                } else {
+                    pObjectInList->setNext(pNewEntry);
+                    break;
+                }
             }
+        }
     }
+}
 
-    if (fast_statics_cache_.find(key) != fast_statics_cache_.end()) {
-        // draw statics
-        for (unsigned int i = 0; i < cache_statics_.size(); i++)
-            if (cache_statics_[i]->sameTile(tilePos)) {
-                cache_statics_[i]->draw(x, y);
-            }
-    }
-
-    if (fast_sfx_objects_cache_.find(key) != fast_sfx_objects_cache_.end()) {
-        // draw sfx objects
-        for (unsigned int i = 0; i < cache_sfx_objects_.size(); i++)
-            if (cache_sfx_objects_[i]->sameTile(tilePos)) {
-                cache_sfx_objects_[i]->draw(x, y);
-            }
+/**
+ * Objects that were listed for drawing may be bigger than objects really drawn.
+ * So remove those objects from the list.
+ * \return void
+ *
+ */
+void MapRenderer::freeUnreleasedResources() {
+    int nbFreed = 0;
+    std::map<int, ObjectToDraw *>::iterator itr = objectsByTile_.begin();
+    while (itr != objectsByTile_.end()) {
+        std::map<int, ObjectToDraw *>::iterator toErase = itr;
+        ++itr;
+        ObjectToDraw *pObj = toErase->second;
+        while(pObj != NULL) {
+            ObjectToDraw *pNext = pObj->getNext();
+            pool_.releaseResource(pObj);
+            nbFreed++;
+            pObj = pNext;
+        }
+        objectsByTile_.erase(toErase);
     }
 }
