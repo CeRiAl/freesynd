@@ -351,8 +351,8 @@ public:
     //! See ShootableMovableMapObject::initMovementToDestination()
     bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1);
 
-    //! See ShootableMovableMapObject::updatePosition()
-    bool updatePosition(int elapsed, Mission *pMission);
+    //! See ShootableMovableMapObject::doMove()
+    bool doMove(int elapsed, Mission *pMission);
 
     //*************************************
     // Weapon management
@@ -410,7 +410,6 @@ public:
     void putInVehicle(Vehicle *v);
     void leaveVehicle();
 
-    int map();
     AnimationDrawn drawnAnim(void);
     void setDrawnAnim(AnimationDrawn drawn_anim);
     bool handleDrawnAnim(int elapsed);

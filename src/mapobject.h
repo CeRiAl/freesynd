@@ -80,6 +80,8 @@ public:
         return map_ != -1;
     }
 
+    int map() { return map_; }
+    void setMap(int new_map) { map_ = new_map; }
 
     virtual void draw(int x, int y) = 0;
     enum DamageType {
@@ -157,9 +159,6 @@ public:
     void setSizeX(int size_x) { size_x_ = size_x;}
     void setSizeY(int size_y) { size_y_ = size_y;}
     void setSizeZ(int size_z) { size_z_ = size_z;}
-
-    virtual int map() { return map_; }
-    void setMap(int new_map) { map_ = new_map; }
 
     /*!
      *
@@ -541,7 +540,7 @@ public:
      * \return True if the position has been updated.
      *
      */
-    virtual bool updatePosition(int elapsed, Mission *m) = 0;
+    virtual bool doMove(int elapsed, Mission *m) = 0;
 
     //! Return true if the ped is moving
     bool isMoving() { return speed_ != 0 || !dest_path_.empty();}
@@ -551,12 +550,13 @@ public:
     FreeWay hold_on_;
 
 protected:
+    bool addOffsetToPosition(int nOffX, int nOffY);
+
+protected:
     int speed_, base_speed_;
     //! on reaching this distance object should stop
     int dist_to_pos_;
     std::list<TilePoint> dest_path_;
-
-    bool updatePlacement(int nOffX, int nOffY);
 };
 
 /*!

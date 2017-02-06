@@ -176,15 +176,6 @@ private:
     Map *pMap_;
     SquadSelection *pSelection_;
 
-    std::vector<Vehicle *> cache_vehicles_;
-    std::vector<PedInstance *> cache_peds_;
-    std::vector<WeaponInstance *> cache_weapons_;
-    std::vector<Static *> cache_statics_;
-    std::vector<SFXObject *> cache_sfx_objects_;
-
-    std::set<int> fast_vehicle_cache_, fast_ped_cache_, fast_weapon_cache_,
-            fast_statics_cache_, fast_sfx_objects_cache_;
-
     Pool<ObjectToDraw> pool_;
     /*! This map contains for each tile the list of objects to draw.*/
     std::map<int, ObjectToDraw *> objectsByTile_;

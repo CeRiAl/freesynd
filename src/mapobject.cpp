@@ -583,11 +583,11 @@ ShootableMovableMapObject::ShootableMovableMapObject(uint16 anId, int m, ObjectN
  * \param nOffX amount to add to offX
  * \param nOffY amount to add to offY
  */
-bool ShootableMovableMapObject::updatePlacement(int nOffX, int nOffY)
+bool ShootableMovableMapObject::addOffsetToPosition(int nOffX, int nOffY)
 {
 
-    pos_.ox = nOffX;
-    pos_.oy = nOffY;
+    pos_.ox += nOffX;
+    pos_.oy += nOffY;
     bool changed = false;
 
     while (pos_.ox < 0) {

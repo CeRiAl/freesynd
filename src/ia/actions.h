@@ -33,6 +33,7 @@ class PedInstance;
 class WeaponInstance;
 class Vehicle;
 class GenericCar;
+class TrainHead;
 
 
 /*!
@@ -464,6 +465,23 @@ protected:
 protected:
     /*! Vehicle to drive.*/
     GenericCar *pVehicle_;
+    /*! Destination point.*/
+    TilePoint dest_;
+};
+
+/*!
+ * This action is used to drive a train to a point.
+ */
+class DriveTrainAction : public MovementAction {
+public:
+    DriveTrainAction(TrainHead *pTrain, const TilePoint &dest);
+
+protected:
+    void doStart(Mission *pMission, PedInstance *pPed);
+    bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
+protected:
+    /*! Train to drive.*/
+    TrainHead *pTrain_;
     /*! Destination point.*/
     TilePoint dest_;
 };

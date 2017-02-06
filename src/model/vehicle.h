@@ -150,8 +150,8 @@ public:
         speed_ = new_speed;
     }
 
-    //! See ShootableMovableMapObject::updatePosition()
-    bool updatePosition(int elapsed, Mission *m);
+    //! See ShootableMovableMapObject::doMove()
+    bool doMove(int elapsed, Mission *m);
 
     //! Adds the given ped to the list of passengers
     void addPassenger(PedInstance *p);
@@ -175,7 +175,7 @@ public:
     void handleHit(ShootableMapObject::DamageInflictType &d);
 
 protected:
-    bool move_vehicle(int elapsed);
+    bool findPathToNearestWalkableTile(Map *pMap, const TilePoint &startPt, int *basex, int *basey, std::vector < TilePoint > *path2add);
     uint16 tileDir(int x, int y, int z);
     bool dirWalkable(TilePoint *p, int x, int y, int z);
 

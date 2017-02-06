@@ -437,6 +437,7 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
  */
 bool PedInstance::executeAction(int elapsed, Mission *pMission) {
     bool updated = false;
+
     while(currentAction_ != NULL) {
         // execute action
         updated |= currentAction_->execute(elapsed, pMission, this);
@@ -1010,11 +1011,6 @@ void PedInstance::leaveVehicle() {
     setPosition(in_vehicle_->position());
     in_vehicle_ = NULL;
     switchActionStateFrom(state_ & PedInstance::pa_smInCar);
-}
-
-int PedInstance::map() {
-
-    return map_;
 }
 
 PedInstance::AnimationDrawn PedInstance::drawnAnim(void) {

@@ -33,19 +33,35 @@
 #include "vehicle.h"
 
 /*!
- * .
+ * A train is composed of TrainBody chained together.
+ * The train head contains the driver and moves. The other parts
+ * of the train move along with the TrainHead.
  */
 class TrainBody : public Vehicle {
 public:
-    TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation);
+    TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp);
     ~TrainBody();
 
-    bool updatePosition(int elapsed, Mission *m);
+    TrainBody * getNext() { return pNextBody_; }
+
+    void setNext(TrainBody *pNext) { pNextBody_ = pNext; }
 
     //! Set the destination to reach at given speed
     bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1) {
         return false;
     }
+
+    bool doMove(int elapsed, Mission *m) {
+        return false;
+    }
+
+protected:
+    //! add given amount to train position and updates passengers position
+    void changeTrainAndPassengersPosition(int distanceX, int distanceY);
+
+protected:
+    //! Next part of the train
+    TrainBody *pNextBody_;
 };
 
 /*!
@@ -53,13 +69,25 @@ public:
  */
 class TrainHead : public TrainBody {
 public:
-    TrainHead(uint16 id, uint8 aType, VehicleAnimation *pAnimation);
+    TrainHead(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp);
     ~TrainHead();
 
-    //! Animates the train
-    bool animate(int elapsed);
-private:
+    //! Set the destination to reach at given speed
+    bool initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed = -1);
 
+    bool doMove(int elapsed, Mission *m);
+
+    void appendTrainBody(TrainBody *pTrainBody);
+private:
+    bool isMovementOnXAxis() {
+        return moveOnXaxis_;
+    }
+    // If the destination is reached the train stops
+    void stopIfDestinationReached(const WorldPoint &destinationPt);
+
+private:
+    //! True means this train is moving on the X axis, else on the Y axis
+    bool moveOnXaxis_;
 };
 
 #endif // MODEL_TRAIN_H_

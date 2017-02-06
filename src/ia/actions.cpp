@@ -30,6 +30,7 @@
 #include "ped.h"
 #include "weapon.h"
 #include "model/vehicle.h"
+#include "model/train.h"
 #include "mission.h"
 #include "agentmanager.h"
 #include "core/squad.h"
@@ -250,7 +251,7 @@ void WalkAction::doStart(Mission *pMission, PedInstance *pPed) {
  * \param pPed The ped executing the action.
  */
 bool WalkAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    bool updated = pPed->updatePosition(elapsed, pMission);
+    bool updated = pPed->doMove(elapsed, pMission);
     if (!pPed->hasDestination()) {
         // Ped has arrived at destination
         setSucceeded();
@@ -434,7 +435,7 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
                 pPed->clearDestination();
                 pPed->leaveState(targetState_);
             } else {
-                updated = pPed->updatePosition(elapsed, pMission);
+                updated = pPed->doMove(elapsed, pMission);
             }
         }
 
@@ -509,7 +510,7 @@ bool FollowToShootAction::doExecute(int elapsed, Mission *pMission, PedInstance 
             setSucceeded();
             pPed->clearDestination();
         } else {
-            updated = pPed->updatePosition(elapsed, pMission);
+            updated = pPed->doMove(elapsed, pMission);
         }
 
     }
@@ -617,13 +618,36 @@ bool DriveVehicleAction::doExecute(int elapsed, Mission *pMission, PedInstance *
     return true;
 }
 
+DriveTrainAction::DriveTrainAction(TrainHead *pTrain, const TilePoint &dest) :
+    MovementAction(kActTypeUndefined, false, true) {
+    pTrain_ = pTrain;
+    dest_ = dest;
+}
+
+void DriveTrainAction::doStart(Mission *pMission, PedInstance *pPed) {
+    if (!pTrain_->containsPed(pPed)) {
+        setFailed();
+    }
+
+    if (!pTrain_->initMovementToDestination(pMission, dest_, 1024)) {
+        setFailed();
+    }
+}
+
+bool DriveTrainAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
+    if (!pTrain_->hasDestination()) {
+        setSucceeded();
+    }
+    return true;
+}
+
 WaitAction::WaitAction(WaitEnum waitFor, uint32 duration) :
-MovementAction(kActTypeWait, true), waitTimer_(duration) {
+MovementAction(kActTypeWait, true, true), waitTimer_(duration) {
     waitType_ = waitFor;
 }
 
 WaitAction::WaitAction(WaitEnum waitFor) :
-MovementAction(kActTypeWait, true), waitTimer_(0) {
+MovementAction(kActTypeWait, true, true), waitTimer_(0) {
     waitType_ = waitFor;
 }
 

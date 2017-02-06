@@ -490,6 +490,7 @@ WeaponInstance * MissionManager::create_weapon_instance(const LevelData::Weapons
 
 
 void MissionManager::createVehicles(const LevelData::LevelDataAll &level_data, DataIndex &di, Mission *pMission) {
+    TrainHead *pTrainHead = NULL;
     for (uint16 i = 0; i < 64; i++) {
         const LevelData::Cars & car = level_data.cars[i];
         // car.sub_type 0x09 - train
@@ -504,6 +505,17 @@ void MissionManager::createVehicles(const LevelData::LevelDataAll &level_data, D
                 == car.offset_of_driver)
             {
                 di.driverindx[(car.offset_of_driver - 2) / 92] = di.vindx[i];
+            }
+
+            if (v->getType() == Vehicle::kVehicleTypeTrainHead) {
+                TrainHead *pHead = dynamic_cast<TrainHead *>(v);
+                if (pTrainHead == NULL) {
+                    pTrainHead = pHead;
+                } else {
+                    pTrainHead->appendTrainBody(pHead);
+                }
+            } else if (v->getType() == Vehicle::kVehicleTypeTrainBody) {
+                pTrainHead->appendTrainBody(dynamic_cast<TrainBody *>(v));
             }
         }
     }
@@ -523,10 +535,10 @@ Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, 
     Vehicle *pVehicle = NULL;
     if (gamdata.sub_type == Vehicle::kVehicleTypeTrainHead) {
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Head %d", id))
-        pVehicle = new TrainHead(id, Vehicle::kVehicleTypeTrainHead, vehicleanim);
+        pVehicle = new TrainHead(id, Vehicle::kVehicleTypeTrainHead, vehicleanim, hp);
     } else if (gamdata.sub_type == Vehicle::kVehicleTypeTrainBody) {
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Body %d", id))
-        pVehicle = new TrainBody(id, Vehicle::kVehicleTypeTrainHead, vehicleanim);
+        pVehicle = new TrainBody(id, Vehicle::kVehicleTypeTrainBody, vehicleanim, hp);
     } else {
         // standard car
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create generic car %d", id))
@@ -719,8 +731,9 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                     GenericCar *pCar = dynamic_cast<GenericCar *>(v);
                     pPed->addToDefaultActions(new DriveVehicleAction(pCar, locT));
                 } else {
-                    LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive train %d to (%d, %d, %d) (%d, %d)", v->id(), locT.tx, locT.ty, locT.tz, locT.ox, locT.oy))
-                    // TODO : add drive train action
+                    LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive train (a) %d to (%d, %d, %d) (%d, %d)", v->id(), locT.tx, locT.ty, locT.tz, locT.ox, locT.oy))
+                    TrainHead *pTrain = dynamic_cast<TrainHead *>(v);
+                    pPed->addToDefaultActions(new DriveTrainAction(pTrain, locT));
                 }
             } else {
                 LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Walk toward location (%d, %d, %d)", locT.tx, locT.ty, locT.tz))
@@ -752,7 +765,8 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
                     pPed->addToDefaultActions(
                         new DriveVehicleAction(pCar, v->position()));
                 } else {
-                    LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive train %d to (%d, %d, %d) (%d, %d)", v->id(), v->tileX(), v->tileY(), v->tileZ(), v->offX(), v->offY()))
+                    LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - Drive train (b) %d to (%d, %d, %d) (%d, %d)", v->id(), v->tileX(), v->tileY(), v->tileZ(), v->offX(), v->offY()))
+                    // NOTE : this action is redundant with action of type 1
                 }
             }
         } else if (sc.type == LevelData::kScenarioTypeEscape) {
@@ -763,6 +777,10 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             pPed->addToDefaultActions(new ResetScriptedAction(Action::kActionDefault));
         } else if (sc.type == 10) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" scenario type 10"))
+            if (offset_nxt == 0) {
+                // on the last action, add a reset
+                pPed->addToDefaultActions(new ResetScriptedAction(Action::kActionDefault));
+            }
         } else {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" - unknown type %d", sc.type))
         }

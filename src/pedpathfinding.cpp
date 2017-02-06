@@ -2290,7 +2290,7 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
 #endif
 }
 
-bool PedInstance::updatePosition(int elapsed, Mission *pMission)
+bool PedInstance::doMove(int elapsed, Mission *pMission)
 {
     bool updated = false;
     int used_time = elapsed;
@@ -2381,11 +2381,11 @@ bool PedInstance::updatePosition(int elapsed, Mission *pMission)
             } else
                 used_time = 0;
 
-            updatePlacement(pos_.ox + dx, pos_.oy + dy);
+            addOffsetToPosition(dx, dy);
             // TODO : what obstacles? cars? doors are already
             // setting stop signal, reuse it?
 #if 0
-            if (updatePlacement(pos_.ox + dx, pos_.oy + dy)) {
+            if (addOffsetToPosition(dx, dy)) {
                 ;
             } else {
                 // TODO: avoid obstacles.
