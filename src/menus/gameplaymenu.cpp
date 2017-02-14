@@ -245,9 +245,12 @@ void GameplayMenu::initWorldCoords()
 {
     // get the leader position on the map
     PedInstance *p_leader = selection_.leader();
+    //Vehicle *pVehicle = mission_->vehicle(0);
     Point2D start;
     mission_->get_map()->tileToScreenPoint(p_leader->tileX(),
         p_leader->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
+    //mission_->get_map()->tileToScreenPoint(pVehicle->tileX(),
+    //    pVehicle->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
     start.x -= (GAME_SCREEN_WIDTH - 129) / 2;
     start.y -= GAME_SCREEN_HEIGHT / 2;
 
@@ -367,7 +370,6 @@ void GameplayMenu::handleTick(int elapsed)
         for (size_t i = 0; i < mission_->numPeds(); i++)
             change |= mission_->ped(i)->animate(diff, mission_);
 
-        updateMarkersPosition();
 
         for (size_t i = 0; i < mission_->numVehicles(); i++)
             change |= mission_->vehicle(i)->animate(diff);
@@ -385,6 +387,8 @@ void GameplayMenu::handleTick(int elapsed)
                 i--;
             }
         }
+
+        updateMarkersPosition();
     }
 
     updateMinimap(elapsed);
@@ -567,7 +571,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
 
         for (size_t i = 0; mission_ && i < mission_->numVehicles(); ++i) {
             Vehicle *v = mission_->vehicle(i);
-            if (v->isAlive()) {
+            // TrainHead cannot be selected to prevent player from putting agents in it
+            if (v->isAlive() && v->getType() != Vehicle::kVehicleTypeTrainHead) {
                 Point2D scPt;
                 mission_->get_map()->tileToScreenPoint(v->position(), &scPt);
                 int px = scPt.x - 20;
@@ -1354,7 +1359,7 @@ void GameplayMenu::highlightLeaderMarker()
  */
 void GameplayMenu::updateMarkersPosition() {
     for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
-        if (mission_->sfxObjects(i + 4)->isVisible()) {
+        if (mission_->sfxObjects(i + 4)->isDrawable()) {
             TilePoint agentPos = mission_->getSquad()->member(i)->position();
             agentPos.ox -= 16;
             agentPos.oz += 256;
@@ -1371,7 +1376,7 @@ void GameplayMenu::updateSelectionForDeadAgent(PedInstance *pPed) {
     // Deselects dead agent
     selection_.deselectAgent(pPed);
     // hide dead agent's marker
-    mission_->sfxObjects(pPed->id() + 4)->setVisible(false);
+    mission_->sfxObjects(pPed->id() + 4)->setDrawable(false);
 
     // if selection is empty after agent's death
     // selects the first selectable agent

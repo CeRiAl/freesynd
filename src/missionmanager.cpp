@@ -535,10 +535,10 @@ Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, 
     Vehicle *pVehicle = NULL;
     if (gamdata.sub_type == Vehicle::kVehicleTypeTrainHead) {
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Head %d", id))
-        pVehicle = new TrainHead(id, Vehicle::kVehicleTypeTrainHead, vehicleanim, hp);
+        pVehicle = new TrainHead(id, Vehicle::kVehicleTypeTrainHead, vehicleanim, hp, gamdata.orientation == 192);
     } else if (gamdata.sub_type == Vehicle::kVehicleTypeTrainBody) {
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create Train Body %d", id))
-        pVehicle = new TrainBody(id, Vehicle::kVehicleTypeTrainBody, vehicleanim, hp);
+        pVehicle = new TrainBody(id, Vehicle::kVehicleTypeTrainBody, vehicleanim, hp, gamdata.orientation == 192);
     } else {
         // standard car
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", ("Create generic car %d", id))
@@ -596,7 +596,7 @@ Vehicle * MissionManager::createVehicleInstance(const LevelData::Cars &gamdata, 
                                 gamdata.mapposy[0], oz);
         pVehicle->setDirection(gamdata.orientation);
 
-        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - position %d, %d, %d, %d, %d, %d\n", gamdata.mapposx[1], gamdata.mapposy[1], z, gamdata.mapposx[0],gamdata.mapposy[0], oz))
+        LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - position %d, %d, %d, %d, %d, %d", gamdata.mapposx[1], gamdata.mapposy[1], z, gamdata.mapposx[0],gamdata.mapposy[0], oz))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 1 %u", gamdata.unkn1))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 2 %u", gamdata.unkn2))
         LOG(Log::k_FLG_GAME, "MissionManager","createVehicleInstance", (" - field unknown 3 %u", gamdata.unkn3))
@@ -777,6 +777,7 @@ void MissionManager::createScriptedActionsForPed(Mission *pMission, DataIndex &d
             pPed->addToDefaultActions(new ResetScriptedAction(Action::kActionDefault));
         } else if (sc.type == 10) {
             LOG(Log::k_FLG_GAME, "MissionManager","createScriptedActionsForPed", (" scenario type 10"))
+            pPed->addToDefaultActions(new WaitAction(WaitAction::kWaitTime, 7000));
             if (offset_nxt == 0) {
                 // on the last action, add a reset
                 pPed->addToDefaultActions(new ResetScriptedAction(Action::kActionDefault));

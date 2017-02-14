@@ -45,7 +45,7 @@ void Squad::clear() {
 void Squad::setMember(size_t slotId, PedInstance *pPedAgent) {
     assert(slotId < AgentManager::kMaxSlot);
     a_members_[slotId] = pPedAgent;
-    
+
     // recount the number of agent
     size_ = 0;
     for (size_t i=0; i < AgentManager::kMaxSlot; i++) {
@@ -61,7 +61,7 @@ PedInstance * Squad::member(size_t slotId) {
     return a_members_[slotId];
 }
 
-/*! 
+/*!
  * Returns true if one living agent has a scanner.
  */
 bool Squad::hasScanner() {
@@ -94,4 +94,16 @@ bool Squad::isAllDead() {
 
     // No agent is alive
     return true;
+}
+
+void Squad::getPositionInSquadFormation(size_t slotId, TilePoint *pPosition) {
+    //TODO: current group position is like
+    // in original this can make non-tile
+    // oriented
+    //int sox = (i % 2) * (i - 2) * 16;
+    //int soy = ((i + 1) % 2) * (i - 1) * 8;
+
+    //this should be removed if non-tile position needed
+    pPosition->ox = 63 + 128 * (slotId % 2);
+    pPosition->oy = 63 + 128 * (slotId >> 1);
 }

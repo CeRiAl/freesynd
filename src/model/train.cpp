@@ -1,22 +1,69 @@
-#include "train.h"
+/************************************************************************
+ *                                                                      *
+ *  FreeSynd - a remake of the classic Bullfrog game "Syndicate".       *
+ *                                                                      *
+ *   Copyright (C) 2005  Stuart Binge  <skbinge@gmail.com>              *
+ *   Copyright (C) 2005  Joost Peters  <joostp@users.sourceforge.net>   *
+ *   Copyright (C) 2006  Trent Waddington <qg@biodome.org>              *
+ *   Copyright (C) 2006  Tarjei Knapstad <tarjei.knapstad@gmail.com>    *
+ *   Copyright (C) 2010  Bohdan Stelmakh <chamel@users.sourceforge.net> *
+ *   Copyright (C) 2016  Benoit Blancard <benblan@users.sourceforge.net>*
+ *                                                                      *
+ *    This program is free software;  you can redistribute it and / or  *
+ *  modify it  under the  terms of the  GNU General  Public License as  *
+ *  published by the Free Software Foundation; either version 2 of the  *
+ *  License, or (at your option) any later version.                     *
+ *                                                                      *
+ *    This program is  distributed in the hope that it will be useful,  *
+ *  but WITHOUT  ANY WARRANTY;  without even  the implied  warranty of  *
+ *  MERCHANTABILITY  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  *
+ *  General Public License for more details.                            *
+ *                                                                      *
+ *    You can view the GNU  General Public License, online, at the GNU  *
+ *  project's  web  site;  see <http://www.gnu.org/licenses/gpl.html>.  *
+ *  The full text of the license is also included in the file COPYING.  *
+ *                                                                      *
+ ************************************************************************/
 
-TrainBody::TrainBody(uint16 anId, uint8 aType, VehicleAnimation *pAnimation, int startHp) :
+#include "train.h"
+#include "mission.h"
+#include "core/squad.h"
+
+TrainBody::TrainBody(uint16 anId, uint8 aType, VehicleAnimation *pAnimation, int startHp, bool isMoveOnXAxis) :
     Vehicle(anId, aType, -1, pAnimation) {
 
     setHealth(startHp);
     setStartHealth(startHp);
 
     pNextBody_ = NULL;
+    moveOnXaxis_ = isMoveOnXAxis;
 }
 
 TrainBody::~TrainBody() {
+}
+
+void TrainBody::dropAllPassengers(const Mission &mission, const TilePoint &dropPos) {
+    while (!passengers_.empty()) {
+        PedInstance *pPed = passengers_.front();
+        pPed->leaveVehicle();
+        pPed->setPosition(dropPos);
+        // when leaving train, passengers walk towards the station
+        TilePoint movePos(dropPos);
+        isMovementOnXAxis() ? movePos.ty += 2 : movePos.tx += 2;
+        movePos.tz += 1; // train station are higher than trains
+        if (pPed->isOurAgent()) {
+            mission.getSquad()->getPositionInSquadFormation(pPed->id(), &movePos);
+        }
+        pPed->addActionWalk(movePos, false);
+        passengers_.pop_front();
+    }
 }
 
 void TrainBody::changeTrainAndPassengersPosition(int distanceX, int distanceY) {
     addOffsetToPosition(distanceX, distanceY);
 
     if (!passengers_.empty()) {
-        for (std::set<PedInstance *>::iterator it = passengers_.begin();
+        for (std::list<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++
         ) {
             (*it)->setPosition(pos_);
@@ -28,10 +75,8 @@ void TrainBody::changeTrainAndPassengersPosition(int distanceX, int distanceY) {
     }
 }
 
-TrainHead::TrainHead(uint16 anId, uint8 aType, VehicleAnimation *pAnimation, int startHp) :
-    TrainBody(anId, aType, pAnimation, startHp) {
-        moveOnXaxis_ = true;
-}
+TrainHead::TrainHead(uint16 anId, uint8 aType, VehicleAnimation *pAnimation, int startHp, bool isMoveOnXAxis) :
+    TrainBody(anId, aType, pAnimation, startHp, isMoveOnXAxis) {}
 
 TrainHead::~TrainHead() {
 
@@ -44,7 +89,6 @@ bool TrainHead::initMovementToDestination(Mission *m, const TilePoint &destinati
     dest_path_.push_front(destinationPt);
     speed_ = newSpeed;
 
-    moveOnXaxis_ = (destinationPt.ty == pos_.ty);
     return true;
 }
 
@@ -109,3 +153,4 @@ void TrainHead::appendTrainBody(TrainBody *pTrainBodyToAdd) {
     }
     pBody->setNext(pTrainBodyToAdd);
 }
+

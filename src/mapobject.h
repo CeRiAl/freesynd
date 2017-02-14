@@ -67,15 +67,15 @@ public:
     //! Return the object's id
     uint16 id() { return id_; }
 
-    void setVisible(bool visible) {
-        isVisible_ = visible;
-        // TODO : remove when isVisible is active
-        if (!isVisible_) {
+    void setDrawable(bool drawable) {
+        isDrawable_ = drawable;
+        // TODO : remove when isDrawable_ is active
+        if (!isDrawable_) {
             map_ = -1;
         }
     }
 
-    bool isVisible() {
+    bool isDrawable() {
         // TODO : replace with isvisible_
         return map_ != -1;
     }
@@ -308,7 +308,7 @@ protected:
     //! if equal -1 object is not on map and should not be drawn
     int map_;
     //! Object should be drawn only if visible
-    bool isVisible_;
+    bool isDrawable_;
     //! animation frame changing
     int frame_;
     /*!

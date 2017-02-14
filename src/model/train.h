@@ -39,7 +39,7 @@
  */
 class TrainBody : public Vehicle {
 public:
-    TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp);
+    TrainBody(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp, bool isMoveOnXAxis);
     ~TrainBody();
 
     TrainBody * getNext() { return pNextBody_; }
@@ -55,13 +55,20 @@ public:
         return false;
     }
 
+    void dropAllPassengers(const Mission &mission, const TilePoint &dropPos);
+
 protected:
+    bool isMovementOnXAxis() {
+        return moveOnXaxis_;
+    }
     //! add given amount to train position and updates passengers position
     void changeTrainAndPassengersPosition(int distanceX, int distanceY);
 
 protected:
     //! Next part of the train
     TrainBody *pNextBody_;
+    //! True means this train is moving on the X axis, else on the Y axis
+    bool moveOnXaxis_;
 };
 
 /*!
@@ -69,7 +76,7 @@ protected:
  */
 class TrainHead : public TrainBody {
 public:
-    TrainHead(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp);
+    TrainHead(uint16 id, uint8 aType, VehicleAnimation *pAnimation, int startHp, bool isMoveOnXAxis);
     ~TrainHead();
 
     //! Set the destination to reach at given speed
@@ -78,16 +85,10 @@ public:
     bool doMove(int elapsed, Mission *m);
 
     void appendTrainBody(TrainBody *pTrainBody);
-private:
-    bool isMovementOnXAxis() {
-        return moveOnXaxis_;
-    }
-    // If the destination is reached the train stops
-    void stopIfDestinationReached(const WorldPoint &destinationPt);
 
 private:
-    //! True means this train is moving on the X axis, else on the Y axis
-    bool moveOnXaxis_;
+    // If the destination is reached the train stops
+    void stopIfDestinationReached(const WorldPoint &destinationPt);
 };
 
 #endif // MODEL_TRAIN_H_

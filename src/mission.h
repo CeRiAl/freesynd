@@ -313,7 +313,7 @@ public:
     /*!
      * Returns the current squad.
      */
-    Squad * getSquad() { return p_squad_; }
+    Squad * getSquad() const { return p_squad_; }
 
 protected:
     bool sWalkable(char thisTile, char upperTile);

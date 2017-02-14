@@ -154,7 +154,7 @@ void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
     // Include peds
     for (size_t i = 0; i < pMission_->numPeds(); i++) {
         PedInstance *pPed = pMission_->ped(i);
-        if (pPed->isVisible() && isObjectInsideDrawingArea(pPed, viewport)) {
+        if (pPed->isDrawable() && isObjectInsideDrawingArea(pPed, viewport)) {
             addObjectToDraw(pPed);
         }
     }
@@ -170,7 +170,7 @@ void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
     // weapons
     for (size_t i = 0; i < pMission_->numWeapons(); i++) {
         WeaponInstance *pWeapon = pMission_->weapon(i);
-        if (pWeapon->isVisible() && isObjectInsideDrawingArea(pWeapon, viewport)) {
+        if (pWeapon->isDrawable() && isObjectInsideDrawingArea(pWeapon, viewport)) {
             addObjectToDraw(pWeapon);
         }
     }
@@ -186,7 +186,7 @@ void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
     // sfx objects
     for (size_t i = 0; i < pMission_->numSfxObjects(); i++) {
         SFXObject *pSfx = pMission_->sfxObjects(i);
-        if (pSfx->isVisible() && isObjectInsideDrawingArea(pSfx, viewport)) {
+        if (pSfx->isDrawable() && isObjectInsideDrawingArea(pSfx, viewport)) {
             addObjectToDraw(pSfx);
         }
     }

@@ -234,44 +234,34 @@ void SquadSelection::followPed(PedInstance *pPed, bool addAction) {
 }
 
 /*!
- * Selected agents enter or leave the given vehicle. First check where the
- * leader is :
- * - if he is in a vehicle (can be different from the given one),
- *   every selected agent that is not in a vehicle, gets in the vehicle.
- * - else every selected gets out of the given vehicle.
- * \param pPed The ped to follow
+ * Selected agents enter or leave the given vehicle.
+ * - if he is in the vehicle, the vehicle stops and he gets out. It only works
+ *    with cars : Trains automatically drop their passengers.
+ * - else he gets in the given vehicle.
+ * \param pVehicle The vehicle
  * \param addAction True to add the action at the end of the list of action,
  * false to set as the only action.
  */
 void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
-    // true means every one get in the vehicle
-    bool leaderIsInVehicle = leader()->inVehicle() == NULL;
-
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *pAgent = *it;
 
-        if (leaderIsInVehicle && !pAgent->inVehicle()) {
-            // Agent is out and leader is in
+        if (pVehicle->isCar() && pAgent->inVehicle() == pVehicle) {
+            // First stop the car
+            if (pVehicle->speed() != 0) {
+                pVehicle->clearDestination();
+                GenericCar *pCar = dynamic_cast<GenericCar *>(pVehicle);
+                pCar->getDriver()->destroyAllActions();
+            }
+
+            // then drop passenger
+            pVehicle->dropPassenger(pAgent);
+        } else {
+            // Agent is out
             MovementAction *pAction =
                 pAgent->createActionEnterVehicle(pVehicle);
             pAgent->addMovementAction(pAction, addAction);
-        } else if (!leaderIsInVehicle && pAgent->inVehicle() == pVehicle) {
-            // Agent is in the given car and leader is out
-            // first stops the vehicle if it's a car
-            if (pVehicle->speed() != 0 && pVehicle->isCar()) {
-                pVehicle->clearDestination();
-                // tells the driver to stop
-                GenericCar *pVi = dynamic_cast<GenericCar *>(pVehicle);
-                pVi->getDriver()->destroyAllActions();
-            }
-            // Ped can get off only if vehicle is stopped
-            // (ie trains only stop in stations)
-            if (pVehicle->speed() == 0) {
-                // drop passenger is not implemented as an action as player
-                // cannot queue this action with other actions.
-                pVehicle->dropPassenger(pAgent);
-            }
         }
     }
 }
@@ -313,16 +303,7 @@ void SquadSelection::moveTo(TilePoint &mapPt, bool addAction) {
             TilePoint tmpPosT = mapPt;
 
             if (size() > 1) {
-                //TODO: current group position is like
-                // in original this can make non-tile
-                // oriented
-                //int sox = (i % 2) * (i - 2) * 16;
-                //int soy = ((i + 1) % 2) * (i - 1) * 8;
-
-                //this should be romoved if non-tile
-                //position needed
-                tmpPosT.ox = 63 + 128 * (i % 2);
-                tmpPosT.oy = 63 + 128 * (i >> 1);
+                pSquad_->getPositionInSquadFormation(i, &tmpPosT);
             }
 
             pAgent->addActionWalk(tmpPosT, addAction);

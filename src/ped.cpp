@@ -1000,14 +1000,14 @@ Vehicle *PedInstance::inVehicle() const {
 
 void PedInstance::putInVehicle(Vehicle * pVehicle)
 {
-    map_ = -1;
+    setDrawable(false);
     in_vehicle_ = pVehicle;
     switchActionStateTo(PedInstance::pa_smInCar);
 }
 
 void PedInstance::leaveVehicle() {
-    assert(map_ == -1 && in_vehicle_);
-    map_ = in_vehicle_->map();
+    setDrawable(true);
+    setMap(g_Session.getMission()->map());
     setPosition(in_vehicle_->position());
     in_vehicle_ = NULL;
     switchActionStateFrom(state_ & PedInstance::pa_smInCar);

@@ -24,6 +24,7 @@
 #define CORE_SQUAD_H_
 
 #include "common.h"
+#include "model/position.h"
 
 class PedInstance;
 
@@ -50,6 +51,8 @@ public:
     bool isAllDead();
     //! Returns the size of the squad (with the dead agents)
     size_t size() { return size_; }
+
+    void getPositionInSquadFormation(size_t slotId, TilePoint *pPosition);
 private:
     /*!
      * Selected agents for the next mission. Up to 4 agents.

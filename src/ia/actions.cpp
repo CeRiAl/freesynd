@@ -637,8 +637,25 @@ void DriveTrainAction::doStart(Mission *pMission, PedInstance *pPed) {
 bool DriveTrainAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
     if (!pTrain_->hasDestination()) {
         setSucceeded();
+
+        dropAgents(*pMission);
     }
+
     return true;
+}
+
+void DriveTrainAction::dropAgents(const Mission &mission) {
+    // find center of train
+    // Train are always five elements long
+    TrainBody *pBody = pTrain_->getNext()->getNext();
+    TilePoint dropPos = pBody->position();
+
+    // There should be passengers only in train body
+    pBody = pTrain_->getNext();
+    while (pBody->getType() != Vehicle::kVehicleTypeTrainHead) {
+        pBody->dropAllPassengers(mission, dropPos);
+        pBody = pBody->getNext();
+    }
 }
 
 WaitAction::WaitAction(WaitEnum waitFor, uint32 duration) :

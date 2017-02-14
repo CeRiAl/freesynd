@@ -479,6 +479,8 @@ public:
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
+
+    void dropAgents(const Mission &mission);
 protected:
     /*! Train to drive.*/
     TrainHead *pTrain_;

@@ -114,7 +114,14 @@ public:
 
     //! Returns true if given ped is in the vehicle
     bool containsPed(PedInstance *p) {
-        return (passengers_.find(p) != passengers_.end());
+        for (std::list<PedInstance *>::iterator it = passengers_.begin();
+        it != passengers_.end(); it++)
+        {
+            if ((*it)->id() == p->id()) {
+                return true;
+            }
+        }
+        return false;
     }
     //! Returns true if the vehicle contains one of our agent
     bool containsOurAgents();
@@ -123,7 +130,7 @@ public:
 
 protected:
     /*! The passengers of the vehicle.*/
-    std::set <PedInstance *> passengers_;
+    std::list <PedInstance *> passengers_;
     /*! Animation for vehicle.*/
     VehicleAnimation *animation_;
 

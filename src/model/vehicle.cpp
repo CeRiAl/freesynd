@@ -112,7 +112,7 @@ bool Vehicle::animate(int elapsed)
  */
 void Vehicle::addPassenger(PedInstance *pPed) {
     if(!containsPed(pPed)) {
-        passengers_.insert(pPed);
+        passengers_.push_back(pPed);
         pPed->putInVehicle(this);
     }
 }
@@ -122,17 +122,22 @@ void Vehicle::addPassenger(PedInstance *pPed) {
  * \param pPed Ped to remove
  */
 void Vehicle::dropPassenger(PedInstance *pPed) {
-    if(containsPed(pPed)) {
-        pPed->leaveVehicle();
-        passengers_.erase(passengers_.find(pPed));
-    }
+    for (std::list<PedInstance *>::iterator it = passengers_.begin();
+        it != passengers_.end(); it++)
+        {
+            if ((*it)->id() == pPed->id()) {
+                pPed->leaveVehicle();
+                passengers_.erase(it);
+                return;
+            }
+        }
 }
 
 /*!
  * Returns true if at least one of our agent is inside the vehicle.
  */
 bool Vehicle::containsOurAgents() {
-    for (std::set<PedInstance *>::iterator it = passengers_.begin();
+    for (std::list<PedInstance *>::iterator it = passengers_.begin();
         it != passengers_.end(); it++)
     {
         if ((*it)->isOurAgent()) {
@@ -151,7 +156,7 @@ bool Vehicle::containsOurAgents() {
 bool Vehicle::containsHostilesForPed(PedInstance* p,
                                           unsigned int hostile_desc_alt)
 {
-    for (std::set<PedInstance *>::iterator it = passengers_.begin();
+    for (std::list<PedInstance *>::iterator it = passengers_.begin();
         it != passengers_.end(); it++)
     {
         if (p->isHostileTo((ShootableMapObject *)(*it), hostile_desc_alt))
@@ -391,7 +396,7 @@ bool GenericCar::initMovementToDestination(Mission *pMission, const TilePoint &d
 
     clearDestination();
 
-    if (!isVisible() || isDead() || !(pMap->isTileWalkableByCar(x, y, z))) {
+    if (!isDrawable() || isDead() || !(pMap->isTileWalkableByCar(x, y, z))) {
 #if 0
 #if _DEBUG
         if (!(map_ == -1 || health_ <= 0)) {
@@ -772,7 +777,7 @@ bool GenericCar::doMove(int elapsed, Mission *m)
         speed_ = 0;
     }
     if (!passengers_.empty()) {
-        for (std::set<PedInstance *>::iterator it = passengers_.begin();
+        for (std::list<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++
         ) {
             (*it)->setPosition(pos_);
@@ -840,7 +845,7 @@ void GenericCar::dropPassenger(PedInstance *pPed) {
         clearDestination();
 
         // find another driver in the remaining passengers
-        for (std::set<PedInstance *>::iterator it = passengers_.begin();
+        for (std::list<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++) {
             // take the first one
             pDriver_ = *it;
