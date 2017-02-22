@@ -139,8 +139,14 @@ bool TrainHead::doMove(int elapsed, Mission *m)
 }
 
 void TrainHead::stopIfDestinationReached(const WorldPoint &destinationPt) {
+    bool stop = false;
     WorldPoint currentPos(pos_);
-    if(abs(destinationPt.y - currentPos.y) < 4) {
+
+    stop = isMovementOnXAxis() ?
+                abs(destinationPt.x - currentPos.x) < 4:
+                abs(destinationPt.y - currentPos.y) < 4;
+
+    if(stop) {
         dest_path_.pop_front();
         speed_ = 0;
     }

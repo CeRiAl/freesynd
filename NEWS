@@ -15,13 +15,13 @@ Fixed Bugs
 
 Features added
 ----------
-  * 
+  * Trains now moves and player agents can get on/off
 
 Known issues with this release
 ------------------------------
   * Agent AI is partially operational.
   * PathFinding requires improvement (path smoothing)
-  * Map drawing is buggy
+  * Trains that moves North/South have a buggy display (it flickers)
   * Not all weapons correctly function.
 
 History
