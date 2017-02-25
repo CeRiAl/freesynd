@@ -16,6 +16,7 @@ Fixed Bugs
 Features added
 ----------
   * Trains now moves and player agents can get on/off
+  * Persuaded peds follow their leader in cars and trains
 
 Known issues with this release
 ------------------------------

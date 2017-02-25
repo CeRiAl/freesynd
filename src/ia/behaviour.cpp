@@ -156,7 +156,7 @@ void PersuaderBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
 
 PersuadedBehaviourComponent::PersuadedBehaviourComponent():
         BehaviourComponent(), checkWeaponTimer_(1000) {
-    status_ = kPersuadStatusInitializing;
+    status_ = kPersuadStatusWaitForHitAction;
 }
 
 void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
@@ -185,10 +185,10 @@ void PersuadedBehaviourComponent::execute(int elapsed, Mission *pMission, PedIns
                     pPed->addToAltActions(pActions);
                 } else {
                     // just update weapon
-                    updateAltActionsWith(pWeapon, pPed);
+                    changeTargetWeaponInAltActions(pWeapon, pPed);
                 }
                 // execute alternative actions
-                pPed->changeSourceOfActions(Action::kActionAlt);
+                pPed->setCurrentActionWithSource(Action::kActionAlt);
             }
         }
     }
@@ -216,7 +216,7 @@ void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
             }
         }
     } else if (evtType == Behaviour::kBehvEvtActionEnded) {
-        if (status_ == kPersuadStatusWaitInit) {
+        if (status_ == kPersuadStatusWaitForHitAction) {
             status_ = kPersuadStatusInitializing;
         } else {
             Action::ActionType *pType = static_cast<Action::ActionType *> (pCtxt);
@@ -231,6 +231,12 @@ void PersuadedBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
                 status_ = kPersuadStatusLookForWeapon;
             }
         }
+    } else if (evtType == Behaviour::kBehvEvtEnterVehicle) {
+        Vehicle *pVehicle = static_cast<Vehicle *> (pCtxt);
+        MovementAction *pAction =
+                pPed->createActionEnterVehicle(pVehicle);
+        pPed->addMovementAction(pAction, false);
+        status_ = kPersuadStatusFollow;
     }
 }
 
@@ -261,7 +267,7 @@ WeaponInstance * PersuadedBehaviourComponent::findWeaponWithAmmo(Mission *pMissi
     return pWeaponFound;
 }
 
-void PersuadedBehaviourComponent::updateAltActionsWith(WeaponInstance *pWeapon, PedInstance *pPed) {
+void PersuadedBehaviourComponent::changeTargetWeaponInAltActions(WeaponInstance *pWeapon, PedInstance *pPed) {
     MovementAction *pAction = pPed->altAction();
     while (pAction != NULL) {
         if (pAction->type() == Action::kActTypeWalk) {
@@ -296,7 +302,7 @@ void PanicComponent::execute(int elapsed, Mission *pMission, PedInstance *pCivil
             status_ = kPanicStatusInPanic;
         } else if (backFromPanic_) {
             backFromPanic_ = false;
-            pCivil->changeSourceOfActions(Action::kActionDefault);
+            pCivil->setCurrentActionWithSource(Action::kActionDefault);
             status_ = kPanicStatusAlert;
         }
     }
@@ -318,7 +324,7 @@ void PanicComponent::handleBehaviourEvent(PedInstance *pCivil, Behaviour::Behavi
         if (g_Session.getMission()->numArmedPeds() == 0) {
             setEnabled(false);
             if (!pCivil->isCurrentActionFromSource(Action::kActionDefault)) {
-                pCivil->changeSourceOfActions(Action::kActionDefault);
+                pCivil->setCurrentActionWithSource(Action::kActionDefault);
                 status_ = kPanicStatusAlert;
             }
         }
@@ -374,7 +380,7 @@ void  PanicComponent::runAway(PedInstance *pPed) {
         pPed->addToAltActions(new ResetScriptedAction(Action::kActionAlt));
     }
 
-    pPed->changeSourceOfActions(Action::kActionAlt);
+    pPed->setCurrentActionWithSource(Action::kActionAlt);
 }
 
 PoliceBehaviourComponent::PoliceBehaviourComponent():
@@ -398,7 +404,7 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
         } else if (!pPed->isCurrentActionFromSource(Action::kActionDefault)) {
             // there is no one around so go back to patrol if it's not already the case
             pPed->deselectWeapon();
-            pPed->changeSourceOfActions(Action::kActionDefault);
+            pPed->setCurrentActionWithSource(Action::kActionDefault);
             if (pMission->numArmedPeds() != 0) {
                 // There are still some armed peds so keep on alert
                 status_ = kPoliceStatusAlert;
@@ -493,7 +499,7 @@ void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstan
             pAction = pAction->next();
         }
     }
-    pPed->changeSourceOfActions(Action::kActionAlt);
+    pPed->setCurrentActionWithSource(Action::kActionAlt);
 }
 
 PlayerHostileBehaviourComponent::PlayerHostileBehaviourComponent():
@@ -526,7 +532,7 @@ void PlayerHostileBehaviourComponent::execute(int elapsed, Mission *pMission, Pe
             followAndShootTarget(pPed, pArmedGuy);
         } else {
             pPed->deselectWeapon();
-            pPed->changeSourceOfActions(Action::kActionDefault);
+            pPed->setCurrentActionWithSource(Action::kActionDefault);
             status_ = kHostileStatusDefault;
         }
     }
@@ -589,6 +595,6 @@ void PlayerHostileBehaviourComponent::followAndShootTarget(PedInstance *pPed, Pe
             pAction = pAction->next();
         }
     }
-    pPed->changeSourceOfActions(Action::kActionAlt);
+    pPed->setCurrentActionWithSource(Action::kActionAlt);
 }
 

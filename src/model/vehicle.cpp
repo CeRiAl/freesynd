@@ -828,7 +828,7 @@ void GenericCar::handleHit(ShootableMapObject::DamageInflictType &d) {
  */
 void GenericCar::addPassenger(PedInstance *p) {
     Vehicle::addPassenger(p);
-    if (pDriver_ == NULL) {
+    if (pDriver_ == NULL && !p->isPersuaded()) {
         // Ped becomes the driver
         pDriver_ = p;
     }
@@ -847,9 +847,11 @@ void GenericCar::dropPassenger(PedInstance *pPed) {
         // find another driver in the remaining passengers
         for (std::list<PedInstance *>::iterator it = passengers_.begin();
             it != passengers_.end(); it++) {
-            // take the first one
-            pDriver_ = *it;
-            break;
+            // take the first non persuaded
+            if (!(*it)->isPersuaded()) {
+                pDriver_ = *it;
+                break;
+            }
         }
     }
 }

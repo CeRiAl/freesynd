@@ -320,7 +320,7 @@ public:
     //! Restart the actions of given source and set as current action
     void resetActions(Action::ActionSource source);
     //! Switch to the given source of action
-    void changeSourceOfActions(Action::ActionSource source);
+    void setCurrentActionWithSource(Action::ActionSource source);
 
     //! Adds action to walk to a given destination
     void addActionWalk(const TilePoint &destPosT, bool appendAction);
@@ -403,6 +403,9 @@ public:
     void handlePersuadedBy(PedInstance *pAgent);
     //! Change the owner of the ped
     void setNewOwner(PedInstance *pPed);
+    //!
+    void informPersuadedToEnterVehicle(Vehicle *pVehicle);
+    void dropPersuadedFromCar(Vehicle *pCar);
 
     bool inSightRange(MapObject *t);
     Vehicle * inVehicle() const;

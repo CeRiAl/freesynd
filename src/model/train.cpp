@@ -48,13 +48,16 @@ void TrainBody::dropAllPassengers(const Mission &mission, const TilePoint &dropP
         pPed->leaveVehicle();
         pPed->setPosition(dropPos);
         // when leaving train, passengers walk towards the station
-        TilePoint movePos(dropPos);
-        isMovementOnXAxis() ? movePos.ty += 2 : movePos.tx += 2;
-        movePos.tz += 1; // train station are higher than trains
         if (pPed->isOurAgent()) {
+            TilePoint movePos(dropPos);
+            isMovementOnXAxis() ? movePos.ty += 2 : movePos.tx += 2;
+            movePos.tz += 1; // train station are higher than trains
             mission.getSquad()->getPositionInSquadFormation(pPed->id(), &movePos);
+            pPed->addActionWalk(movePos, false);
+        } else {
+            // here are only persuaded ped. So continue following owner
+            pPed->setCurrentActionWithSource(Action::kActionDefault);
         }
-        pPed->addActionWalk(movePos, false);
         passengers_.pop_front();
     }
 }

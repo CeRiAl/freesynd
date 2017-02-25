@@ -189,7 +189,7 @@ void PedInstance::resetActions(Action::ActionSource source) {
  * Change the current action to the list of actions identified by given source.
  * \param source The new source of actions
  */
-void PedInstance::changeSourceOfActions(Action::ActionSource source) {
+void PedInstance::setCurrentActionWithSource(Action::ActionSource source) {
     if (currentAction_ == NULL) {
         // no action currently defined so immediately assign new chain
         resetActions(source);

@@ -58,7 +58,9 @@ public:
         //! A ped has cleared his weapon
         kBehvEvtWeaponCleared,
         //! An action has ended
-        kBehvEvtActionEnded
+        kBehvEvtActionEnded,
+        //! An agent is getting into a vehicle so do his persuadeds
+        kBehvEvtEnterVehicle
     };
 
     virtual ~Behaviour();
@@ -151,11 +153,9 @@ public:
     void execute(int elapsed, Mission *pMission, PedInstance *pPed);
 
     void handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt);
-    //! Force behaviour to wait before init
-    void setWaitInitialization() { status_ = kPersuadStatusWaitInit;}
 private:
     WeaponInstance * findWeaponWithAmmo(Mission *pMission, PedInstance *pPed);
-    void updateAltActionsWith(WeaponInstance *pWeapon, PedInstance *pPed);
+    void changeTargetWeaponInAltActions(WeaponInstance *pWeapon, PedInstance *pPed);
 
 private:
     /*!
@@ -163,7 +163,7 @@ private:
      */
     enum PersuadedStatus {
         //! Behaviour will wait until current action is finished to initialize
-        kPersuadStatusWaitInit,
+        kPersuadStatusWaitForHitAction,
         //! Behaviour will run some initialization
         kPersuadStatusInitializing,
         //! Default status : just follow the leada

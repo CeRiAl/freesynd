@@ -1603,19 +1603,7 @@ void PedInstance::handlePersuadedBy(PedInstance *pAgent) {
     owner_ = pAgent;
     setPanicImmuned();
 
-    PersuadedBehaviourComponent *pComp = new PersuadedBehaviourComponent();
-    behaviour_.replaceAllcomponentsBy(pComp);
-
-    if (currentAction_ != NULL && !currentAction_->suspend(this)) {
-        // Usually, current action should be PersuadedHitAction
-        // so it cannot be suspended
-        // so delay init of behaviour until the action is finished
-        pComp->setWaitInitialization();
-        currentAction_->setWarnBehaviour(true);
-        // we insert a dummy action to be sure that after the current action
-        // is finished we won't have another unsuspendable action
-        currentAction_->insertNext(new WaitAction(WaitAction::kWaitTime, 5000));
-    }
+    behaviour_.replaceAllcomponentsBy(new PersuadedBehaviourComponent());
 
     /////////////////// Check if still useful ////////////
     pAgent->cpyEnemyDefs(enemy_group_defs_);
@@ -1676,5 +1664,22 @@ void PedInstance::updatePersuadedRelations(Squad *pSquad) {
                 break;
             }
         }
+    }
+}
+
+void PedInstance::informPersuadedToEnterVehicle(Vehicle *pVehicle) {
+    ;
+    for (std::set <PedInstance *>::iterator it = persuadedSet_.begin();
+        it != persuadedSet_.end(); it++) {
+            (*it)->behaviour().handleBehaviourEvent(Behaviour::kBehvEvtEnterVehicle, pVehicle);
+    }
+}
+
+void PedInstance::dropPersuadedFromCar(Vehicle *pCar) {
+    for (std::set <PedInstance *>::iterator it = persuadedSet_.begin();
+        it != persuadedSet_.end(); it++) {
+            pCar->dropPassenger(*it);
+            // default action is to follow owner
+            (*it)->setCurrentActionWithSource(Action::kActionDefault);
     }
 }

@@ -257,11 +257,13 @@ void SquadSelection::enterOrLeaveVehicle(Vehicle *pVehicle, bool addAction) {
 
             // then drop passenger
             pVehicle->dropPassenger(pAgent);
+            pAgent->dropPersuadedFromCar(pVehicle);
         } else {
             // Agent is out
             MovementAction *pAction =
                 pAgent->createActionEnterVehicle(pVehicle);
             pAgent->addMovementAction(pAction, addAction);
+            pAgent->informPersuadedToEnterVehicle(pVehicle);
         }
     }
 }

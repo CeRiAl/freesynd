@@ -245,12 +245,9 @@ void GameplayMenu::initWorldCoords()
 {
     // get the leader position on the map
     PedInstance *p_leader = selection_.leader();
-    //Vehicle *pVehicle = mission_->vehicle(0);
     Point2D start;
     mission_->get_map()->tileToScreenPoint(p_leader->tileX(),
         p_leader->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
-    //mission_->get_map()->tileToScreenPoint(pVehicle->tileX(),
-    //    pVehicle->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
     start.x -= (GAME_SCREEN_WIDTH - 129) / 2;
     start.y -= GAME_SCREEN_HEIGHT / 2;
 

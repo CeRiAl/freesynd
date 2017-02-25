@@ -905,6 +905,7 @@ bool WalkBurnHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
 PersuadedHitAction::PersuadedHitAction(ShootableMapObject::DamageInflictType &d) :
 HitAction(d) {
     targetState_ = PedInstance::pa_smHitByPersuadotron;
+    warnBehaviour_ = true;
 }
 
 /*!
