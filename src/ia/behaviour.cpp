@@ -120,6 +120,8 @@ void CommonAgentBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Beha
             doRegenerates_ = true;
         }
         break;
+    default:
+        break;
     }
 }
 
@@ -151,6 +153,9 @@ void PersuaderBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behavi
         break;
     case Behaviour::kBehvEvtPersuadotronDeactivated:
         doUsePersuadotron_ = false;
+        break;
+    default:
+        break;
     }
 }
 
@@ -314,8 +319,14 @@ void PanicComponent::handleBehaviourEvent(PedInstance *pCivil, Behaviour::Behavi
     }
 
     switch(evtType) {
+    case Behaviour::kBehvEvtEjectedFromVehicle:
+        // reacting to ejection from vehicle is the same as when a gun is out
+        // -> panic!
+        pCivil->destroyAllActions(true);
+        pCivil->addToDefaultActions(new WalkToDirectionAction());
     case Behaviour::kBehvEvtWeaponOut:
-        if (!isEnabled()) {
+        // civilian in cars do not panic
+        if (pCivil->inVehicle() == NULL && !isEnabled()) {
             setEnabled(true);
             status_ = kPanicStatusAlert;
         }
@@ -338,6 +349,8 @@ void PanicComponent::handleBehaviourEvent(PedInstance *pCivil, Behaviour::Behavi
             scoutTimer_.setToMax();
             backFromPanic_ = true;
         }
+        break;
+    default:
         break;
     }
 }
@@ -385,23 +398,17 @@ void  PanicComponent::runAway(PedInstance *pPed) {
 
 PoliceBehaviourComponent::PoliceBehaviourComponent():
         BehaviourComponent(), scoutTimer_(200) {
-    status_ = kPoliceStatusOnPatrol;
+    status_ = kPoliceStatusDefault;
     pTarget_ = NULL;
 }
 
 void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
     if (status_ == kPoliceStatusAlert && scoutTimer_.update(elapsed)) {
-        PedInstance *pArmedGuy = findArmedPedNotPolice(pMission, pPed);
-        if (pArmedGuy != NULL) {
-            status_ = kPoliceStatusFollowAndShoot;
-            followAndShootTarget(pPed, pArmedGuy);
-        }
-    } else if (status_ == kPoliceStatusCheckForDefault) {
+        findAndEngageNewTarget(pMission, pPed);
+    } else if (status_ == kPoliceStatusCheckReengageOrDefault) {
         // check if there is a nearby enemy
-        if (findArmedPedNotPolice(pMission, pPed) != NULL) {
-            status_ = kPoliceStatusAlert;
-            scoutTimer_.setToMax(); // don't waste time waiting
-        } else if (!pPed->isCurrentActionFromSource(Action::kActionDefault)) {
+        bool foundNewTarget = findAndEngageNewTarget(pMission, pPed);
+        if ( !foundNewTarget && !pPed->isCurrentActionFromSource(Action::kActionDefault)) {
             // there is no one around so go back to patrol if it's not already the case
             pPed->deselectWeapon();
             pPed->setCurrentActionWithSource(Action::kActionDefault);
@@ -409,7 +416,7 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
                 // There are still some armed peds so keep on alert
                 status_ = kPoliceStatusAlert;
             } else {
-                status_ = kPoliceStatusOnPatrol;
+                status_ = kPoliceStatusDefault;
             }
         }
     }
@@ -417,34 +424,68 @@ void PoliceBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstan
 
 void PoliceBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt) {
     switch(evtType) {
+    case Behaviour::kBehvEvtEjectedFromVehicle:
+        handleEjectionFromVehicle(pPed, pCtxt);
+        break;
     case Behaviour::kBehvEvtWeaponOut:
-        if (status_ == kPoliceStatusOnPatrol && !pPed->inVehicle()) {
+        if (status_ == kPoliceStatusDefault && !pPed->inVehicle()) {
             // When someone get his weapon out, police is on alert
             status_ = kPoliceStatusAlert;
         }
         break;
     case Behaviour::kBehvEvtWeaponCleared:
         // our target has dropped his weapon
-        if (pTarget_ == pCtxt) {
-            if (status_ == kPoliceStatusFollowAndShoot) {
-                status_ = kPoliceStatusPendingEndFollow;
-                pPed->stopUsingWeapon();
-                // just wait a few time before engaging another target or simply
-                // continue with default behavior
-                WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon, kPolicePendingTime);
-                pWait->setWarnBehaviour(true);
-                pPed->addMovementAction(pWait, false);
-            }
-        } else if (status_ != kPoliceStatusFollowAndShoot) {
-            status_ = kPoliceStatusCheckForDefault;
+        if (status_ == kPoliceStatusFollowAndShootTarget && pTarget_ == pCtxt) {
+            status_ = kPoliceStatusPendingEndFollow;
+            pPed->stopUsingWeapon();
+
+            // just wait a few time before engaging another target or simply
+            // continue with default behavior
+            WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon, kPolicePendingTime);
+            pWait->setWarnBehaviour(true);
+            pPed->addMovementAction(pWait, false);
+        } else if (status_ == kPoliceStatusAlert) {
+            status_ = kPoliceStatusCheckReengageOrDefault;
         }
         break;
     case Behaviour::kBehvEvtActionEnded:
-        // We are at the end of waiting period so check if we need to engage right now
-        // of if we can go back on patrol
-        status_ = kPoliceStatusCheckForDefault;
+        {
+            Action::ActionType *pType = static_cast<Action::ActionType *> (pCtxt);
+            if (*pType == Action::kActTypeWait) {
+                // We are at the end of waiting period so check if we need to engage right now
+                // of if we can go back on patrol
+                status_ = kPoliceStatusCheckReengageOrDefault;
+            } else {
+                status_ = kPoliceStatusAlert;
+            }
+        }
+
+        break;
+    default:
         break;
     }
+}
+
+void PoliceBehaviourComponent::handleEjectionFromVehicle(PedInstance *pPed, void *pCtxt) {
+    pPed->destroyAllActions(true);
+    pPed->addToDefaultActions(new WalkToDirectionAction());
+    PedInstance *pShooter = static_cast<PedInstance *>(pCtxt);
+    pPed->setDirectionTowardObject(*pShooter);
+    // Add a walk action just to get away from the vehicle so that the ped can shoot
+    // without being blocked by the vehicle
+    WalkToDirectionAction *outOfCarAction = new WalkToDirectionAction();
+    outOfCarAction->setMaxDistanceToWalk(20);
+    outOfCarAction->setWarnBehaviour(true);
+    pPed->addMovementAction(outOfCarAction, true);
+    status_ = kPoliceStatusOutOfVehicle;
+}
+
+bool PoliceBehaviourComponent::findAndEngageNewTarget(Mission *pMission, PedInstance *pPed) {
+    PedInstance *pArmedGuy = findArmedPedNotPolice(pMission, pPed);
+    if (pArmedGuy != NULL) {
+        followAndShootTarget(pPed, pArmedGuy);
+    }
+    return pArmedGuy != NULL;
 }
 
 /*!
@@ -462,6 +503,7 @@ PedInstance * PoliceBehaviourComponent::findArmedPedNotPolice(Mission *pMission,
 
 void PoliceBehaviourComponent::followAndShootTarget(PedInstance *pPed, PedInstance *pArmedGuy) {
     pTarget_ = pArmedGuy;
+    status_ = kPoliceStatusFollowAndShootTarget;
 
     // Set new actions
     if (pPed->altAction() == NULL) { // the first time

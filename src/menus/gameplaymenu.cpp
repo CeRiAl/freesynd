@@ -1357,11 +1357,14 @@ void GameplayMenu::highlightLeaderMarker()
 void GameplayMenu::updateMarkersPosition() {
     for (size_t i = 0; i < AgentManager::kMaxSlot; i++) {
         if (mission_->sfxObjects(i + 4)->isDrawable()) {
-            TilePoint agentPos = mission_->getSquad()->member(i)->position();
-            agentPos.ox -= 16;
-            agentPos.oz += 256;
+            PedInstance *pAgent = mission_->getSquad()->member(i);
+            if (pAgent != NULL && pAgent->isAlive()) {
+                TilePoint agentPos = pAgent->position();
+                agentPos.ox -= 16;
+                agentPos.oz += 256;
 
-            mission_->sfxObjects(i + 4)->setPosition(agentPos);
+                mission_->sfxObjects(i + 4)->setPosition(agentPos);
+            }
         }
     }
 }

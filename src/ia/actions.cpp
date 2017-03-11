@@ -761,10 +761,8 @@ void FireWeaponAction::doStart(Mission *pMission, PedInstance *pPed) {
 }
 
 bool FireWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) {
-    if (shootType_ == ShootAction::kShootActionSingleShoot) {
-        if (!pPed->isUsingWeapon()) {
-            setSucceeded();
-        }
+    if (!pPed->isUsingWeapon()) {
+        setSucceeded();
     }
 
     return true;

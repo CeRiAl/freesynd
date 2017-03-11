@@ -60,7 +60,9 @@ public:
         //! An action has ended
         kBehvEvtActionEnded,
         //! An agent is getting into a vehicle so do his persuadeds
-        kBehvEvtEnterVehicle
+        kBehvEvtEnterVehicle,
+        //! Car driver has been shot so he is ejected from the car
+        kBehvEvtEjectedFromVehicle,
     };
 
     virtual ~Behaviour();
@@ -234,6 +236,9 @@ public:
 
     void handleBehaviourEvent(PedInstance *pPed, Behaviour::BehaviourEvent evtType, void *pCtxt);
 private:
+    void handleEjectionFromVehicle(PedInstance *pPed, void *pCtxt);
+    //! Find a nearby armed Ped and follow and shoot him
+    bool findAndEngageNewTarget(Mission *pMission, PedInstance *pPed);
     //! Checks whether there is an armed ped next to the ped : returns that ped
     PedInstance * findArmedPedNotPolice(Mission *pMission, PedInstance *pPed);
     //! Initiate the process of following and shooting at a target
@@ -245,16 +250,18 @@ private:
      * Status of police behaviour.
      */
     enum PoliceStatus {
-        //! Default status
-        kPoliceStatusOnPatrol,
+        //! Police is walking or driving car
+        kPoliceStatusDefault,
         //! Search for someone who pulled his gun
         kPoliceStatusAlert,
         //! Move closer from target to shoot at him
-        kPoliceStatusFollowAndShoot,
+        kPoliceStatusFollowAndShootTarget,
         //! When target drops his weapon, wait some time
         kPoliceStatusPendingEndFollow,
         //! after waiting, check if police should go on patrol again
-        kPoliceStatusCheckForDefault
+        kPoliceStatusCheckReengageOrDefault,
+        //! Police ped is going away from vehicle
+        kPoliceStatusOutOfVehicle
     };
 
     PoliceStatus status_;

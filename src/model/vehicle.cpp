@@ -816,8 +816,17 @@ void GenericCar::handleHit(ShootableMapObject::DamageInflictType &d) {
         }
 
         Explosion::createExplosion(g_Session.getMission(), this, 512.0);
-    } else {// NOTE: maybe reduce speed on hit?
-        // TODO: let passengers know that vehicle is attacked
+    } else if (pDriver_ != NULL && !pDriver_->isOurAgent()) {
+        // in case the car is drived by someone else than our agents
+        // and one of our agent shot the car then
+        // the driver is ejected from the car
+        // Usually he is alone in the car so don't bother with any passengers
+        PedInstance *pShooter = dynamic_cast<PedInstance *>(d.d_owner);
+        if (pShooter && pShooter->isOurAgent()) {
+            PedInstance *pPed = pDriver_;
+            dropPassenger(pPed);
+            pPed->behaviour().handleBehaviourEvent(Behaviour::kBehvEvtEjectedFromVehicle, pShooter);
+        }
     }
 }
 

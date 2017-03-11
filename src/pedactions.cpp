@@ -170,18 +170,16 @@ void PedInstance::destroyUseWeaponAction() {
  * \param source
  */
 void PedInstance::resetActions(Action::ActionSource source) {
-    MovementAction *pAction = (source == Action::kActionDefault) ?
+    currentAction_ = (source == Action::kActionDefault) ?
                                             defaultAction_ : altAction_;
 
-    if (pAction) {
+    if (currentAction_) {
         // reset all scripted actions
-        MovementAction *pActionToReset = pAction;
+        MovementAction *pActionToReset = currentAction_;
         while (pActionToReset != NULL) {
             pActionToReset->reset();
             pActionToReset = pActionToReset->next();
         }
-
-        currentAction_ = pAction;
     }
 }
 
