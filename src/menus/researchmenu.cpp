@@ -53,7 +53,7 @@ ResearchMenu::ResearchMenu(MenuManager * m):Menu(m, fs_game_menus::kMenuIdResear
     pFieldModsLBox_->setModel(g_Session.researchManager().getAvailableModsSearch());
 
     pEquipsLBox_ = addListBox(504, 110,  122, 230, tab_ == TAB_EQUIPS);
-    pEquipsLBox_->setModel(g_gameCtrl.weapons().getAvailableWeapons());
+    pEquipsLBox_->setModel(g_gameCtrl.weaponManager().getAvailableWeapons());
     pModsLBox_ = addListBox(504, 110,  122, 230, tab_ == TAB_MODS);
     pModsLBox_->setModel(g_gameCtrl.mods().getAvalaibleMods());
 
@@ -237,7 +237,7 @@ void ResearchMenu::handleTick(int elapsed)
     }
 }
 
-/*! 
+/*!
  * Update the game time display
  */
 void ResearchMenu::updateClock() {
@@ -250,7 +250,7 @@ void ResearchMenu::updateClock() {
 }
 
 void ResearchMenu::handleShow() {
-    
+
     menu_manager_->saveBackground();
 
     // Show the mouse
@@ -314,7 +314,7 @@ void ResearchMenu::handleRender(DirtyList &dirtyList)
             lastX = x;
             lastY = y;
         }
-        
+
         // draw projection line
         if (pResForGraph_->getCurrFunding() != 0) {
             g_Screen.drawLine(lastX, lastY, projectedX, projectedY, 16);

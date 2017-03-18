@@ -33,7 +33,7 @@
 
 GameController::GameController() {
     agents_.setModManager(&mods_);
-    agents_.setWeaponManager(&weapons_);
+    agents_.setWeaponManager(&weaponMgr_);
 }
 
 GameController::~GameController() {
@@ -44,13 +44,13 @@ GameController::~GameController() {
 bool GameController::reset() {
     // Reset default mods and weapons
     mods_.reset();
-    weapons_.reset();
+    weaponMgr_.reset();
     // TODO add reading cheatcode for onlywomen parameter
     agents_.reset();
     return true;
 }
 
-/*! 
+/*!
  * Adds a listener to the list of listeners for a stream.
  * \param pListener The listener
  * \param stream The stream
@@ -122,7 +122,7 @@ void GameController::fireGameEvent(GameEvent & evt) {
 /*!
  * Changes the user informations.
  */
-void GameController::change_user_infos(const char *company_name, const char *player_name, 
+void GameController::change_user_infos(const char *company_name, const char *player_name,
                             int new_logo, int new_color) {
     g_Session.setCompanyName(company_name);
     g_Session.setUserName(player_name);
@@ -167,7 +167,7 @@ void GameController::handle_mission_end(Mission *p_mission) {
 
 /*!
  * This method simulates enemy syndicates activtiy
- * by changing ownership of a random number of countries (depending on 
+ * by changing ownership of a random number of countries (depending on
  * the number of remaining syndicates).
  */
 void GameController::simulate_enemy_moves() {
@@ -196,7 +196,7 @@ void GameController::simulate_enemy_moves() {
 
     // this list stores id of missions that shifted
     // to prevent movint them multiple times
-    std::list<int> used_block; 
+    std::list<int> used_block;
     while (nb_mvt > 0) {
         nb_mvt--;
         bool move_done = false;
@@ -213,7 +213,7 @@ void GameController::simulate_enemy_moves() {
                     if (i == m_pos) {
                         // First check to see if mission hasn't already been shited before
                         bool is_in_list = false;
-                        for (std::list < int >::iterator used_it = used_block.begin(); 
+                        for (std::list < int >::iterator used_it = used_block.begin();
                                 used_it != used_block.end(); used_it++) {
                             if (*it == *used_it) {
                                 is_in_list = true;

@@ -48,7 +48,7 @@ WeaponHolder::WeaponHolder() {
 void WeaponHolder::addWeapon(WeaponInstance *w) {
     assert(w);
     assert(weapons_.size() < kMaxHoldedWeapons);
-    w->setMap(-1);
+    w->setDrawable(false);
     weapons_.push_back(w);
 }
 
@@ -194,7 +194,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
         case WeaponSelectCriteria::kCritWeaponType:
             for (uint8 i = 0; i < sz; ++i) {
                 WeaponInstance *pWI = weapons_[i];
-                if (pWI->getWeaponType() == pw_to_use->criteria.wpn_type) {
+                if (pWI->isInstanceOf(pw_to_use->criteria.wpn_type)) {
                     if (pWI->usesAmmo()) {
                         if (pWI->ammoRemaining()) {
                             found = true;
@@ -268,11 +268,11 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
                         }
                     }
                 }
-            } else if (pw_to_use->criteria.wi->getWeaponType() == Weapon::MediKit &&
+            } else if (pw_to_use->criteria.wi->isInstanceOf(Weapon::MediKit) &&
                 pw_to_use->apply_to_all) {
                 for (uint8 i = 0; i < sz; ++i) {
                     WeaponInstance *pWI = weapons_[i];
-                    if (pWI->getWeaponType() == Weapon::MediKit && pWI->ammoRemaining() > 0) {
+                    if (pWI->isInstanceOf(Weapon::MediKit) && pWI->ammoRemaining() > 0) {
                         found_weapons.push_back(std::make_pair(pWI->rank(), i));
                         break;
                     }
@@ -286,6 +286,8 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
                     found_weapons.push_back(std::make_pair(pWI->rank(), i));
                 }
             }
+            break;
+        default:
             break;
     }
 
@@ -319,7 +321,7 @@ void WeaponHolder::selectNextWeapon() {
             for (int i = 0; i < numWeapons(); ++i) {
                 WeaponInstance * wi = weapons_[i];
                 if (i != selected_weapon_ && wi->ammoRemaining()
-                        && wi->getWeaponType() == cur_sel_weapon->getWeaponType())
+                        && wi->hasSameTypeAs(*cur_sel_weapon))
                 {
                     if (nextWeapon == -1)
                         nextWeapon = i;

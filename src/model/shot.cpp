@@ -36,7 +36,7 @@
 void InstantImpactShot::inflictDamage(Mission *pMission) {
     WorldPoint originLocW(dmg_.d_owner->position()); // origin of shooting
     // get how much impacts does the weapon generate
-    int nbImpacts = dmg_.pWeapon->getWeaponClass()->shotsPerAmmo();
+    int nbImpacts = dmg_.pWeapon->getClass()->shotsPerAmmo();
 
     // If there are many impacts, a target can be hit by several impacts
     // so this map stores number of impacts for a target
@@ -65,13 +65,13 @@ void InstantImpactShot::inflictDamage(Mission *pMission) {
     // finally distribute damage
     std::map<ShootableMapObject *, int>::iterator it;
     for (it = hitsByObject.begin(); it != hitsByObject.end(); it++) {
-        dmg_.dvalue = (*it).second * dmg_.pWeapon->getWeaponClass()->damagePerShot();
+        dmg_.dvalue = (*it).second * dmg_.pWeapon->getClass()->damagePerShot();
         (*it).first->handleHit(dmg_);
     }
 }
 
 void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &originLocW, WorldPoint *pImpactPosW) {
-    double angle = dmg_.pWeapon->getWeaponClass()->shotAngle();
+    double angle = dmg_.pWeapon->getClass()->shotAngle();
     if (angle == 0)
         return;
 
@@ -198,8 +198,8 @@ void InstantImpactShot::diffuseImpact(Mission *pMission, const WorldPoint &origi
 void InstantImpactShot::createImpactAnimation(Mission *pMission, ShootableMapObject * pTargetHit, const WorldPoint impactPosW) {
     SFXObject::SfxTypeEnum impactAnimId =
         (pTargetHit != NULL ?
-            dmg_.pWeapon->getWeaponClass()->impactAnims()->objectHit :
-            dmg_.pWeapon->getWeaponClass()->impactAnims()->groundHit);
+            dmg_.pWeapon->getClass()->impactAnims()->objectHit :
+            dmg_.pWeapon->getClass()->impactAnims()->groundHit);
 
     if (impactAnimId != SFXObject::sfxt_Unknown) {
         SFXObject *so = new SFXObject(pMission->map(), impactAnimId);
@@ -244,7 +244,7 @@ void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, c
 
 Explosion::Explosion(const ShootableMapObject::DamageInflictType &dmg) : Shot(dmg) {
     // GaussGun has a different animation for explosion
-    if (dmg_.pWeapon && dmg_.pWeapon->getWeaponType() == Weapon::GaussGun) {
+    if (dmg_.pWeapon && dmg_.pWeapon->isInstanceOf(Weapon::GaussGun)) {
         rngDmgAnim_ = SFXObject::sfxt_LargeFire;
     } else {
         rngDmgAnim_ = SFXObject::sfxt_ExplosionFire;
@@ -366,7 +366,7 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     // look at all bombs on the ground except the weapon that generated the shot
     for (size_t i = 0; i < pMission->numWeapons(); ++i) {
         WeaponInstance *w = pMission->weapon(i);
-        if (w->getWeaponType() == Weapon::TimeBomb && w != dmg_.pWeapon && !w->hasOwner() && w->isAlive()) {
+        if (w->isInstanceOf(Weapon::TimeBomb) && w != dmg_.pWeapon && !w->hasOwner() && w->isAlive()) {
             WorldPoint weaponPosW(w->position());
             if (pMission->checkBlockedByTile(originLocW, &weaponPosW, false, dmg_.range) == 1) {
                 objInRangeVec.push_back(w);
@@ -383,7 +383,7 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
     drawImpact_ = false;
     pShootableHit_ = NULL;
 
-    speed_ = dmg.pWeapon->getWeaponClass()->shotSpeed();
+    speed_ = dmg.pWeapon->getClass()->shotSpeed();
     // distance from origin of shoot to target on each axis
     targetLocW_.x = dmg.aimedLocW.x;
     targetLocW_.y = dmg.aimedLocW.y;
@@ -400,7 +400,7 @@ ProjectileShot::ProjectileShot(const ShootableMapObject::DamageInflictType &dmg)
         incZ_ = diffz / distanceToTarget;
     }
 
-    distanceMax_ = dmg.pWeapon->getWeaponClass()->range();
+    distanceMax_ = dmg.pWeapon->getClass()->range();
     if (distanceToTarget < distanceMax_) {
         distanceMax_ = distanceToTarget;
     }
@@ -537,7 +537,7 @@ void GaussGunShot::inflictDamage(Mission *pMission) {
     lifeOver_ = true;
 
     if (drawImpact_) {
-        int dmgRange = dmg_.pWeapon->getWeaponClass()->rangeDmg();
+        int dmgRange = dmg_.pWeapon->getClass()->rangeDmg();
         Explosion::createExplosion(pMission, dmg_.pWeapon, curPosW_, dmgRange, dmg_.dvalue);
     }
 }
@@ -571,7 +571,7 @@ void GaussGunShot::drawTrace(Mission *pMission) {
                     t.z = (pMission->mmax_z_ - 1) * 128;
 
                 SFXObject *so = new SFXObject(pMission->map(),
-                    dmg_.pWeapon->getWeaponClass()->impactAnims()->trace_anim);
+                    dmg_.pWeapon->getClass()->impactAnims()->trace_anim);
                 so->setPosition(t);
                 pMission->addSfxObject(so);
             }
@@ -583,7 +583,7 @@ FlamerShot::FlamerShot(Mission *pMission, const ShootableMapObject::DamageInflic
         ProjectileShot(dmg) {
     // We create a SFXObjet that we keep in memory to updateits position
     pFlame_ = new SFXObject(pMission->map(),
-                            dmg_.pWeapon->getWeaponClass()->impactAnims()->trace_anim);
+                            dmg_.pWeapon->getClass()->impactAnims()->trace_anim);
     // The sfxObject will loop to keep it alive
     pFlame_->setLoopAnimation(true);
     pFlame_->setPosition(dmg.originLocW);

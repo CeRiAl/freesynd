@@ -340,9 +340,9 @@ uint8 PedInstance::addActionShootAt(const WorldPoint &aimedLocW) {
         // adds precision to the shoot
         WorldPoint adjAimedLocW = aimedLocW;
         WeaponInstance *pWeapon = selectedWeapon();
-        adjustAimedPtWithRangeAndAccuracy(pWeapon->getWeaponClass(), &adjAimedLocW);
+        adjustAimedPtWithRangeAndAccuracy(pWeapon->getClass(), &adjAimedLocW);
 
-        if (pWeapon->getWeaponClass()->isAutomatic()) {
+        if (pWeapon->getClass()->isAutomatic()) {
             pUseWeaponAction_ = new AutomaticShootAction(adjAimedLocW, pWeapon);
             res = ShootAction::kShootActionAutomaticShoot;
         } else {

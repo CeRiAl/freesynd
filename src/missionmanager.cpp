@@ -476,7 +476,7 @@ WeaponInstance * MissionManager::create_weapon_instance(const LevelData::Weapons
             break;
     }
 
-    Weapon *pWeapon = g_gameCtrl.weapons().getWeapon(wType);
+    Weapon *pWeapon = g_gameCtrl.weaponManager().getWeapon(wType);
     if (pWeapon) {
         WeaponInstance *wi = WeaponInstance::createInstance(pWeapon);
         wi->setPosition(gamdata.mapposx[1], gamdata.mapposy[1],

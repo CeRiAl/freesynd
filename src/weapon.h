@@ -61,7 +61,7 @@ public:
         Persuadatron = 14
     };
 
-    typedef enum {
+    enum WeaponAnimIndex {
         Unarmed_Anim,
         Pistol_Anim,
         Minigun_Anim,
@@ -72,7 +72,7 @@ public:
         Laser_Anim,
         Gauss_Anim,
         Shotgun_Anim
-    } WeaponAnimIndex;
+    };
 
     /*!
      * This structure holds animation ids of impacts for a weapon.
@@ -90,6 +90,7 @@ public:
 
     Weapon(WeaponType w_type, ConfigFile &conf);
 
+    WeaponType getType() { return type_; }
     const char *getName() { return name_.c_str(); }
 
     int cost() { return cost_; }
@@ -108,10 +109,9 @@ public:
     }
 
     WeaponAnimIndex index() { return idx_; }
-    WeaponType getWeaponType() { return type_; }
     MapObject::DamageType dmgType() { return dmg_type_; }
 
-    bool operator==(Weapon weapon) { return this->type_ == weapon.getWeaponType(); }
+    bool operator==(Weapon weapon) { return this->type_ == weapon.getType(); }
 
     int ammoPerShot() { return ammo_per_shot_; }
     int timeForShot() { return time_for_shot_; }
@@ -129,7 +129,7 @@ public:
         return (dmg_type_ & MapObject::dmg_Physical) != 0;
     }
 
-    typedef enum {
+    enum ShotPropertyEnum {
         spe_None = 0x0,
         // can target only owner
         spe_Owner = 0x0001,
@@ -152,9 +152,9 @@ public:
         spe_CanShoot = 0x0800,
         //! Automatic weapon can shot continuously
         spe_Automatic = 0X1000
-    } ShotPropertyEnum;
+    };
 
-    typedef enum {
+    enum WeaponShotPropertyType {
         wspt_None = spe_None,
         wspt_Persuadatron = spe_None,
         wspt_Pistol =
@@ -187,7 +187,7 @@ public:
         wspt_AccessCard = (spe_Owner | spe_ChangeAttribute),
         wspt_EnergyShield =
             (spe_Owner | spe_ChangeAttribute | spe_UsesAmmo),
-    } WeaponShotPropertyType;
+    };
 
     enum SearchTargetMask {
         stm_AllObjects = MapObject::kNaturePed | MapObject::kNatureVehicle
@@ -218,6 +218,8 @@ public:
         return (shotProperty() & Weapon::spe_Automatic) != 0;
     }
 
+    //! Return the cost of reloading the weapon
+    int getReloadingCost(int remaingAmmo);
 protected:
     //! Init weapon from given config file
     void initFromConfig(WeaponType w_type, ConfigFile &conf);
@@ -270,9 +272,14 @@ protected:
 class WeaponInstance : public ShootableMapObject {
 public:
     //! Creates a instance for the given weapon class
-    static WeaponInstance *createInstance(Weapon *pWeaponClass);
+    static WeaponInstance *createInstance(Weapon *pWeaponClass, int remainingAmmo = -1);
 
-    WeaponInstance(Weapon *w, uint16 id);
+    WeaponInstance(Weapon *w, uint16 id, int remainingAmmo = -1);
+
+    Weapon *getClass() const { return pWeaponClass_; }
+
+    bool isInstanceOf(Weapon::WeaponType weaponType) { return pWeaponClass_->getType() == weaponType; }
+    bool hasSameTypeAs(const WeaponInstance & otherWeapon) { return pWeaponClass_->getType() == otherWeapon.getClass()->getType();}
 
     /*! Sets the owner of the weapon. */
     void setOwner(PedInstance *pOwner) { pOwner_ = pOwner; }
@@ -282,12 +289,10 @@ public:
     bool hasOwner() { return pOwner_ != NULL; }
 
     int ammoRemaining() { return ammo_remaining_; }
-    void setAmmoRemaining(int n) {  ammo_remaining_ = n; }
+    void reload() { ammo_remaining_ = pWeaponClass_->ammo(); }
 
     bool animate(int elapsed);
     void draw(int x, int y);
-
-    Weapon *getWeaponClass() { return pWeaponClass_; }
 
     int range() { return pWeaponClass_->range(); }
     int ammo() { return pWeaponClass_->ammo(); }
@@ -296,10 +301,10 @@ public:
     const char * name() { return pWeaponClass_->getName(); }
 
     Weapon::WeaponAnimIndex index() { return pWeaponClass_->index(); }
-    Weapon::WeaponType getWeaponType() { return pWeaponClass_->getWeaponType(); }
 
     bool operator==(WeaponInstance wi) {
-        return getWeaponType() == wi.getWeaponType();
+        // TODO : check if this method is necessary
+        return hasSameTypeAs(wi);
     }
 
     //! Plays the weapon's sound.

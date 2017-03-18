@@ -547,7 +547,7 @@ bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
 
     WeaponInstance *pWi = pWeapon != NULL ? pWeapon : selectedWeapon();
     return (pWi != NULL &&
-            (pWi->canShoot() || pWi->getWeaponType() == Weapon::MediKit) &&
+            (pWi->canShoot() || pWi->isInstanceOf(Weapon::MediKit)) &&
             pWi->ammoRemaining() > 0);
 }
 
@@ -582,7 +582,7 @@ void PedInstance::updateShootingTarget(const WorldPoint &aimedPt) {
 int PedInstance::getTimeBetweenShoots(WeaponInstance *pWeapon) {
     // TODO : Add IPA and mods influence
     return kDefaultShootReactionTime +
-            pWeapon->getWeaponClass()->timeReload();
+            pWeapon->getClass()->timeReload();
 }
 
 /*!
@@ -867,7 +867,7 @@ bool PedInstance::inSightRange(MapObject *t) {
  * \param wi The weapon to select
  */
 bool PedInstance::canSelectWeapon(WeaponInstance *pNewWeapon) {
-    if (pNewWeapon->getWeaponType() == Weapon::MediKit) {
+    if (pNewWeapon->isInstanceOf(Weapon::MediKit)) {
         // we cas use medikit only if ped is hurt
         return health() != startHealth() &&
             canAddUseWeaponAction(pNewWeapon);
@@ -881,14 +881,14 @@ bool PedInstance::canSelectWeapon(WeaponInstance *pNewWeapon) {
  * \param wi The deselected weapon
  */
 void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
-    if (wi->getWeaponType() == Weapon::EnergyShield) {
+    if (wi->isInstanceOf(Weapon::EnergyShield)) {
         wi->deactivate();
-    } else if (wi->getWeaponType() == Weapon::AccessCard) {
+    } else if (wi->isInstanceOf(Weapon::AccessCard)) {
         rmEmulatedGroupDef(4, og_dmPolice);
     }
     desc_state_ &= (pd_smAll ^ (pd_smArmed | pd_smNoAmmunition));
 
-    if (wi->getWeaponType() == Weapon::Persuadatron) {
+    if (wi->isInstanceOf(Weapon::Persuadatron)) {
         behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtPersuadotronDeactivated);
     } else if (wi->canShoot() && (type_ != kPedTypePolice || isPersuaded())) {
         // don't warn if ped is police to limit calls
@@ -918,7 +918,7 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
     else
         desc_state_ &= pd_smAll ^ pd_smArmed;
 
-    switch(wi->getWeaponType()) {
+    switch(wi->getClass()->getType()) {
     case Weapon::EnergyShield:
         wi->activate();
         break;
@@ -986,7 +986,8 @@ void PedInstance::dropAllWeapons() {
 void PedInstance::destroyAllWeapons() {
     while (!weapons_.empty()) {
         WeaponInstance * w = removeWeaponAtIndex(0);
-        w->setMap(-1);
+        // TODO : Delete weapon
+        w->setDrawable(false);
     }
 }
 
@@ -1524,7 +1525,7 @@ bool PedInstance::hasAccessCard()
 {
     WeaponInstance * wi = selectedWeapon();
     Mod *pMod = slots_[Mod::MOD_BRAIN];
-    return wi && pMod && wi->getWeaponType() == Weapon::AccessCard
+    return wi && pMod && wi->isInstanceOf(Weapon::AccessCard)
         && pMod->getVersion() == Mod::MOD_V3 ? true : false;
 }
 

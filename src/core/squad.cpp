@@ -69,7 +69,7 @@ bool Squad::hasScanner() {
         PedInstance *pAgent = a_members_[indx];
         if (pAgent && pAgent->isAlive()) {
             for (uint8 windx=0; windx<pAgent->numWeapons(); windx++) {
-                if (pAgent->weapon(windx)->getWeaponType() == Weapon::Scanner) {
+                if (pAgent->weapon(windx)->isInstanceOf(Weapon::Scanner)) {
                     return true;
                 }
             }

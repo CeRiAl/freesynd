@@ -193,8 +193,8 @@ public:
     Vehicle *vehicle(size_t i) { return vehicles_[i]; }
     void addVehicle(Vehicle *pVehicle) { vehicles_.push_back(pVehicle); }
 
-    size_t numWeapons() { return weapons_.size(); }
-    WeaponInstance *weapon(size_t i) { return weapons_[i]; }
+    size_t numWeapons() { return weaponsOnGround_.size(); }
+    WeaponInstance *weapon(size_t i) { return weaponsOnGround_[i]; }
     void addWeapon(WeaponInstance *w);
 
     size_t numStatics() { return statics_.size(); }
@@ -272,8 +272,6 @@ public:
     /*! Return the mission statistics. */
     MissionStats *stats() { return &stats_; }
 
-    void addWeaponsFromPedToAgent(PedInstance *p, Agent *pAg);
-
     bool setSurfaces();
     void clrSurfaces();
     bool getWalkable(TilePoint &mtp);
@@ -320,12 +318,15 @@ protected:
     bool isSurface(char thisTile);
     bool isStairs(char thisTile);
 
+    void transferWeaponsFromPedInstanceToAgent(PedInstance *p, Agent *pAg);
+
 protected:
 
     /*! List of all vehicles, cars and train.*/
     std::vector<Vehicle *> vehicles_;
     std::vector<PedInstance *> peds_;
-    std::vector<WeaponInstance *> weapons_;
+    //! List of all weapons that have no owner
+    std::vector<WeaponInstance *> weaponsOnGround_;
     std::vector<Static *> statics_;
     std::vector<SFXObject *> sfx_objects_;
     std::vector<ProjectileShot *> prj_shots_;

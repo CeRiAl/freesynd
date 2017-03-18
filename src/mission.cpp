@@ -81,8 +81,8 @@ Mission::~Mission()
         delete vehicles_[i];
     for (unsigned int i = 0; i < peds_.size(); i++)
         delete peds_[i];
-    for (unsigned int i = 0; i < weapons_.size(); i++)
-        delete weapons_[i];
+    for (unsigned int i = 0; i < weaponsOnGround_.size(); i++)
+        delete weaponsOnGround_[i];
     while (sfx_objects_.size() != 0) {
         delSfxObject(0);
     }
@@ -171,7 +171,7 @@ void Mission::start()
     // creating a list of available weapons
     // TODO: consider weight of weapons when adding?
     std::vector <Weapon *> wpns;
-    g_gameCtrl.weapons().getAvailable(MapObject::dmg_Bullet, wpns);
+    g_gameCtrl.weaponManager().getAvailable(MapObject::dmg_Bullet, wpns);
     int indx_best = -1;
     int indx_second = -1;
     for (int i = 0, sz = wpns.size(), rank_best = -1, rank_second = -1;
@@ -187,7 +187,7 @@ void Mission::start()
             indx_second = i;
         }
     }
-    Weapon *bomb = g_gameCtrl.weapons().getAvailable(Weapon::TimeBomb);
+    Weapon *bomb = g_gameCtrl.weaponManager().getAvailable(Weapon::TimeBomb);
 
     // TODO: check whether enemy agents weapons are equal to best two
     // if not set them
@@ -202,12 +202,12 @@ void Mission::start()
             WeaponInstance *wi = WeaponInstance::createInstance(wpns[index_give]);
             p->addWeapon(wi);
             wi->setOwner(p);
-            weapons_.push_back(wi);
+            weaponsOnGround_.push_back(wi);
             if (bomb) {
                 WeaponInstance *w_bomb = WeaponInstance::createInstance(bomb);
                 p->addWeapon(w_bomb);
                 w_bomb->setOwner(p);
-                weapons_.push_back(w_bomb);
+                weaponsOnGround_.push_back(w_bomb);
             }
         }
     }
@@ -270,20 +270,27 @@ void Mission::endWithStatus(Status status) {
     status_ = status;
 }
 
-void Mission::addWeaponsFromPedToAgent(PedInstance* p, Agent* pAg)
+/**
+ * When mission is over, weapons from agents are saved for
+ * reuse in other missions. So they are transfered to Agent.
+ * \param p PedInstance* The agent in the mission
+ * \param pAg Agent* The Agent in cryo chamber
+ *
+ */
+void Mission::transferWeaponsFromPedInstanceToAgent(PedInstance* p, Agent* pAg)
 {
     while (p->numWeapons()) {
         WeaponInstance *wi = p->removeWeaponAtIndex(0);
         std::vector < WeaponInstance * >::iterator it =
-            weapons_.begin();
-        while (it != weapons_.end() && *it != wi)
+            weaponsOnGround_.begin();
+        while (it != weaponsOnGround_.end() && *it != wi)
             it++;
-        assert(it != weapons_.end());
-        weapons_.erase(it);
+        assert(it != weaponsOnGround_.end());
+        weaponsOnGround_.erase(it);
         wi->deactivate();
         // auto-reload for pistol
-        if (wi->getWeaponType() == Weapon::Pistol)
-            wi->setAmmoRemaining(wi->ammo());
+        if (wi->isInstanceOf(Weapon::Pistol))
+            wi->reload();
         wi->resetWeaponUsedTime();
         pAg->addWeapon(wi);
     }
@@ -322,7 +329,7 @@ void Mission::end()
                 if (completed()) {
                     Agent *pAg = g_gameCtrl.agents().createAgent(false);
                     if (pAg) {
-                        addWeaponsFromPedToAgent(p, pAg);
+                        transferWeaponsFromPedInstanceToAgent(p, pAg);
                         *((ModOwner *)pAg) = *((ModOwner *)p);
                     }
                 }
@@ -341,7 +348,7 @@ void Mission::end()
                 g_gameCtrl.agents().destroyAgentSlot(i);
             } else {
                 // synch only weapons
-                addWeaponsFromPedToAgent(p_pedAgent, pAg);
+                transferWeaponsFromPedInstanceToAgent(p_pedAgent, pAg);
             }
         }
     }
@@ -352,11 +359,12 @@ void Mission::end()
 
 void Mission::addWeapon(WeaponInstance * w)
 {
-    //w->setMap(p_map_->id());
-    for (unsigned int i = 0; i < weapons_.size(); i++)
-        if (weapons_[i] == w)
+    for (unsigned int i = 0; i < weaponsOnGround_.size(); i++) {
+        // TODO : check if == operator is used correctly (see  == in WeaponInstance)
+        if (weaponsOnGround_[i] == w)
             return;
-    weapons_.push_back(w);
+    }
+    weaponsOnGround_.push_back(w);
 }
 
 MapObject * Mission::findObjectWithNatureAtPos(int tilex, int tiley, int tilez,
@@ -2529,8 +2537,8 @@ MapObject * Mission::checkBlockedByObject(WorldPoint * pStartPt, WorldPoint * pE
         }
     }
 
-    for (unsigned int i = 0; i < weapons_.size(); ++i) {
-        WeaponInstance *pWeapon = weapons_[i];
+    for (unsigned int i = 0; i < weaponsOnGround_.size(); ++i) {
+        WeaponInstance *pWeapon = weaponsOnGround_[i];
         if (!pWeapon->hasOwner()) {
             if (pWeapon->isBlocker(&copyStartPt, &copyEndPt, inc_xyz)) {
                 int cx = pStartPt->x - copyStartPt.x;

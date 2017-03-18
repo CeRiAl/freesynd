@@ -82,7 +82,7 @@ bool Agent::saveToFile(PortableFile &file) {
     file.write32(nb);
     for (int wIndex = 0; wIndex < numWeapons(); wIndex++) {
         WeaponInstance *pWinst = weapon(wIndex);
-        file.write32(pWinst->getWeaponType());
+        file.write32(pWinst->getClass()->getType());
         file.write32(pWinst->ammoRemaining());
     }
     return true;
@@ -106,6 +106,6 @@ bool Agent::loadFromFile(PortableFile &infile, const FormatVersion& v) {
     active_ = infile.read8b();
     // health : not used
     int health = infile.read32();
-    
+
     return true;
 }

@@ -105,9 +105,9 @@ Research *ResearchManager::loadResearch(Weapon::WeaponType wt) {
 
             // Create new research
             Research *pRes = new Research(wt, name, fund, nextWeap);
-            
+
             // Check if searched weapon has already been discovered
-            Weapon *pW = g_gameCtrl.weapons().getWeapon(wt);
+            Weapon *pW = g_gameCtrl.weaponManager().getWeapon(wt);
             if (pW->wasSubmittedToSearch()) {
                 pRes->improve(pW);
             }
@@ -197,7 +197,7 @@ void ResearchManager::start(Research *pResearch) {
 }
 
 /*!
- * Terminate the given search and loads a new one if 
+ * Terminate the given search and loads a new one if
  * the search has defined a next search.
  * Enables Weapon/Mod associated with that search.
  * \param pResearch The completed search.
@@ -206,7 +206,7 @@ void ResearchManager::complete(Research *pResearch) {
     Research *pNextRes = NULL;
     // Enable new weapon or mods
     if (pResearch->getType() == Research::EQUIPS) {
-        g_gameCtrl.weapons().enableWeapon(pResearch->getSearchWeapon());
+        g_gameCtrl.weaponManager().enableWeapon(pResearch->getSearchWeapon());
         // Loads next research
         if (pResearch->getNextWeaponRes() != Weapon::Unknown) {
             pNextRes = loadResearch(pResearch->getNextWeaponRes());
@@ -253,14 +253,14 @@ int ResearchManager::process(int hourElapsed, int moneyLeft) {
                 complete(pCurrResearch_);
             }
         }
-    
+
     return amount;
 }
 
 void ResearchManager::replaceSearch(Research *pOldSearch, Research *pNewSearch) {
-    VectorModel < Research * > *pList = 
+    VectorModel < Research * > *pList =
         pOldSearch->getType() == Research::EQUIPS ? &availableWeaponsSearch_ : &availableModsSearch_;
-    
+
     for (unsigned int i=0; i<pList->size(); i++) {
         if (pOldSearch->getId() == pList->get(i)->getId()) {
             pList->setAt(i, pNewSearch);
@@ -271,9 +271,9 @@ void ResearchManager::replaceSearch(Research *pOldSearch, Research *pNewSearch) 
 
 // There's no more research for this category
 void ResearchManager::removeSearch(Research *pOldSearch) {
-    VectorModel < Research * > *pList = 
+    VectorModel < Research * > *pList =
         pOldSearch->getType() == Research::EQUIPS ? &availableWeaponsSearch_ : &availableModsSearch_;
-    
+
     for (unsigned int i=0; i<pList->size(); i++) {
         if (pOldSearch->getId() == pList->get(i)->getId()) {
             pList->remove(i);
@@ -294,7 +294,7 @@ bool ResearchManager::handleWeaponDiscovered(Weapon *pWeapon) {
         pWeapon->submitToSearch();
         // Find if there is a search already available for this weapon
         for (unsigned int i=0; i<availableWeaponsSearch_.size(); i++) {
-            if (pWeapon->getWeaponType() == availableWeaponsSearch_.get(i)->getSearchWeapon()) {
+            if (pWeapon->getType() == availableWeaponsSearch_.get(i)->getSearchWeapon()) {
                 // There is currently a research on that weapon
                 Research *pRes = availableWeaponsSearch_.get(i);
                 pRes->improve(pWeapon);
@@ -312,7 +312,7 @@ bool ResearchManager::handleWeaponDiscovered(Weapon *pWeapon) {
 
         return true;
     }
-    
+
     return false;
 }
 

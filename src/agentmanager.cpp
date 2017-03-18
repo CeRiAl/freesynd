@@ -148,7 +148,7 @@ void AgentManager::reset(bool onlyWomen) {
     for (size_t i = 0; i < 8; i++) {
         Agent * pAgent = new Agent(g_AgentNames[nextName_], onlyWomen ? true : ((i % 2) == 0));
         pAgent->addWeapon(WeaponInstance::createInstance(pWeaponManager_->getWeapon(Weapon::Pistol)));
-        
+
         agents_.setAt(i, pAgent);
         // Adds the first 4 agents to the squad
         if (i < kMaxSlot) {
@@ -284,9 +284,8 @@ bool AgentManager::loadFromFile(PortableFile &infile, const FormatVersion& v) {
                         wt = Weapon::Unknown;
                 }
                 if (wt != Weapon::Unknown) {
-                    WeaponInstance *pInst = WeaponInstance::createInstance(pWeaponManager_->getWeapon(wt));
                     int ammo = infile.read32();
-                    pInst->setAmmoRemaining(ammo);
+                    WeaponInstance *pInst = WeaponInstance::createInstance(pWeaponManager_->getWeapon(wt), ammo);
                     pAgent->addWeapon(pInst);
                 } else
                     // if not read, we will corrupt loading
@@ -333,7 +332,7 @@ void AgentManager::clearSquad() {
         a_squad_[s] = NULL;
     }
 }
-    
+
 //! Returns true if the slot holds an agent and if he's active
 bool AgentManager::isSquadSlotActive(size_t slotId) {
     assert(slotId < kMaxSlot);

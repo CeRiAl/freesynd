@@ -60,7 +60,7 @@ typedef struct Block_ {
      * Real tax rate is updated with this buffer every day.
      */
     int addToTax;
-    /*! 
+    /*!
      * Status of the population satisfaction.
      */
     Status_Pop popStatus;
@@ -180,6 +180,21 @@ public:
         money_ = m;
     }
 
+    void increaseMoney(int amount) {
+        money_ += amount;
+    }
+
+    void decreaseMoney(int amount) {
+        money_ -= amount;
+        if (money_ < 0) {
+            money_ = 0;
+        }
+    }
+
+    bool canAfford(int amount) {
+        return money_ >= amount;
+    }
+
     ResearchManager &researchManager() {
         return researchMan_;
     }
@@ -278,7 +293,7 @@ private:
     int time_elapsed_;
     /*! How long does an hour in millisecond. */
     int hour_delay_;
-    /*! 
+    /*!
      * Stores the index of the current selected
      * region on the mission map.
      */

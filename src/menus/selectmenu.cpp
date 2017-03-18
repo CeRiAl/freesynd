@@ -64,7 +64,7 @@ cur_agent_(0), tick_count_(0), rnd_(0), sel_all_(false)
     pTeamLBox_->setModel(g_gameCtrl.agents().getAgents());
     // Available weapons list
     pWeaponsLBox_ = addListBox(504, 110,  122, 230, tab_ == TAB_EQUIPS);
-    pWeaponsLBox_->setModel(g_gameCtrl.weapons().getAvailableWeapons());
+    pWeaponsLBox_->setModel(g_gameCtrl.weaponManager().getAvailableWeapons());
     // Available mods list
     pModsLBox_ = addListBox(504, 110,  122, 230, tab_ == TAB_MODS);
     pModsLBox_->setModel(g_gameCtrl.mods().getAvalaibleMods());
@@ -235,7 +235,7 @@ void SelectMenu::drawAgent()
         WeaponInstance *wi = draw_weapons[i];
 
         if (wi) {
-            Weapon *pW = wi->getWeaponClass();
+            Weapon *pW = wi->getClass();
             menuSprites().drawSpriteXYZ(pW->getSmallIconId(),
                 pos[i].x, pos[i].y, 0, false, true);
             uint8 data[3] = {204, 204, 204};
@@ -326,11 +326,10 @@ void SelectMenu::drawSelectedWeaponInfos(int x, int y) {
         y += 12;
     }
 
-    if (selectedWInstId_ > 0 && g_gameCtrl.weapons().isAvailable(pSelectedWeap_)) {
+    if (selectedWInstId_ > 0 && g_gameCtrl.weaponManager().isAvailable(pSelectedWeap_)) {
         WeaponInstance *wi = g_gameCtrl.agents().squadMember(cur_agent_)->weapon(selectedWInstId_ - 1);
         if (wi->needsReloading()) {
-            int rldCost = (pSelectedWeap_->ammo()
-                                    - wi->ammoRemaining()) * pSelectedWeap_->ammoCost();
+            int rldCost = pSelectedWeap_->getReloadingCost(wi->ammoRemaining());
 
             sprintf(tmp, ":%d", rldCost);
             getMenuFont(FontManager::SIZE_1)->drawText(x, y,
@@ -596,12 +595,12 @@ bool SelectMenu::handleMouseDown(int x, int y, int button, const int modKeys)
 
                 if (newId != selectedWInstId_) { // Do something only if a different weapon is selected
                     selectedWInstId_ = newId;
-                    pSelectedWeap_ = wi->getWeaponClass();
+                    pSelectedWeap_ = wi->getClass();
                     addDirtyRect(500, 105,  125, 235);
                     // 3/ see if reload button should be displayed,
                     // if weapon is not researched it will not be reloadable
                     bool displayReload = wi->needsReloading()
-                        && g_gameCtrl.weapons().isAvailable(pSelectedWeap_);
+                        && g_gameCtrl.weaponManager().isAvailable(pSelectedWeap_);
                     getOption(reloadButId_)->setVisible(displayReload);
 
                     // 4/ hides the purchase button for the sell button
@@ -731,12 +730,11 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
     } else if (actionId == reloadButId_) {
         Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);
         WeaponInstance *wi = selected->weapon(selectedWInstId_ - 1);
-        int rldCost = (pSelectedWeap_->ammo()
-                        - wi->ammoRemaining()) * pSelectedWeap_->ammoCost();
+        int rldCost = pSelectedWeap_->getReloadingCost(wi->ammoRemaining());
 
-        if (g_Session.getMoney() >= rldCost) {
-            g_Session.setMoney(g_Session.getMoney() - rldCost);
-            wi->setAmmoRemaining(pSelectedWeap_->ammo());
+        if (g_Session.canAfford(rldCost)) {
+            g_Session.decreaseMoney(rldCost);
+            wi->reload();
             getOption(reloadButId_)->setVisible(false);
             getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
         }
@@ -747,8 +745,8 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
                 for (size_t n = 0; n < AgentManager::kMaxSlot; n++) {
                     Agent *selected = g_gameCtrl.agents().squadMember(n);
                     if (selected && selected->numWeapons() < 8
-                        && g_Session.getMoney() >= pSelectedWeap_->cost()) {
-                        g_Session.setMoney(g_Session.getMoney() - pSelectedWeap_->cost());
+                        && g_Session.canAfford(pSelectedWeap_->cost())) {
+                        g_Session.decreaseMoney(pSelectedWeap_->cost());
                         selected->addWeapon(WeaponInstance::createInstance(pSelectedWeap_));
                         getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
                     }
@@ -756,8 +754,8 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
             } else {
                 Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);
                 if (selected && selected->numWeapons() < 8
-                    && g_Session.getMoney() >= pSelectedWeap_->cost()) {
-                    g_Session.setMoney(g_Session.getMoney() - pSelectedWeap_->cost());
+                    && g_Session.canAfford(pSelectedWeap_->cost())) {
+                    g_Session.decreaseMoney(pSelectedWeap_->cost());
                     selected->addWeapon(WeaponInstance::createInstance(pSelectedWeap_));
                     getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
                 }
@@ -768,18 +766,18 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
                 for (size_t n = 0; n < AgentManager::kMaxSlot; n++) {
                     Agent *selected = g_gameCtrl.agents().squadMember(n);
                     if (selected && selected->canHaveMod(pSelectedMod_)
-                        && g_Session.getMoney() >= pSelectedMod_->cost()) {
+                        && g_Session.canAfford(pSelectedMod_->cost())) {
                         selected->addMod(pSelectedMod_);
-                        g_Session.setMoney(g_Session.getMoney() - pSelectedMod_->cost());
+                        g_Session.decreaseMoney(pSelectedMod_->cost());
                         getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
                     }
                 }
             } else {
                 Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);
                 if (selected && selected->canHaveMod(pSelectedMod_)
-                    && g_Session.getMoney() >= pSelectedMod_->cost()) {
+                    && g_Session.canAfford(pSelectedMod_->cost())) {
                     selected->addMod(pSelectedMod_);
-                    g_Session.setMoney(g_Session.getMoney() - pSelectedMod_->cost());
+                    g_Session.decreaseMoney(pSelectedMod_->cost());
                     getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
                 }
             }
@@ -790,7 +788,7 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
         addDirtyRect(360, 305, 135, 70);
         Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);
         WeaponInstance *pWi = selected->removeWeaponAtIndex(selectedWInstId_ - 1);
-        g_Session.setMoney(g_Session.getMoney() + pWi->getWeaponClass()->cost());
+        g_Session.increaseMoney(pWi->getClass()->cost());
         getStatic(moneyTxtId_)->setTextFormated("%d", g_Session.getMoney());
         delete pWi;
         showItemList();
@@ -810,7 +808,7 @@ void SelectMenu::updateSelectedWeapon() {
     WeaponInstance *wi = selected->weapon(selectedWInstId_ - 1);
 
     // if weapon is researched it can be bought
-    if (g_gameCtrl.weapons().isAvailable(wi->getWeaponClass())) {
+    if (g_gameCtrl.weaponManager().isAvailable(wi->getClass())) {
         selectedWInstId_ = 0;
         getOption(sellButId_)->setVisible(false);
         getOption(purchaseButId_)->setVisible(true);

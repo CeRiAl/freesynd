@@ -51,7 +51,7 @@ WeaponManager::~WeaponManager() {
         delete (*it);
     }
     all_game_weapons_.clear();
-        
+
 }
 
 void WeaponManager::reset() {
@@ -101,7 +101,7 @@ void WeaponManager::cheatEnableAllWeapons() {
 void WeaponManager::enableWeapon(Weapon::WeaponType wt) {
     // First check if weapon is not already available
     for (unsigned i = 0; i != availableWeapons_.size(); ++i) {
-        if (wt == availableWeapons_.get(i)->getWeaponType())
+        if (wt == availableWeapons_.get(i)->getType())
             return;
     }
 
@@ -119,7 +119,7 @@ void WeaponManager::enableWeapon(Weapon::WeaponType wt) {
 
     // make it available
     for (unsigned i = 0; i != availableWeapons_.size(); ++i) {
-        if (pWeapon->getWeaponType() < availableWeapons_.get(i)->getWeaponType()) {
+        if (pWeapon->getType() < availableWeapons_.get(i)->getType()) {
             // The new weapon is inserted in the order of the WeaponType constants
             availableWeapons_.insertAt(i, pWeapon);
             return;
@@ -132,23 +132,23 @@ void WeaponManager::enableWeapon(Weapon::WeaponType wt) {
 Weapon * WeaponManager::getWeapon(Weapon::WeaponType wt) {
     // Search in prefetched weapons first
     for (unsigned int i = 0; i < preFetch_.size(); i++) {
-        if (wt == preFetch_[i]->getWeaponType())
+        if (wt == preFetch_[i]->getType())
             return preFetch_[i];
     }
 
     // Then search in available weapons
     for (unsigned i = 0; i != availableWeapons_.size(); ++i) {
-        if (wt == availableWeapons_.get(i)->getWeaponType())
+        if (wt == availableWeapons_.get(i)->getType())
             return availableWeapons_.get(i);
     }
 
     // Weapon was not found so loads it
     Weapon *pWeapon = NULL;
-    
+
     for (std::vector<Weapon *>::iterator it = all_game_weapons_.begin();
         it != all_game_weapons_.end();it++)
     {
-        if ((*it)->getWeaponType() == wt) {
+        if ((*it)->getType() == wt) {
             pWeapon = *it;
             break;
         }
@@ -156,14 +156,14 @@ Weapon * WeaponManager::getWeapon(Weapon::WeaponType wt) {
     assert(pWeapon);
     // Stores it in cache
     preFetch_.push_back(pWeapon);
-    
+
     return pWeapon;
 }
 
 bool WeaponManager::isAvailable(Weapon *pWeapon) {
     // search in available weapons
     for (unsigned i = 0; i != availableWeapons_.size(); ++i) {
-        if (pWeapon->getWeaponType() == availableWeapons_.get(i)->getWeaponType())
+        if (pWeapon->getType() == availableWeapons_.get(i)->getType())
             return true;
     }
 
@@ -174,7 +174,7 @@ bool WeaponManager::isAvailable(Weapon *pWeapon) {
 Weapon * WeaponManager::getAvailable(Weapon::WeaponType wpn) {
     // search in available weapons
     for (unsigned i = 0; i != availableWeapons_.size(); ++i) {
-        if (wpn == availableWeapons_.get(i)->getWeaponType())
+        if (wpn == availableWeapons_.get(i)->getType())
             return availableWeapons_.get(i);
     }
 
@@ -215,7 +215,7 @@ bool WeaponManager::saveToFile(PortableFile &file) {
 
     for(unsigned int i=0; i<availableWeapons_.size(); i++) {
         Weapon *pWeapon = availableWeapons_.get(i);
-        file.write32(pWeapon->getWeaponType());
+        file.write32(pWeapon->getType());
     }
 
     return true;

@@ -249,26 +249,32 @@ void Weapon::initFromConfig(WeaponType w_type, ConfigFile &conf) {
     }
 }
 
+int Weapon::getReloadingCost(int remaingAmmo) {
+    return (ammo_ - remaingAmmo) * ammo_cost_;
+}
+
 /*!
  * Creates a new instance of Weapon instance for the given weapon class.
  * \param pWeaponClass Class of weapon
+ * \param Current amount of ammo. If value is -1, ammo is full
  * \return an instance of WeaponInstance
  */
-WeaponInstance *WeaponInstance::createInstance(Weapon *pWeaponClass) {
-    return new WeaponInstance(pWeaponClass, weaponIdCnt++);
+WeaponInstance *WeaponInstance::createInstance(Weapon *pWeaponClass, int remainingAmmo) {
+    return new WeaponInstance(pWeaponClass, weaponIdCnt++, remainingAmmo);
 }
 
-WeaponInstance::WeaponInstance(Weapon * w, uint16 anId) : ShootableMapObject(anId, -1, MapObject::kNatureWeapon),
-    bombSoundTimer(w->timeReload()), bombExplosionTimer(w->timeForShot()),
-    flamerTimer_(180) {
-    pWeaponClass_ = w;
-    ammo_remaining_ = w->ammo();
+WeaponInstance::WeaponInstance(Weapon * pWeaponClass, uint16 anId, int remainingAmmo) :
+        ShootableMapObject(anId, -1, MapObject::kNatureWeapon),
+        bombSoundTimer(pWeaponClass->timeReload()), bombExplosionTimer(pWeaponClass->timeForShot()),
+        flamerTimer_(180) {
+    pWeaponClass_ = pWeaponClass;
+    ammo_remaining_ = remainingAmmo == -1 ? pWeaponClass->ammo() : remainingAmmo;
     weapon_used_time_ = 0;
     pOwner_ = NULL;
     activated_ = false;
     time_consumed_ = false;
-    if (w->getWeaponType() == Weapon::TimeBomb
-        || w->getWeaponType() == Weapon::Flamer)
+    if (pWeaponClass->getType() == Weapon::TimeBomb
+        || pWeaponClass->getType() == Weapon::Flamer)
     {
         size_x_ = 32;
         size_y_ = 32;
@@ -282,7 +288,7 @@ WeaponInstance::WeaponInstance(Weapon * w, uint16 anId) : ShootableMapObject(anI
 bool WeaponInstance::animate(int elapsed) {
 
     if (activated_) {
-        if (getWeaponType() == Weapon::EnergyShield) {
+        if (isInstanceOf(Weapon::EnergyShield)) {
             if (ammo_remaining_ == 0)
                 return false;
             int tm_left = elapsed;
@@ -293,7 +299,7 @@ bool WeaponInstance::animate(int elapsed) {
             } else
                 ammo_remaining_ -= ammoused;
             return true;
-        } else if (getWeaponType() == Weapon::TimeBomb) {
+        } else if (isInstanceOf(Weapon::TimeBomb)) {
             if (bombSoundTimer.update(elapsed)) {
                 g_App.gameSounds().play(snd::TIMEBOMB);
             }
@@ -311,10 +317,11 @@ bool WeaponInstance::animate(int elapsed) {
         updtWeaponUsedTime(elapsed);
     }
 
-    if (map_ == -1)
-        return false;
+    if (isDrawable()) {
+        return MapObject::animate(elapsed);
+    }
 
-    return MapObject::animate(elapsed);
+    return false;
 }
 
 void WeaponInstance::draw(int x, int y) {
@@ -408,7 +415,7 @@ void WeaponInstance::activate() {
 
 void WeaponInstance::deactivate() {
     activated_ = false;
-    if (getWeaponType() == Weapon::TimeBomb)
+    if (isInstanceOf(Weapon::TimeBomb))
         weapon_used_time_ = 0;
 }
 
@@ -421,13 +428,13 @@ void WeaponInstance::deactivate() {
  */
 void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed) {
     bool updateStats = true;
-    if (getWeaponType() == Weapon::MediKit) {
+    if (isInstanceOf(Weapon::MediKit)) {
         dmg.d_owner->resetHealth();
         updateStats = false;
-    } else if (getWeaponType() == Weapon::GaussGun) {
+    } else if (isInstanceOf(Weapon::GaussGun)) {
         GaussGunShot *pShot = new GaussGunShot(dmg);
         pMission->addPrjShot(pShot);
-    } else if (getWeaponType() == Weapon::Flamer) {
+    } else if (isInstanceOf(Weapon::Flamer)) {
         // when targeting a point with the flamer, the point of impact
         // circles around the target.
         // We use the weapon's direction field to store a logical direction
@@ -470,7 +477,7 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         if (flamerTimer_.update(elapsed)) {
             setDirection((direction() + 1) % 8);
         }
-    }  else if (getWeaponType() == Weapon::TimeBomb) {
+    }  else if (isInstanceOf(Weapon::TimeBomb)) {
         updateStats = false;
         map_ = -1;
         health_ = 0;
@@ -500,7 +507,7 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
 void WeaponInstance::handleHit(ShootableMapObject::DamageInflictType & d)
 {
     // When a bomb is hit, it explodes
-    if (getWeaponType() == Weapon::TimeBomb && health_ > 0) {
+    if (isInstanceOf(Weapon::TimeBomb) && health_ > 0) {
         // we pass the given DamageInflictType just for the compiler
         // as it is not used by the fire method for a Bomb
         // same for elapsed

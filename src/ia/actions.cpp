@@ -533,7 +533,7 @@ bool PutdownWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance 
     if (status_ != kActStatusWaitForAnim) {
         WeaponInstance *pWeapon = pPed->dropWeapon(weaponIdx_);
         // Dropping a timebomb means activate it to explode
-        if (pWeapon->getWeaponType() == Weapon::TimeBomb) {
+        if (pWeapon->isInstanceOf(Weapon::TimeBomb)) {
             pWeapon->activate();
         }
 
@@ -995,14 +995,14 @@ void ShootAction::fillDamageDesc(Mission *pMission,
                                     WeaponInstance *pWeapon,
                                     ShootableMapObject::DamageInflictType &dmg) {
     dmg.pWeapon = pWeapon;
-    dmg.dtype = pWeapon->getWeaponClass()->dmgType();
-    dmg.dvalue =  pWeapon->getWeaponClass()->damagePerShot();
-    dmg.range = pWeapon->getWeaponClass()->range();
+    dmg.dtype = pWeapon->getClass()->dmgType();
+    dmg.dvalue =  pWeapon->getClass()->damagePerShot();
+    dmg.range = pWeapon->getClass()->range();
     dmg.d_owner = pShooter;
     dmg.aimedLocW = aimedAt_;
     dmg.originLocW.convertFromTilePoint(pShooter->position());
 
-    if (pWeapon->getWeaponType() == Weapon::Flamer) {
+    if (pWeapon->isInstanceOf(Weapon::Flamer)) {
         // the weapon is located at half the size of the shooter
         dmg.originLocW.z += pShooter->sizeZ() >> 1;
 
@@ -1041,7 +1041,7 @@ void ShootAction::fillDamageDesc(Mission *pMission,
 
 AutomaticShootAction::AutomaticShootAction(const WorldPoint &aimedAt, WeaponInstance *pWeapon) :
         ShootAction(aimedAt, pWeapon),
-        fireRateTimer_(pWeapon->getWeaponClass()->fireRate())
+        fireRateTimer_(pWeapon->getClass()->fireRate())
 {
 }
 
@@ -1103,7 +1103,7 @@ bool UseMedikitAction::execute(int elapsed, Mission *pMission, PedInstance *pPed
         status_ = kActStatusWaitForTime;
         timeToWait_ = pPed->getTimeBetweenShoots(pWeapon_);
 
-        if (pWeapon_->getWeaponType() != Weapon::MediKit) {
+        if (!pWeapon_->isInstanceOf(Weapon::MediKit)) {
             setFailed();
         } else {
             pWeapon_->playSound();

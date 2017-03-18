@@ -154,9 +154,9 @@ void DebriefMenu::checkNewWeaponFound() {
         Agent *pAgent = g_gameCtrl.agents().squadMember(i);
         if (pAgent) {
             for (int wi=0; wi < pAgent->numWeapons(); wi++) {
-                Weapon *pWeapon = pAgent->weapon(wi)->getWeaponClass();
+                Weapon *pWeapon = pAgent->weapon(wi)->getClass();
 
-                if (!g_gameCtrl.weapons().isAvailable(pWeapon)) {
+                if (!g_gameCtrl.weaponManager().isAvailable(pWeapon)) {
                     if (g_Session.researchManager().handleWeaponDiscovered(pWeapon)) {
                         getStatic(txtNewWeap1Id_)->setText("#DEBRIEF_WEAP_FOUND1");
                         getStatic(txtNewWeap2Id_)->setText("#DEBRIEF_WEAP_FOUND2");
@@ -200,7 +200,7 @@ void DebriefMenu::handleGameEvent(GameEvent evt) {
              assert(wt);
 
              // Get weapon
-             Weapon *pWeap = g_gameCtrl.weapons().getWeapon(wt);
+             Weapon *pWeap = g_gameCtrl.weaponManager().getWeapon(wt);
              assert(pWeap);
 
              // Draw name of it

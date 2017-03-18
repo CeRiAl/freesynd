@@ -1254,7 +1254,7 @@ void GameplayMenu::drawWeaponSelectors() {
 
                 if (i + j * 4 < p->numWeapons()) {
                     wi = p->weapon(i + j * 4);
-                    s = wi->getWeaponClass()->selector();
+                    s = wi->getClass()->selector();
                     if (p->selectedWeapon() && p->selectedWeapon() == wi)
                         s += 40;
                 } else if (draw_pw) {
@@ -1266,7 +1266,7 @@ void GameplayMenu::drawWeaponSelectors() {
                         // in the inventory to display its icon
                         wi = (WeaponInstance *)target_;
                         draw_pw = false;
-                        s = wi->getWeaponClass()->selector() + 40;
+                        s = wi->getClass()->selector() + 40;
                     }
                 }
 

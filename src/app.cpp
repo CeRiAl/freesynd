@@ -425,7 +425,7 @@ void App::cheatRepeatOrCompleteMission() {
 }
 
 void App::cheatWeaponsAndMods() {
-    g_gameCtrl.weapons().cheatEnableAllWeapons();
+    g_gameCtrl.weaponManager().cheatEnableAllWeapons();
     g_gameCtrl.mods().cheatEnableAllMods();
 }
 
@@ -477,38 +477,38 @@ void App::cheatEquipFancyWeapons() {
         g_gameCtrl.agents().agent(i)->removeAllWeapons();
 #ifdef _DEBUG
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Minigun)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Minigun)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::TimeBomb)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::TimeBomb)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::GaussGun)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::GaussGun)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Flamer)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Flamer)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Uzi)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Uzi)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Persuadatron)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Persuadatron)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Laser)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Laser)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::AccessCard)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::AccessCard)));
 #else
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Minigun)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Minigun)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Minigun)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Minigun)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Persuadatron)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Persuadatron)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::TimeBomb)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::TimeBomb)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::EnergyShield)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::EnergyShield)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::EnergyShield)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::EnergyShield)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Laser)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Laser)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-                WeaponInstance::createInstance(g_gameCtrl.weapons().getWeapon(Weapon::Laser)));
+                WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Laser)));
 #endif
         }
     }
@@ -697,7 +697,7 @@ bool App::saveGameToFile(int fileSlot, std::string name) {
         g_Session.saveToFile(outfile);
 
         // Weapons
-        g_gameCtrl.weapons().saveToFile(outfile);
+        g_gameCtrl.weaponManager().saveToFile(outfile);
 
         // Mods
         g_gameCtrl.mods().saveToFile(outfile);
@@ -756,7 +756,7 @@ bool App::loadGameFromFile(int fileSlot) {
         g_Session.loadFromFile(infile, v);
 
         // Weapons
-        g_gameCtrl.weapons().loadFromFile(infile, v);
+        g_gameCtrl.weaponManager().loadFromFile(infile, v);
 
         // Mods
         g_gameCtrl.mods().loadFromFile(infile, v);

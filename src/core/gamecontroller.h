@@ -71,8 +71,8 @@ class GameController : public Singleton < GameController > {
         return agents_;
     }
 
-    WeaponManager &weapons() {
-        return weapons_;
+    WeaponManager &weaponManager() {
+        return weaponMgr_;
     }
 
     ModManager &mods() {
@@ -87,7 +87,7 @@ class GameController : public Singleton < GameController > {
     // Game services
     //*************************************
     //! Changes the user preferences (from the config menu)
-    void change_user_infos(const char *company_name, const char *player_name, 
+    void change_user_infos(const char *company_name, const char *player_name,
                             int logo, int color);
     //! Checks if mission is completed and updates game state
     void handle_mission_end(Mission *p_mission);
@@ -103,7 +103,7 @@ private:
      */
     AgentManager agents_;
     /*! Manager of weapons.*/
-    WeaponManager weapons_;
+    WeaponManager weaponMgr_;
     /*! Manager of mods.*/
     ModManager mods_;
     /*! Manager of missions.*/

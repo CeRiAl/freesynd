@@ -83,13 +83,13 @@ void BriefMenu::handleTick(int elapsed)
     if (g_Session.updateTime(elapsed)) {
         updateClock();
     }
-    
+
     if (mm_renderer_.handleTick(elapsed)) {
         redrawMiniMap();
     }
 }
 
-/*! 
+/*!
  * Update the game time display
  */
 void BriefMenu::updateClock() {
@@ -140,7 +140,7 @@ void BriefMenu::handleShow() {
     uint8 enh_lvl = g_Session.getSelectedBlock().enhanceLevel;
     MinimapRenderer::EZoom zoom =
         toZoomLevel(enh_lvl);
-    
+
     bool drawEnemies = enh_lvl == p_briefing_->nb_enhts();
 
     mm_renderer_.init(p_briefing_, zoom, drawEnemies);
@@ -194,7 +194,7 @@ void BriefMenu::render_briefing_text() {
     }
 }
 
-/*! 
+/*!
  * Reads a word (up to next separator : white space, new line or end of text)
  * and adds the word to the given line if it fits whithin the limit.
  * \return true if the line is complete
@@ -243,7 +243,7 @@ bool BriefMenu::read_next_word(std::string & brief, std::string & line)
  * Called when next or previous button was clicked or when info was bought.
  * Updates the array of lines to be displayed.
  */
-void BriefMenu::update_briefing_text() 
+void BriefMenu::update_briefing_text()
 {
     int line_count = 0;
 
@@ -256,7 +256,7 @@ void BriefMenu::update_briefing_text()
         std::string brief(p_briefing_->briefing(lvl));
         std::string line;
 
-        while (brief.size() != 0 && 
+        while (brief.size() != 0 &&
                 line_count <= (start_line_ + kMaxLinePerPage)) {
             bool add = read_next_word(brief, line);
 
@@ -318,9 +318,9 @@ void BriefMenu::handleAction(const int actionId, void *ctx, const int modKeys) {
     if (actionId == infosButId_) {
         // Buy some informations
         if (g_Session.getSelectedBlock().infoLevel < p_briefing_->nb_infos()) {
-            g_Session.setMoney(g_Session.getMoney() - p_briefing_->infoCost(g_Session.getSelectedBlock().infoLevel));
+            g_Session.decreaseMoney(p_briefing_->infoCost(g_Session.getSelectedBlock().infoLevel));
             g_Session.getSelectedBlock().infoLevel += 1;
-            
+
             getStatic(txtMoneyId_)->setTextFormated("%d", g_Session.getMoney());
             if (g_Session.getSelectedBlock().infoLevel < p_briefing_->nb_infos()) {
                 getStatic(txtInfoId_)->setTextFormated("%d",
@@ -336,8 +336,7 @@ void BriefMenu::handleAction(const int actionId, void *ctx, const int modKeys) {
     if (actionId == enhButId_) {
         // Buy some map enhancement
         if (g_Session.getSelectedBlock().enhanceLevel < p_briefing_->nb_enhts()) {
-            g_Session.setMoney(g_Session.getMoney() - 
-                p_briefing_->enhanceCost(g_Session.getSelectedBlock().enhanceLevel));
+            g_Session.decreaseMoney(p_briefing_->enhanceCost(g_Session.getSelectedBlock().enhanceLevel));
             g_Session.getSelectedBlock().enhanceLevel += 1;
             // zoom in the minimap
             mm_renderer_.zoomOut();
@@ -346,7 +345,7 @@ void BriefMenu::handleAction(const int actionId, void *ctx, const int modKeys) {
                 getOption(enhButId_)->setWidgetEnabled(false);
             }
             redrawMiniMap();
-            
+
             getStatic(txtMoneyId_)->setTextFormated("%d", g_Session.getMoney());
             if (g_Session.getSelectedBlock().enhanceLevel < p_briefing_->nb_enhts()) {
                 getStatic(txtEnhId_)->setTextFormated("%d",
