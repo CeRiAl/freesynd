@@ -567,6 +567,7 @@ bool PickupWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *
         pWeapon_->setOwner(pPed);
         pWeapon_->deactivate();
         pPed->addWeapon(pWeapon_);
+        pMission->removeWeaponOnGround(pWeapon_);
 
         setSucceeded();
     }

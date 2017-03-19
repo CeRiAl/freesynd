@@ -78,7 +78,7 @@ public:
     static const uint8 kMaxHoldedWeapons;
 
     WeaponHolder();
-    virtual ~WeaponHolder() {}
+    virtual ~WeaponHolder();
 
     uint8 numWeapons() { return weapons_.size(); }
 
@@ -94,8 +94,8 @@ public:
 
     //! Removes the given weapon from the inventory.
     void removeWeapon(WeaponInstance *w);
-    //! Removes all weapons in the inventory
-    void removeAllWeapons();
+    //! Removes and delete all weapons in the inventory
+    void destroyAllWeapons();
 
     //! Selects the weapon at given index in the inventory
     void selectWeapon(uint8 n);

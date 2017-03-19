@@ -359,7 +359,6 @@ public:
     //*************************************
     WeaponInstance * dropWeapon(uint8 index);
     void dropAllWeapons();
-    void destroyAllWeapons();
     bool wePickupWeapon();
 
     //*************************************

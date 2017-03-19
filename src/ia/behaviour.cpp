@@ -256,9 +256,9 @@ WeaponInstance * PersuadedBehaviourComponent::findWeaponWithAmmo(Mission *pMissi
    WeaponInstance *pWeaponFound = NULL;
    double currentDistance = kMaxRangeForSearchingWeapon;
 
-    int numweapons = pMission->numWeapons();
+    int numweapons = pMission->numWeaponsOnGround();
     for (int32 i = 0; i < numweapons; ++i) {
-        WeaponInstance *w = pMission->weapon(i);
+        WeaponInstance *w = pMission->weaponOnGround(i);
         if (!w->hasOwner() && w->canShoot() && w->ammoRemaining() > 0) {
             double length = 0;
             if (pMission->getPathLengthBetween(pPed, w, kMaxRangeForSearchingWeapon, &length) == 0) {

@@ -364,8 +364,8 @@ void Explosion::getAllShootablesWithinRange(Mission *pMission,
     }
 
     // look at all bombs on the ground except the weapon that generated the shot
-    for (size_t i = 0; i < pMission->numWeapons(); ++i) {
-        WeaponInstance *w = pMission->weapon(i);
+    for (size_t i = 0; i < pMission->numWeaponsOnGround(); ++i) {
+        WeaponInstance *w = pMission->weaponOnGround(i);
         if (w->isInstanceOf(Weapon::TimeBomb) && w != dmg_.pWeapon && !w->hasOwner() && w->isAlive()) {
             WorldPoint weaponPosW(w->position());
             if (pMission->checkBlockedByTile(originLocW, &weaponPosW, false, dmg_.range) == 1) {

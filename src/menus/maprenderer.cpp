@@ -168,8 +168,8 @@ void MapRenderer::listObjectsToDraw(const Point2D &viewport) {
     }
 
     // weapons
-    for (size_t i = 0; i < pMission_->numWeapons(); i++) {
-        WeaponInstance *pWeapon = pMission_->weapon(i);
+    for (size_t i = 0; i < pMission_->numWeaponsOnGround(); i++) {
+        WeaponInstance *pWeapon = pMission_->weaponOnGround(i);
         if (pWeapon->isDrawable() && isObjectInsideDrawingArea(pWeapon, viewport)) {
             addObjectToDraw(pWeapon);
         }

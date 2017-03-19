@@ -371,8 +371,8 @@ void GameplayMenu::handleTick(int elapsed)
         for (size_t i = 0; i < mission_->numVehicles(); i++)
             change |= mission_->vehicle(i)->animate(diff);
 
-        for (size_t i = 0; i < mission_->numWeapons(); i++)
-            change |= mission_->weapon(i)->animate(diff);
+        for (size_t i = 0; i < mission_->numWeaponsOnGround(); i++)
+            change |= mission_->weaponOnGround(i)->animate(diff);
 
         for (size_t i = 0; i < mission_->numStatics(); i++)
             change |= mission_->statics(i)->animate(diff, mission_);
@@ -585,8 +585,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
             }
         }
 
-        for (size_t i = 0; mission_ && i < mission_->numWeapons(); ++i) {
-            WeaponInstance *w = mission_->weapon(i);
+        for (size_t i = 0; mission_ && i < mission_->numWeaponsOnGround(); ++i) {
+            WeaponInstance *w = mission_->weaponOnGround(i);
 
             if (w->map() != -1) {
                 Point2D scPt;

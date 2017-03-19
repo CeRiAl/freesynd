@@ -43,7 +43,7 @@ class ModManager;
  * Provides methods for managing player's agents and squad.
  * The Squad is the team of agent selected for a mission. It holds up to 4 agents.
  * An agent can be selected for a squad but not active : in this case, he will not
- * participate 
+ * participate
  */
 class AgentManager {
 public:
@@ -61,7 +61,9 @@ public:
     static const size_t kSlot4;
 
     AgentManager();
-    ~AgentManager();
+    ~AgentManager() {}
+
+    void destroy();
 
     void setWeaponManager(WeaponManager *pWeaponManager) {
         pWeaponManager_ = pWeaponManager;
@@ -94,7 +96,7 @@ public:
      * \param n The agent's index in the team (from 0 to 3)
      * \param a The new agent
      */
-    void setSquadMember(size_t slotId, Agent *pAgent) { 
+    void setSquadMember(size_t slotId, Agent *pAgent) {
         assert(slotId < kMaxSlot);
         a_squad_[slotId] = pAgent;
     }

@@ -281,17 +281,10 @@ void Mission::transferWeaponsFromPedInstanceToAgent(PedInstance* p, Agent* pAg)
 {
     while (p->numWeapons()) {
         WeaponInstance *wi = p->removeWeaponAtIndex(0);
-        std::vector < WeaponInstance * >::iterator it =
-            weaponsOnGround_.begin();
-        while (it != weaponsOnGround_.end() && *it != wi)
-            it++;
-        assert(it != weaponsOnGround_.end());
-        weaponsOnGround_.erase(it);
         wi->deactivate();
         // auto-reload for pistol
         if (wi->isInstanceOf(Weapon::Pistol))
             wi->reload();
-        wi->resetWeaponUsedTime();
         pAg->addWeapon(wi);
     }
 }
@@ -357,7 +350,7 @@ void Mission::end()
     p_squad_->clear();
 }
 
-void Mission::addWeapon(WeaponInstance * w)
+void Mission::addWeaponToGround(WeaponInstance * w)
 {
     for (unsigned int i = 0; i < weaponsOnGround_.size(); i++) {
         // TODO : check if == operator is used correctly (see  == in WeaponInstance)
@@ -365,6 +358,14 @@ void Mission::addWeapon(WeaponInstance * w)
             return;
     }
     weaponsOnGround_.push_back(w);
+}
+
+void Mission::removeWeaponOnGround(WeaponInstance *pWeapon) {
+    for (unsigned int i = 0; i < weaponsOnGround_.size(); i++) {
+        if (weaponsOnGround_[i] == pWeapon) {
+            weaponsOnGround_.erase(weaponsOnGround_.begin() + i);
+        }
+    }
 }
 
 MapObject * Mission::findObjectWithNatureAtPos(int tilex, int tiley, int tilez,

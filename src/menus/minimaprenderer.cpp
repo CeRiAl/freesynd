@@ -526,9 +526,9 @@ void GamePlayMinimapRenderer::drawVehicles(uint8 *a_minimap) {
 
 void GamePlayMinimapRenderer::drawWeapons(uint8 * a_minimap) {
     const size_t weapon_size = 2;
-    for (size_t i = 0; i < p_mission_->numWeapons(); i++)
+    for (size_t i = 0; i < p_mission_->numWeaponsOnGround(); i++)
     {
-        WeaponInstance * w = p_mission_->weapon(i);
+        WeaponInstance * w = p_mission_->weaponOnGround(i);
         // we draw weapons that have no owner ie that are on the ground
         // and are not destroyed
         if (w->map() == -1)

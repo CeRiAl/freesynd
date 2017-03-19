@@ -265,14 +265,12 @@ WeaponInstance *WeaponInstance::createInstance(Weapon *pWeaponClass, int remaini
 
 WeaponInstance::WeaponInstance(Weapon * pWeaponClass, uint16 anId, int remainingAmmo) :
         ShootableMapObject(anId, -1, MapObject::kNatureWeapon),
-        bombSoundTimer(pWeaponClass->timeReload()), bombExplosionTimer(pWeaponClass->timeForShot()),
+        bombSoundTimer(pWeaponClass->reloadTime()), bombExplosionTimer(pWeaponClass->timeForShot()),
         flamerTimer_(180) {
     pWeaponClass_ = pWeaponClass;
     ammo_remaining_ = remainingAmmo == -1 ? pWeaponClass->ammo() : remainingAmmo;
-    weapon_used_time_ = 0;
     pOwner_ = NULL;
     activated_ = false;
-    time_consumed_ = false;
     if (pWeaponClass->getType() == Weapon::TimeBomb
         || pWeaponClass->getType() == Weapon::Flamer)
     {
@@ -289,15 +287,10 @@ bool WeaponInstance::animate(int elapsed) {
 
     if (activated_) {
         if (isInstanceOf(Weapon::EnergyShield)) {
-            if (ammo_remaining_ == 0)
-                return false;
-            int tm_left = elapsed;
-            int ammoused = getShots(&tm_left) * pWeaponClass_->ammoPerShot();
-            if (ammoused >= ammo_remaining_) {
-                ammo_remaining_ = 0;
-                pOwner_->selectNextWeapon();
-            } else
-                ammo_remaining_ -= ammoused;
+            if (ammo_remaining_ && consumeAmmoForEnergyShield(elapsed)) {
+                // no more ammo so deselect shield
+                pOwner_->deselectWeapon();
+            }
             return true;
         } else if (isInstanceOf(Weapon::TimeBomb)) {
             if (bombSoundTimer.update(elapsed)) {
@@ -309,12 +302,7 @@ bool WeaponInstance::animate(int elapsed) {
                 fire(g_Session.getMission(), dmg, elapsed);
                 return true;
             }
-            time_consumed_ = true;
         }
-
-        updtWeaponUsedTime(elapsed);
-    } else if (weapon_used_time_ != 0) {
-        updtWeaponUsedTime(elapsed);
     }
 
     if (isDrawable()) {
@@ -322,6 +310,36 @@ bool WeaponInstance::animate(int elapsed) {
     }
 
     return false;
+}
+
+bool WeaponInstance::consumeAmmoForEnergyShield(int elapsed) {
+    int timeForShot = pWeaponClass_->timeForShot();
+    shieldTimeUsed_ += elapsed;
+
+    if (shieldTimeUsed_ >= timeForShot) {
+        // here time for shot is the unit of time for spending ammo
+        // there's no time for reloading
+
+        int remainingShots = ammo_remaining_ / pWeaponClass_->ammoPerShot();
+        if (ammo_remaining_ % pWeaponClass_->ammoPerShot()) {
+            remainingShots++;
+        }
+
+        // effective shots is the number of shot we have to do due to elapsed time
+        int effectiveShots = shieldTimeUsed_ / timeForShot;
+        shieldTimeUsed_ %= timeForShot;
+
+        if (effectiveShots > remainingShots) {
+            effectiveShots = remainingShots;
+            shieldTimeUsed_ = 0;
+        }
+
+        ammo_remaining_ -= effectiveShots * pWeaponClass_->ammoPerShot();
+        if (ammo_remaining_ < 0) {
+            ammo_remaining_ = 0;
+        }
+    }
+    return ammo_remaining_ == 0;
 }
 
 void WeaponInstance::draw(int x, int y) {
@@ -336,87 +354,13 @@ void WeaponInstance::playSound() {
     g_App.gameSounds().play(pWeaponClass_->getSound());
 }
 
-int WeaponInstance::getShots(int *elapsed, uint32 make_shots) {
-    int time_for_shot = pWeaponClass_->timeForShot();
-    int time_reload = pWeaponClass_->timeReload();
-#if 0
-    // TODO: if owner exists these two values should change(IPA, mods)
-    if (pOwner_)
-#endif
-    // TODO check in weaponinstance animate double consuming of elapsed
-    int time_full_shot = time_for_shot + time_reload;
-    int elapsed_l = *elapsed;
-    *elapsed = 0;
-    time_consumed_ = true;
-    if (weapon_used_time_ >= time_for_shot) {
-        weapon_used_time_ += elapsed_l;
-        if (weapon_used_time_ >= time_full_shot) {
-            // reloading after previous shot
-            weapon_used_time_ -= time_full_shot;
-        } else {
-            // reload consumed all time, no time for shooting
-            return 0;
-        }
-    } else
-        weapon_used_time_ += elapsed_l;
-
-    if (weapon_used_time_ == 0) {
-        return 0;
-    }
-    elapsed_l = 0;
-
-    uint32 shots_can_do = 0xFFFFFFFF;
-    if (shotProperty() & Weapon::spe_UsesAmmo) {
-        shots_can_do = ammo_remaining_ / pWeaponClass_->ammoPerShot();
-        if (ammo_remaining_ % pWeaponClass_->ammoPerShot())
-            shots_can_do++;
-    }
-    uint32 shots = weapon_used_time_ / time_full_shot;
-    weapon_used_time_ %= time_full_shot;
-    bool adjusted = false;
-    if (weapon_used_time_ >= time_for_shot) {
-        shots++;
-        adjusted = true;
-    }
-    // Adjusting time consumed and shots done to ammo
-    // that can be used
-    if (shots_can_do < shots) {
-        if (adjusted) {
-            shots--;
-            adjusted = false;
-        }
-        if (shots_can_do < shots) {
-         elapsed_l = time_full_shot * (shots - shots_can_do);
-         shots = shots_can_do;
-        } else
-            elapsed_l = weapon_used_time_;
-        weapon_used_time_ = 0;
-    }
-
-    if (make_shots != 0 && shots != 0 && make_shots < shots) {
-        // we might have some time left here
-        if (adjusted)
-            shots--;
-        if (make_shots < shots) {
-         *elapsed = time_full_shot  * (shots - make_shots) + elapsed_l;
-         *elapsed += weapon_used_time_;
-         shots = make_shots;
-        } else
-            *elapsed = elapsed_l + weapon_used_time_;
-        weapon_used_time_ = 0;
-    } else
-        *elapsed = elapsed_l;
-    return shots;
-}
-
 void WeaponInstance::activate() {
     activated_ = true;
+    shieldTimeUsed_ = 0;
 }
 
 void WeaponInstance::deactivate() {
     activated_ = false;
-    if (isInstanceOf(Weapon::TimeBomb))
-        weapon_used_time_ = 0;
 }
 
 /*!
@@ -512,18 +456,5 @@ void WeaponInstance::handleHit(ShootableMapObject::DamageInflictType & d)
         // as it is not used by the fire method for a Bomb
         // same for elapsed
         fire(g_Session.getMission(), d, 0);
-    }
-}
-
-void WeaponInstance::updtWeaponUsedTime(int elapsed) {
-    if (time_consumed_) {
-        time_consumed_ = false;
-    } else if (weapon_used_time_ != 0 ) {
-        weapon_used_time_ += elapsed;
-        if (weapon_used_time_ >= (pWeaponClass_->timeForShot()
-            + pWeaponClass_->timeReload()))
-        {
-            weapon_used_time_ = 0;
-        }
     }
 }

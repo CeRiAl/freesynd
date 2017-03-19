@@ -54,6 +54,9 @@ class GameController : public Singleton < GameController > {
      */
     bool reset();
 
+    //! Delete all ressources. Called by App:destroy()
+    void destroy();
+
     //*************************************
     // Event management
     //*************************************
@@ -63,6 +66,8 @@ class GameController : public Singleton < GameController > {
     void removeListener(GameEventListener *pListener, GameEvent::EEventStream stream);
     //! Sends the event to the listeners
     void fireGameEvent(GameEvent & evt);
+    //! Removes all listeners from every stream
+    void clearAllListeners();
 
     //*************************************
     // Managers

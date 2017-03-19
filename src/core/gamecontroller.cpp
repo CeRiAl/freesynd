@@ -36,9 +36,10 @@ GameController::GameController() {
     agents_.setWeaponManager(&weaponMgr_);
 }
 
-GameController::~GameController() {
-    game_listeners_.clear();
-    mission_listeners_.clear();
+GameController::~GameController() {}
+
+void GameController::destroy() {
+    agents_.destroy();
 }
 
 bool GameController::reset() {
@@ -48,6 +49,11 @@ bool GameController::reset() {
     // TODO add reading cheatcode for onlywomen parameter
     agents_.reset();
     return true;
+}
+
+void GameController::clearAllListeners() {
+    game_listeners_.clear();
+    mission_listeners_.clear();
 }
 
 /*!

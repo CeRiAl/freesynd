@@ -426,6 +426,11 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
         }
     }
 
+    WeaponInstance *pWeapon = selectedWeapon();
+    if (pWeapon && pWeapon->isInstanceOf(Weapon::EnergyShield)) {
+        pWeapon->animate(elapsed);
+    }
+
     return update;
 }
 
@@ -533,7 +538,6 @@ bool PedInstance::executeUseWeaponAction(int elapsed, Mission *pMission) {
  * Return true if :
  * - is not doing something that prevents him from using weapon
  * - is not already using a weapon
- * - has a weapon in hand
  * - weapon is usable (ie a shooting weapon or a medikit)
  */
 bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
@@ -546,9 +550,7 @@ bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
     }
 
     WeaponInstance *pWi = pWeapon != NULL ? pWeapon : selectedWeapon();
-    return (pWi != NULL &&
-            (pWi->canShoot() || pWi->isInstanceOf(Weapon::MediKit)) &&
-            pWi->ammoRemaining() > 0);
+    return pWi != NULL && pWi->usesAmmo() && pWi->ammoRemaining() > 0;
 }
 
 /*!
@@ -582,7 +584,7 @@ void PedInstance::updateShootingTarget(const WorldPoint &aimedPt) {
 int PedInstance::getTimeBetweenShoots(WeaponInstance *pWeapon) {
     // TODO : Add IPA and mods influence
     return kDefaultShootReactionTime +
-            pWeapon->getClass()->timeReload();
+            pWeapon->getClass()->reloadTime();
 }
 
 /*!
@@ -871,6 +873,8 @@ bool PedInstance::canSelectWeapon(WeaponInstance *pNewWeapon) {
         // we cas use medikit only if ped is hurt
         return health() != startHealth() &&
             canAddUseWeaponAction(pNewWeapon);
+    } else if (pNewWeapon->isInstanceOf(Weapon::EnergyShield)) {
+        return canAddUseWeaponAction(pNewWeapon);
     }
 
     return true;
@@ -956,7 +960,9 @@ WeaponInstance * PedInstance::dropWeapon(uint8 index) {
 
     if(pWeapon) {
         pWeapon->setMap(map_);
+        pWeapon->setDrawable(true);
         pWeapon->setPosition(pos_);
+        g_Session.getMission()->addWeaponToGround(pWeapon);
     }
 
     return pWeapon;
@@ -980,14 +986,6 @@ void PedInstance::dropAllWeapons() {
         int oy = rand() % 256;
         w->setPosition(pos_.tx, pos_.ty, pos_.tz, ox, oy);
         w->offzOnStairs(twd);
-    }
-}
-
-void PedInstance::destroyAllWeapons() {
-    while (!weapons_.empty()) {
-        WeaponInstance * w = removeWeaponAtIndex(0);
-        // TODO : Delete weapon
-        w->setDrawable(false);
     }
 }
 
@@ -1226,7 +1224,6 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
                 } else {
                     setDrawnAnim(PedInstance::ad_NoAnimation);
                 }
-                destroyAllWeapons();
                 break;
             case MapObject::dmg_Explosion:
             case MapObject::dmg_Burn:
@@ -1238,7 +1235,6 @@ bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInfli
                     // was burning because not enough protected or suicide
                     // so die burning
                     setDrawnAnim(PedInstance::ad_DieBurnAnim);
-                    destroyAllWeapons();
                 }
                 break;
             default:

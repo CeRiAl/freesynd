@@ -44,7 +44,7 @@ class WeaponInstance;
 class Agent : public WeaponHolder, public ModOwner {
 public:
     Agent(const char *agent_name, bool male);
-    ~Agent();
+    ~Agent() {}
 
     int getId() { return id_;}
     const char *getName() { return name_.c_str(); }

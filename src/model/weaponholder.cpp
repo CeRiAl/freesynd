@@ -40,16 +40,20 @@ WeaponHolder::WeaponHolder() {
     updtPreferedWeapon();
 }
 
+WeaponHolder::~WeaponHolder() {
+    destroyAllWeapons();
+}
+
 /*!
  * Adds the givent weapon to the inventory.
  * Weapon is placed at the end of the inventory.
  * \param w The weapon to add
  */
 void WeaponHolder::addWeapon(WeaponInstance *w) {
-    assert(w);
-    assert(weapons_.size() < kMaxHoldedWeapons);
-    w->setDrawable(false);
-    weapons_.push_back(w);
+    if (w != NULL && weapons_.size() < kMaxHoldedWeapons) {
+        w->setDrawable(false);
+        weapons_.push_back(w);
+    }
 }
 
 /*!
@@ -102,10 +106,9 @@ void WeaponHolder::removeWeapon(WeaponInstance *wi) {
 }
 
 /*!
- * Removes all weapons from the inventory.
- * Caller is responsible for freeing the removed instances.
+ * Removes and delete all weapons from the inventory.
  */
-void WeaponHolder::removeAllWeapons() {
+void WeaponHolder::destroyAllWeapons() {
     while (weapons_.size())
         delete removeWeaponAtIndex(0);
 }

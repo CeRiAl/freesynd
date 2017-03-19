@@ -47,10 +47,6 @@ male_(male), active_(true) {
     is_alive_ = true;
 }
 
-Agent::~Agent() {
-    removeAllWeapons();
-}
-
 bool Agent::saveToFile(PortableFile &file) {
     // id
     file.write32(id_);
@@ -91,7 +87,7 @@ bool Agent::saveToFile(PortableFile &file) {
 bool Agent::loadFromFile(PortableFile &infile, const FormatVersion& v) {
     // if this instance has already been populated reset it
     clearSlots();
-    removeAllWeapons();
+    destroyAllWeapons();
     // id
     id_ = infile.read32();
     // update counter

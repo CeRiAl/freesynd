@@ -118,31 +118,25 @@ AgentManager::AgentManager() {
         agents_.add(NULL);
 }
 
-AgentManager::~AgentManager() {
-    for (int i = 0; i != MAX_AGENT; ++i) {
-        if (agents_.get(i)) {
-            delete agents_.get(i);
-        }
-    }
-
-    agents_.clear();
-    clearSquad();
-}
-
 void AgentManager::loadAgents() {
     // TODO : load names from file
 }
 
-void AgentManager::reset(bool onlyWomen) {
-    nextName_ = 0;
-    // First delete existing agents
-    clearSquad();
-    for (int i = 0; i < MAX_AGENT; i++) {
+void AgentManager::destroy() {
+    for (int i = 0; i != MAX_AGENT; ++i) {
         if (agents_.get(i)) {
             delete agents_.get(i);
             agents_.setAt(i, NULL);
         }
     }
+
+    clearSquad();
+}
+
+void AgentManager::reset(bool onlyWomen) {
+    nextName_ = 0;
+    // First delete existing agents
+    destroy();
 
     // Then recreate the first 8 available agents
     for (size_t i = 0; i < 8; i++) {
@@ -160,8 +154,6 @@ void AgentManager::reset(bool onlyWomen) {
 
 void AgentManager::destroyAgentSlot(size_t squadSlot) {
     Agent *p_agent = squadMember(squadSlot);
-    p_agent->removeAllWeapons();
-    p_agent->clearSlots();
     setSquadMember(squadSlot, NULL);
     for (int inc = 0; inc < AgentManager::MAX_AGENT; inc++) {
         if (agent(inc) == p_agent) {

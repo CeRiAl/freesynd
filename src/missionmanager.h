@@ -63,7 +63,10 @@ private:
         uint16 pindx[256];
         // contains indexes for driver's vehicle
         uint16 driverindx[256];
-        uint16 windx[512];
+        //uint16 windx[512];
+        WeaponInstance * weapons[512];
+
+        DataIndex() : weapons() {}
     };
 
 private:

@@ -193,9 +193,10 @@ public:
     Vehicle *vehicle(size_t i) { return vehicles_[i]; }
     void addVehicle(Vehicle *pVehicle) { vehicles_.push_back(pVehicle); }
 
-    size_t numWeapons() { return weaponsOnGround_.size(); }
-    WeaponInstance *weapon(size_t i) { return weaponsOnGround_[i]; }
-    void addWeapon(WeaponInstance *w);
+    size_t numWeaponsOnGround() { return weaponsOnGround_.size(); }
+    WeaponInstance *weaponOnGround(size_t i) { return weaponsOnGround_[i]; }
+    void addWeaponToGround(WeaponInstance *w);
+    void removeWeaponOnGround(WeaponInstance *pWeapon);
 
     size_t numStatics() { return statics_.size(); }
     Static *statics(size_t i) { return statics_[i]; }

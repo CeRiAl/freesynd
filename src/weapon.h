@@ -115,7 +115,7 @@ public:
 
     int ammoPerShot() { return ammo_per_shot_; }
     int timeForShot() { return time_for_shot_; }
-    int timeReload() { return time_reload_; }
+    int reloadTime() { return time_reload_; }
 
     bool wasSubmittedToSearch() { return submittedToSearch_; }
     void submitToSearch() { submittedToSearch_ = true; }
@@ -275,11 +275,12 @@ public:
     static WeaponInstance *createInstance(Weapon *pWeaponClass, int remainingAmmo = -1);
 
     WeaponInstance(Weapon *w, uint16 id, int remainingAmmo = -1);
+    ~WeaponInstance() {};
 
+    //*************************************
+    // Properties
+    //*************************************
     Weapon *getClass() const { return pWeaponClass_; }
-
-    bool isInstanceOf(Weapon::WeaponType weaponType) { return pWeaponClass_->getType() == weaponType; }
-    bool hasSameTypeAs(const WeaponInstance & otherWeapon) { return pWeaponClass_->getType() == otherWeapon.getClass()->getType();}
 
     /*! Sets the owner of the weapon. */
     void setOwner(PedInstance *pOwner) { pOwner_ = pOwner; }
@@ -289,35 +290,18 @@ public:
     bool hasOwner() { return pOwner_ != NULL; }
 
     int ammoRemaining() { return ammo_remaining_; }
-    void reload() { ammo_remaining_ = pWeaponClass_->ammo(); }
 
-    bool animate(int elapsed);
-    void draw(int x, int y);
-
+    const char * name() { return pWeaponClass_->getName(); }
     int range() { return pWeaponClass_->range(); }
     int ammo() { return pWeaponClass_->ammo(); }
     int rank() { return pWeaponClass_->rank(); }
+    int getWeight() { return pWeaponClass_->weight(); }
     uint32 shotProperty() { return pWeaponClass_->shotProperty(); }
-    const char * name() { return pWeaponClass_->getName(); }
-
     Weapon::WeaponAnimIndex index() { return pWeaponClass_->index(); }
 
-    bool operator==(WeaponInstance wi) {
-        // TODO : check if this method is necessary
-        return hasSameTypeAs(wi);
+    bool usesAmmo() {
+        return (shotProperty() & Weapon::spe_UsesAmmo) != 0;
     }
-
-    //! Plays the weapon's sound.
-    void playSound();
-
-    void resetWeaponUsedTime() { weapon_used_time_ = 0; }
-
-    int getShots(int *elapsed = NULL, uint32 make_shots = 0);
-
-    void activate();
-    void deactivate();
-
-    void handleHit(ShootableMapObject::DamageInflictType & d);
 
     bool canShoot() {
         return pWeaponClass_->canShoot();
@@ -325,14 +309,6 @@ public:
 
     bool doesPhysicalDmg() {
         return pWeaponClass_->doesPhysicalDmg();
-    }
-
-    bool needsReloading() {
-        return pWeaponClass_->ammo() > ammo_remaining_;
-    }
-
-    bool usesAmmo() {
-        return (shotProperty() & Weapon::spe_UsesAmmo) != 0;
     }
 
     bool doesDmgStrict(uint32 dmg_type) {
@@ -344,11 +320,40 @@ public:
     MapObject::DamageType dmgType() {
         return pWeaponClass_->dmgType();
     }
-    int getWeight() { return pWeaponClass_->weight(); }
-    void updtWeaponUsedTime(int elapsed);
+
+    //*************************************
+    // Behaviour
+    //*************************************
+    bool isInstanceOf(Weapon::WeaponType weaponType) { return pWeaponClass_->getType() == weaponType; }
+    bool hasSameTypeAs(const WeaponInstance & otherWeapon) { return pWeaponClass_->getType() == otherWeapon.getClass()->getType();}
+
+    bool needsReloading() {
+        return pWeaponClass_->ammo() > ammo_remaining_;
+    }
+
+    void reload() { ammo_remaining_ = pWeaponClass_->ammo(); }
+
+    bool operator==(WeaponInstance wi) {
+        // TODO : check if this method is necessary
+        return hasSameTypeAs(wi);
+    }
+
+    //! Plays the weapon's sound.
+    void playSound();
+
+    void activate();
+    void deactivate();
+
+    bool animate(int elapsed);
+    void draw(int x, int y);
+
+    void handleHit(ShootableMapObject::DamageInflictType & d);
 
     //! Use weapon
     void fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed);
+
+protected:
+    bool consumeAmmoForEnergyShield(int elapsed);
 
 protected:
     static uint16 weaponIdCnt;
@@ -356,23 +361,17 @@ protected:
     /*! Owner of the weapon.*/
     PedInstance *pOwner_;
     int ammo_remaining_;
-    /*! if this value is smaller time_for_shot_ shot cannot be done
-    * if is greater then time_for_shot_ reload is in execution
-    * if is greater then time_for_shot_ + time_reload_ then full shot is done
-    * */
-    int weapon_used_time_;
-    // used for timebomb sound effect
+    /*! used for timebomb sound effect.*/
     fs_utils::Timer bombSoundTimer;
     /*! Timer used for bomb explosion.*/
     fs_utils::Timer bombExplosionTimer;
     /*! Timer used for rotating flamer direction.*/
     fs_utils::Timer flamerTimer_;
+    /*! counter for tracking time for ammo consumption for shields.*/
+    int shieldTimeUsed_;
+    /*! TimeBomb, Shield are activated on specific events.*/
     bool activated_;
-    /*! used to avoid double consuming of same elapsed time,
-    * if ped shoots, time is consumed and should not be reused by weapon,
-    * NOTE: ped animate executed before weapon animate
-    */
-    bool time_consumed_;
+
     FlamerShot *pFlamerShot_;
 };
 

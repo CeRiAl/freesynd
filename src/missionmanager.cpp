@@ -329,7 +329,7 @@ Mission * MissionManager::create_mission(LevelData::LevelDataAll &level_data) {
     memset(di.vindx, 0xFF, 2*64);
     memset(di.pindx, 0xFF, 2*256);
     memset(di.driverindx, 0xFF, 2*256);
-    memset(di.windx, 0xFF, 2*512);
+
 
     try {
         createVehicles(level_data, di, p_mission);
@@ -402,13 +402,12 @@ void MissionManager::createWeapons(const LevelData::LevelDataAll &level_data, Da
                 if (offset_owner != 0) {
                     offset_owner = (offset_owner - 2) / 92; // 92 = ped data size
                     if (offset_owner > 7 && di.pindx[offset_owner] != 0xFFFF) {
-                        // TODO: still there is a problem of weapons setup
+                        // NOTE: still there is a problem of weapons setup
                         // some police officers can have more then 1 weapon
                         // others none (pacific Rim)
                         pMission->ped(di.pindx[offset_owner])->addWeapon(w);
                         w->setOwner(pMission->ped(di.pindx[offset_owner]));
-                        di.windx[i] = pMission->numWeapons();
-                        pMission->addWeapon(w);
+                        di.weapons[i] = w;
                     } else {
                         delete w;
                     }
@@ -417,9 +416,8 @@ void MissionManager::createWeapons(const LevelData::LevelDataAll &level_data, Da
                 }
             } else {
                 w->setMap(pMission->mapId());
-                w->setOwner(NULL);
-                di.windx[i] = pMission->numWeapons();
-                pMission->addWeapon(w);
+                di.weapons[i] = w;
+                pMission->addWeaponToGround(w);
             }
         }
     }
@@ -427,6 +425,7 @@ void MissionManager::createWeapons(const LevelData::LevelDataAll &level_data, Da
 
 WeaponInstance * MissionManager::create_weapon_instance(const LevelData::Weapons &gamdata) {
     Weapon::WeaponType wType = Weapon::Unknown;
+    WeaponInstance *pNewWeapon = NULL;
 
     switch (gamdata.sub_type) {
         case 0x01:
@@ -472,20 +471,19 @@ WeaponInstance * MissionManager::create_weapon_instance(const LevelData::Weapons
             wType = Weapon::EnergyShield;
             break;
         default:
-            wType = Weapon::Unknown;
-            break;
+            FSERR(Log::k_FLG_GAME, "Mission", "create_weapon_instance", ("unknown weapon type : %d", gamdata.sub_type));
+            return NULL;
     }
 
     Weapon *pWeapon = g_gameCtrl.weaponManager().getWeapon(wType);
     if (pWeapon) {
-        WeaponInstance *wi = WeaponInstance::createInstance(pWeapon);
-        wi->setPosition(gamdata.mapposx[1], gamdata.mapposy[1],
+        pNewWeapon = WeaponInstance::createInstance(pWeapon);
+        pNewWeapon->setPosition(gamdata.mapposx[1], gamdata.mapposy[1],
             READ_LE_UINT16(gamdata.mapposz) >> 7, gamdata.mapposx[0],
             gamdata.mapposy[0], gamdata.mapposz[0] & 0x7F);
-        return wi;
     }
 
-    return NULL;
+    return pNewWeapon;
 }
 
 
@@ -669,10 +667,6 @@ void MissionManager::createPeds(const LevelData::LevelDataAll &level_data, DataI
             }
 
             if (p->isOurAgent()) {
-                // adds all agent's weapons to the mission weapons
-                for (int wi=0; wi<p->numWeapons(); wi++) {
-                    pMission->addWeapon(p->weapon(wi));
-                }
                 // adds the agent to the mission squad
                 pMission->getSquad()->setMember(i, p);
             } else {
@@ -901,12 +895,14 @@ void MissionManager::createObjectives(const LevelData::LevelDataAll &level_data,
                 if (bindx >= 0x9562 && bindx < 0xDD62) {
                     bindx -= 0x9562;
                     cindx = bindx / 36;
-                    if ((cindx * 36) == bindx && di.windx[cindx] != 0xFFFF) {
-                        objd = new ObjTakeWeapon(pMission->weapon(di.windx[cindx]));
-                    } else
-                        printf("0x05 incorrect offset");
-                } else
-                    printf("0x05 type not matched %X", bindx);
+                    if ((cindx * 36) == bindx && di.weapons[cindx] != NULL) {
+                        objd = new ObjTakeWeapon(di.weapons[cindx]);
+                    } else {
+                        FSERR(Log::k_FLG_GAME, "Mission", "createObjectives", ("Error creating Take Weapon objective(0x05) : incorrect offset %d", cindx));
+                    }
+                } else {
+                    FSERR(Log::k_FLG_GAME, "Mission", "createObjectives", ("Error creating Take Weapon objective(0x05) : type not matched %X", bindx));
+                }
 
                 break;
             case 0x0A:

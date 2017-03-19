@@ -79,13 +79,6 @@ session_(new GameSession()), game_ctlr_(new GameController),
 App::~App() {
 }
 
-/*!
- * Destory the application.
- */
-void App::destroy() {
-    menus_.destroy();
-}
-
 static void addMissingSlash(string& str) {
     if (str[str.length() - 1] != '/') str.push_back('/');
 }
@@ -474,7 +467,7 @@ void App::cheatFemaleRecruits() {
 void App::cheatEquipFancyWeapons() {
     for (int i = 0; i < AgentManager::MAX_AGENT; i++) {
         if (g_gameCtrl.agents().agent(i)) {
-        g_gameCtrl.agents().agent(i)->removeAllWeapons();
+        g_gameCtrl.agents().agent(i)->destroyAllWeapons();
 #ifdef _DEBUG
         g_gameCtrl.agents().agent(i)->addWeapon(
             WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Minigun)));
@@ -489,7 +482,7 @@ void App::cheatEquipFancyWeapons() {
         g_gameCtrl.agents().agent(i)->addWeapon(
             WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Persuadatron)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Laser)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::EnergyShield)));
         g_gameCtrl.agents().agent(i)->addWeapon(
             WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::AccessCard)));
 #else
@@ -580,6 +573,16 @@ bool App::reset() {
     }
 
     return true;
+}
+
+/*!
+ * Destroy the application.
+ */
+void App::destroy() {
+    game_ctlr_->clearAllListeners();
+    menus_.destroy();
+
+    game_ctlr_->destroy();
 }
 
 void App::waitForKeyPress() {
