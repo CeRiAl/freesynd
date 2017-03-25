@@ -153,7 +153,6 @@ Weapon * WeaponManager::getWeapon(Weapon::WeaponType wt) {
             break;
         }
     }
-    assert(pWeapon);
     // Stores it in cache
     preFetch_.push_back(pWeapon);
 

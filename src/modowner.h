@@ -26,7 +26,7 @@
  ************************************************************************/
 #ifndef MODOWNER_H
 #define MODOWNER_H
-#include "mod.h"
+#include "model/mod.h"
 
 class ModOwner {
 public:
@@ -48,7 +48,7 @@ public:
             // Returns true if equiped version if less than new version
             return (pMod->getVersion() < pNewMod->getVersion());
         }
-        
+
         // There is no mod of that type so agent can be equiped
         return true;
     }
@@ -91,7 +91,7 @@ public:
                 return 4000;
             }
         }
-        
+
         return 0;
     }
 

@@ -27,10 +27,10 @@
 
 #include "menus/maprenderer.h"
 #include "mission.h"
-#include "model/vehicle.h"
 #include "agentmanager.h"
 #include "mapobject.h"
-#include "core/squad.h"
+#include "model/vehicle.h"
+#include "model/squad.h"
 #include "gfx/screen.h"
 #include "gfx/tile.h"
 #include "system.h"

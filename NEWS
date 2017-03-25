@@ -8,6 +8,7 @@ This is a prelimary release for testing and development purposes.
 Changes
 -------
   * German translation has been updated (thanks to Maik Wagner)
+  * Added default values to weapon parameters and removed unused keys in config file (weapons.dat)
 
 Fixed Bugs
 ----------

@@ -30,7 +30,7 @@
 #include "debriefmenu.h"
 #include "menus/gamemenuid.h"
 #include "mission.h"
-#include "core/squad.h"
+#include "model/squad.h"
 #include "core/gamecontroller.h"
 #include "core/gamesession.h"
 #include "system.h"

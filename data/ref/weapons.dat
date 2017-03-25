@@ -18,7 +18,7 @@ weapon.1.shotangle=5.0
 weapon.1.shotaccuracy=0.9
 weapon.1.shotspeed=0
 weapon.1.dmg_per_shot=2
-weapon.1.shots_per_ammo=1
+weapon.1.ammo.impactNb=1
 weapon.1.weight=1
 
 # Gauss Gun
@@ -39,7 +39,7 @@ weapon.2.shotangle=5.0
 weapon.2.shotaccuracy=0.99
 weapon.2.shotspeed=6000
 weapon.2.dmg_per_shot=64
-weapon.2.shots_per_ammo=10
+weapon.2.ammo.impactNb=10
 weapon.2.weight=1
 
 # Shotgun
@@ -60,7 +60,7 @@ weapon.3.shotangle=45.0
 weapon.3.shotaccuracy=0.7
 weapon.3.shotspeed=0
 weapon.3.dmg_per_shot=2
-weapon.3.shots_per_ammo=6
+weapon.3.ammo.impactNb=6
 weapon.3.weight=7
 
 # Uzi
@@ -81,7 +81,7 @@ weapon.4.shotangle=20.0
 weapon.4.shotaccuracy=0.85
 weapon.4.shotspeed=0
 weapon.4.dmg_per_shot=2
-weapon.4.shots_per_ammo=1
+weapon.4.ammo.impactNb=1
 weapon.4.weight=5
 weapon.4.auto.fire_rate=250
 
@@ -103,7 +103,7 @@ weapon.5.shotangle=30.0
 weapon.5.shotaccuracy=0.8
 weapon.5.shotspeed=0
 weapon.5.dmg_per_shot=2
-weapon.5.shots_per_ammo=1
+weapon.5.ammo.impactNb=1
 weapon.5.weight=25
 weapon.5.auto.fire_rate=250
 
@@ -125,7 +125,7 @@ weapon.6.shotangle=5.0
 weapon.6.shotaccuracy=0.99
 weapon.6.shotspeed=0
 weapon.6.dmg_per_shot=32
-weapon.6.shots_per_ammo=1
+weapon.6.ammo.impactNb=1
 weapon.6.weight=10
 
 # Flamer
@@ -147,7 +147,7 @@ weapon.7.shotangle=2.0
 weapon.7.shotaccuracy=0.9
 weapon.7.shotspeed=1000
 weapon.7.dmg_per_shot=8
-weapon.7.shots_per_ammo=1
+weapon.7.ammo.impactNb=1
 weapon.7.weight=15
 weapon.7.auto.fire_rate=150
 
@@ -169,7 +169,7 @@ weapon.8.shotangle=1.0
 weapon.8.shotaccuracy=1.0
 weapon.8.shotspeed=0
 weapon.8.dmg_per_shot=2
-weapon.8.shots_per_ammo=1
+weapon.8.ammo.impactNb=1
 weapon.8.weight=5
 
 # Scanner
@@ -177,20 +177,9 @@ weapon.9.name=WEAPON_SCANNER
 weapon.9.icon.small=23
 weapon.9.icon.big=73
 weapon.9.cost=500
-weapon.9.ammo.nb=0
-weapon.9.ammo.price=0
+# Used only for display in select menu
 weapon.9.range=4096
-weapon.9.rank=-1
 weapon.9.anim=376
-weapon.9.ammopershot=1
-weapon.9.timeforshot=1
-weapon.9.timereload=1
-weapon.9.damagerange=0
-weapon.9.shotangle=0.0
-weapon.9.shotaccuracy=0.0
-weapon.9.shotspeed=0
-weapon.9.dmg_per_shot=1
-weapon.9.shots_per_ammo=1
 weapon.9.weight=1
 
 # Medikit
@@ -200,18 +189,12 @@ weapon.10.icon.big=74
 weapon.10.cost=500
 weapon.10.ammo.nb=1
 weapon.10.ammo.price=1
+# Used only for display in select menu
 weapon.10.range=256
-weapon.10.rank=-1
 weapon.10.anim=377
 weapon.10.ammopershot=1
 weapon.10.timeforshot=1
 weapon.10.timereload=1
-weapon.10.damagerange=0
-weapon.10.shotangle=0.0
-weapon.10.shotaccuracy=0.0
-weapon.10.shotspeed=0
-weapon.10.dmg_per_shot=1
-weapon.10.shots_per_ammo=1
 weapon.10.weight=1
 
 # TimeBomb
@@ -219,23 +202,16 @@ weapon.11.name=WEAPON_TIME_BOMB
 weapon.11.icon.small=25
 weapon.11.icon.big=75
 weapon.11.cost=25000
-weapon.11.ammo.nb=0
 # NOTE: what is real number for "shot"? for now = 7500
 weapon.11.ammo.price=7500
 weapon.11.range=1000
-weapon.11.rank=-1
 weapon.11.anim=378
-weapon.11.ammopershot=1
 # This is the time before the bomb explodes
 weapon.11.timeforshot=15000
 # for bomb, this field is used to delay the tick sound effect
 weapon.11.timereload=800
 weapon.11.damagerange=512
-weapon.11.shotangle=0.0
-weapon.11.shotaccuracy=0.0
-weapon.11.shotspeed=0
 weapon.11.dmg_per_shot=64
-weapon.11.shots_per_ammo=1
 weapon.11.weight=5
 
 # AccessCard
@@ -243,20 +219,10 @@ weapon.12.name=WEAPON_ACCESS_CARD
 weapon.12.icon.small=26
 weapon.12.icon.big=76
 weapon.12.cost=1000
-weapon.12.ammo.nb=0
-weapon.12.ammo.price=0
 weapon.12.range=256
-weapon.12.rank=-1
 weapon.12.anim=379
-weapon.12.ammopershot=1
 weapon.12.timeforshot=1
 weapon.12.timereload=1
-weapon.12.damagerange=0
-weapon.12.shotangle=0.0
-weapon.12.shotaccuracy=0.0
-weapon.12.shotspeed=0
-weapon.12.dmg_per_shot=1
-weapon.12.shots_per_ammo=1
 weapon.12.weight=1
 
 # Energy shield
@@ -267,17 +233,10 @@ weapon.13.cost=8000
 weapon.13.ammo.nb=200
 weapon.13.ammo.price=15
 weapon.13.range=768
-weapon.13.rank=-1
 weapon.13.anim=381
 weapon.13.ammopershot=1
 weapon.13.timeforshot=75
-weapon.13.timereload=50
-weapon.13.damagerange=0
-weapon.13.shotangle=0.0
-weapon.13.shotaccuracy=0.0
-weapon.13.shotspeed=0
-weapon.13.dmg_per_shot=0
-weapon.13.shots_per_ammo=1
+weapon.13.ammo.impactNb=1
 weapon.13.weight=8
 
 # Persuadatron
@@ -285,18 +244,9 @@ weapon.14.name=WEAPON_PERSUADERTRON
 weapon.14.icon.small=14
 weapon.14.icon.big=64
 weapon.14.cost=5000
-weapon.14.ammo.nb=0
-weapon.14.ammo.price=0
-weapon.14.range=256
-weapon.14.rank=-1
+# in real game it's 256
+weapon.14.range=100
 weapon.14.anim=367
-weapon.14.ammopershot=1
 weapon.14.timeforshot=150
 weapon.14.timereload=25
-weapon.14.damagerange=0
-weapon.14.shotangle=1.0
-weapon.14.shotaccuracy=1.0
-weapon.14.shotspeed=0
-weapon.14.dmg_per_shot=1
-weapon.14.shots_per_ammo=1
 weapon.14.weight=1

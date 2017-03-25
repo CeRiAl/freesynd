@@ -36,7 +36,7 @@
 #include "model/objectivedesc.h"
 #include "utils/log.h"
 #include "model/vehicle.h"
-#include "core/squad.h"
+#include "model/squad.h"
 #include "model/shot.h"
 
 /*!
@@ -202,12 +202,10 @@ void Mission::start()
             WeaponInstance *wi = WeaponInstance::createInstance(wpns[index_give]);
             p->addWeapon(wi);
             wi->setOwner(p);
-            weaponsOnGround_.push_back(wi);
             if (bomb) {
                 WeaponInstance *w_bomb = WeaponInstance::createInstance(bomb);
                 p->addWeapon(w_bomb);
                 w_bomb->setOwner(p);
-                weaponsOnGround_.push_back(w_bomb);
             }
         }
     }

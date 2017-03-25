@@ -26,11 +26,10 @@
 #include <list>
 #include <fstream>
 
-#include "core/research.h"
+#include "model/research.h"
 #include "utils/seqmodel.h"
 #include "utils/portablefile.h"
 
-class Research;
 
 /*!
  * This class manages all research functionnality.

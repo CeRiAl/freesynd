@@ -36,7 +36,7 @@
 #include "modowner.h"
 #include "gfx/spritemanager.h"
 #include "model/weaponholder.h"
-#include "weapon.h"
+#include "model/weapon.h"
 #include "ipastim.h"
 #include "ia/actions.h"
 #include "ia/behaviour.h"
@@ -391,7 +391,7 @@ public:
     //! Return true if ped is persuaded
     bool isPersuaded() { return IS_FLAG_SET(desc_state_, pd_smControlled); }
     //! Returns true if this ped can persuade that ped
-    bool canPersuade(PedInstance *pOtherPed);
+    bool canPersuade(PedInstance *pOtherPed, const int persuadotronRange);
     //! Return owner of persuaded
     PedInstance * owner() { return owner_; }
     //! Adds given ped to the list of persuaded peds by this agent
@@ -665,8 +665,6 @@ protected:
     //! When a ped dies, changes the persuaded owner/persuaded_group relation.
     void updatePersuadedRelations(Squad *pSquad);
 protected:
-    //! Distance to persuade a ped
-    static const int kMaxDistanceForPersuadotron;
 
     Ped *ped_;
     //! Type of Ped

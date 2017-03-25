@@ -20,7 +20,7 @@
  *                                                                      *
  ************************************************************************/
 
-#include "core/squad.h"
+#include "model/squad.h"
 #include "agentmanager.h"
 #include "ped.h"
 

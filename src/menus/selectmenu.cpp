@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "mod.h"
 #include "selectmenu.h"
 #include "menus/menumanager.h"
 #include "menus/gamemenuid.h"
@@ -37,6 +36,7 @@
 #include "core/gamesession.h"
 #include "gfx/screen.h"
 #include "system.h"
+#include "model/mod.h"
 
 SelectMenu::SelectMenu(MenuManager * m):Menu(m, fs_game_menus::kMenuIdSelect, fs_game_menus::kMenuIdBrief, "mselect.dat",
     "mselout.dat"),
@@ -329,7 +329,7 @@ void SelectMenu::drawSelectedWeaponInfos(int x, int y) {
     if (selectedWInstId_ > 0 && g_gameCtrl.weaponManager().isAvailable(pSelectedWeap_)) {
         WeaponInstance *wi = g_gameCtrl.agents().squadMember(cur_agent_)->weapon(selectedWInstId_ - 1);
         if (wi->needsReloading()) {
-            int rldCost = pSelectedWeap_->getReloadingCost(wi->ammoRemaining());
+            int rldCost = pSelectedWeap_->calculateReloadingCost(wi->ammoRemaining());
 
             sprintf(tmp, ":%d", rldCost);
             getMenuFont(FontManager::SIZE_1)->drawText(x, y,
@@ -730,7 +730,7 @@ void SelectMenu::handleAction(const int actionId, void *ctx, const int modKeys)
     } else if (actionId == reloadButId_) {
         Agent *selected = g_gameCtrl.agents().squadMember(cur_agent_);
         WeaponInstance *wi = selected->weapon(selectedWInstId_ - 1);
-        int rldCost = pSelectedWeap_->getReloadingCost(wi->ammoRemaining());
+        int rldCost = pSelectedWeap_->calculateReloadingCost(wi->ammoRemaining());
 
         if (g_Session.canAfford(rldCost)) {
             g_Session.decreaseMoney(rldCost);

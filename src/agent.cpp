@@ -30,8 +30,6 @@
 
 #include "gfx/screen.h"
 #include "agent.h"
-#include "weapon.h"
-#include "mod.h"
 
 int Agent::agentCnt = 1;
 

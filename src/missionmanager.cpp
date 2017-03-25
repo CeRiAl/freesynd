@@ -35,8 +35,8 @@
 #include "model/objectivedesc.h"
 #include "model/vehicle.h"
 #include "model/train.h"
+#include "model/squad.h"
 #include "mission.h"
-#include "core/squad.h"
 #include "pedmanager.h"
 
 /*!

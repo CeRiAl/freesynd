@@ -32,7 +32,7 @@
 #include <fstream>
 
 #include "common.h"
-#include "weapon.h"
+#include "model/weapon.h"
 #include "utils/seqmodel.h"
 #include "utils/portablefile.h"
 

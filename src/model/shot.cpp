@@ -36,7 +36,7 @@
 void InstantImpactShot::inflictDamage(Mission *pMission) {
     WorldPoint originLocW(dmg_.d_owner->position()); // origin of shooting
     // get how much impacts does the weapon generate
-    int nbImpacts = dmg_.pWeapon->getClass()->shotsPerAmmo();
+    int nbImpacts = dmg_.pWeapon->getClass()->impactsPerAmmo();
 
     // If there are many impacts, a target can be hit by several impacts
     // so this map stores number of impacts for a target
@@ -224,7 +224,7 @@ void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, d
 
 void Explosion::createExplosion(Mission *pMission, ShootableMapObject *pOwner, const WorldPoint &location, double range, int dmgValue) {
     ShootableMapObject::DamageInflictType dmg;
-    if (pOwner && pOwner->nature() == MapObject::kNatureWeapon) {
+    if (pOwner && pOwner->is(MapObject::kNatureWeapon)) {
         // It's a bomb that exploded (other waepons do not explode)
         dmg.pWeapon = dynamic_cast<WeaponInstance *>(pOwner);
     } else {

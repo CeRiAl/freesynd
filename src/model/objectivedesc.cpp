@@ -24,10 +24,10 @@
 #include "model/objectivedesc.h"
 #include "appcontext.h"
 #include "ped.h"
-#include "vehicle.h"
+#include "model/vehicle.h"
+#include "model/squad.h"
 #include "mission.h"
 #include "core/gamecontroller.h"
-#include "core/squad.h"
 
 /*!
  * A common method to end targeted objective.

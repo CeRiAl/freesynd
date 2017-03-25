@@ -27,7 +27,7 @@
 
 #include "train.h"
 #include "mission.h"
-#include "core/squad.h"
+#include "model/squad.h"
 
 TrainBody::TrainBody(uint16 anId, uint8 aType, VehicleAnimation *pAnimation, int startHp, bool isMoveOnXAxis) :
     Vehicle(anId, aType, -1, pAnimation) {

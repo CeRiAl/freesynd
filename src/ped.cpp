@@ -29,10 +29,10 @@
 #include "app.h"
 #include "utils/log.h"
 #include "model/vehicle.h"
-#include "mission.h"
-#include "core/squad.h"
-#include "core/gamesession.h"
+#include "model/squad.h"
 #include "model/shot.h"
+#include "mission.h"
+#include "core/gamesession.h"
 #include "ia/behaviour.h"
 
 //*************************************
@@ -40,7 +40,6 @@
 //*************************************
 const int PedInstance::kAgentMaxHealth = 16;
 const int PedInstance::kDefaultShootReactionTime = 200;
-const int PedInstance::kMaxDistanceForPersuadotron = 100;
 const uint32 PedInstance::kPlayerGroupId = 1;
 
 Ped::Ped() {
@@ -1572,8 +1571,9 @@ uint16 PedInstance::getRequiredPointsToPersuade(PedType aType) {
  * if its persuasion points are less or equal than the agent
  * total persuasion points.
  * \param pOtherPed Ped to persuade.
+ * \param persuadotronRange Distance under which a ped can be persuaded
  */
-bool PedInstance::canPersuade(PedInstance *pOtherPed) {
+bool PedInstance::canPersuade(PedInstance *pOtherPed, const int persuadotronRange) {
     Action *pAction = pOtherPed->currentAction();
     if (pAction != NULL && pAction->type() == Action::kActTypeHit) {
         // cannot persuade a ped if he's currently being hit
@@ -1581,7 +1581,7 @@ bool PedInstance::canPersuade(PedInstance *pOtherPed) {
     }
 
     if (!pOtherPed->isPersuaded() && pOtherPed->isAlive() &&
-            isCloseTo(pOtherPed, kMaxDistanceForPersuadotron)) {
+            isCloseTo(pOtherPed, persuadotronRange)) {
         uint16 points = getRequiredPointsToPersuade(pOtherPed->type());
         return points <= totalPersuasionPoints_;
     }

@@ -11,16 +11,18 @@ set (SOURCES
 	agent.cpp
 	agentmanager.cpp
 	app.cpp
+	model/mod.cpp
 	model/objectivedesc.cpp
 	model/weaponholder.cpp
 	model/shot.cpp
 	model/vehicle.cpp
 	model/train.cpp
-	core/squad.cpp
+	model/weapon.cpp
+	model/research.cpp
+	model/squad.cpp
 	core/gamesession.cpp
 	core/gamecontroller.cpp
 	core/missionbriefing.cpp
-	core/research.cpp
 	core/researchmanager.cpp
 	ia/actions.cpp
 	ia/behaviour.cpp
@@ -61,7 +63,6 @@ set (SOURCES
 	menus/widget.cpp
 	mission.cpp
 	missionmanager.cpp
-	mod.cpp
 	modmanager.cpp
 	ped.cpp
 	pedactions.cpp
@@ -81,7 +82,6 @@ set (SOURCES
 	utils/log.cpp
 	utils/portablefile.cpp
 	utils/seqmodel.cpp
-	weapon.cpp
 	weaponmanager.cpp
 )
 
@@ -106,7 +106,6 @@ set(HEADERS
 	mapobject.h
 	mission.h
 	missionmanager.h
-	mod.h
 	modmanager.h
 	modowner.h
 	path.h
@@ -116,16 +115,12 @@ set(HEADERS
 	resources.h
 	system.h
 	system_sdl.h
-	model/vehicle.h
 	version.h
-	weapon.h
 	weaponmanager.h
 	core/gameevent.h
-	core/squad.h
 	core/gamesession.h
 	core/gamecontroller.h
 	core/missionbriefing.h
-	core/research.h
 	core/researchmanager.h
 	ia/actions.h
 	ia/behaviour.h
@@ -138,12 +133,17 @@ set(HEADERS
 	gfx/spritemanager.h
 	gfx/tile.h
 	gfx/tilemanager.h
+	model/mod.h
+	model/vehicle.h
+	model/weapon.h
 	model/position.h
 	model/objectivedesc.h
 	model/leveldata.h
 	model/shot.h
 	model/weaponholder.h
 	model/train.h
+	model/research.h
+	model/squad.h
 	menus/agentselectorrenderer.h
 	menus/maprenderer.h
 	menus/minimaprenderer.h

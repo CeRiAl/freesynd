@@ -28,8 +28,9 @@
 #include "ia/behaviour.h"
 #include "ped.h"
 #include "mission.h"
-#include "core/squad.h"
+#include "model/squad.h"
 #include "core/gamesession.h"
+#include "core/gamecontroller.h"
 
 //*************************************
 // Constant definition
@@ -128,6 +129,7 @@ void CommonAgentBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Beha
 PersuaderBehaviourComponent::PersuaderBehaviourComponent():
         BehaviourComponent() {
     doUsePersuadotron_ = false;
+    persuadotronRange_ = g_gameCtrl.weaponManager().getWeapon(Weapon::Persuadatron)->range();
 }
 
 void PersuaderBehaviourComponent::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
@@ -136,7 +138,7 @@ void PersuaderBehaviourComponent::execute(int elapsed, Mission *pMission, PedIns
         // iterate through all peds except our agents
         for (size_t i = pMission->getSquad()->size(); i < pMission->numPeds(); i++) {
             PedInstance *pOtherPed = pMission->ped(i);
-            if (pPed->canPersuade(pOtherPed)) {
+            if (pPed->canPersuade(pOtherPed, persuadotronRange_)) {
                 ShootableMapObject::DamageInflictType dmg;
                 dmg.dtype = MapObject::dmg_Persuasion;
                 dmg.d_owner = pPed;

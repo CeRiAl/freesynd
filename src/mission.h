@@ -33,7 +33,6 @@
 
 #include "common.h"
 #include "mapobject.h"
-#include "weapon.h"
 #include "map.h"
 #include "model/leveldata.h"
 #include "core/gameevent.h"
@@ -45,6 +44,7 @@ class ObjectiveDesc;
 class Squad;
 class ProjectileShot;
 class GaussGunShot;
+class Weapon;
 
 /*!
  * A class that holds mission statistics.

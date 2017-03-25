@@ -213,33 +213,33 @@ void Weapon::initFromConfig(WeaponType w_type, ConfigFile &conf) {
         sprintf(propName, pattern, w_type, "cost");
         cost_ = conf.read<int>(propName);
         sprintf(propName, pattern, w_type, "ammo.nb");
-        ammo_ = conf.read<int>(propName);
+        ammo_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "ammo.price");
-        ammo_cost_ = conf.read<int>(propName);
+        ammo_cost_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "range");
         range_ = conf.read<int>(propName);
         sprintf(propName, pattern, w_type, "rank");
-        rank_ = conf.read<int>(propName);
+        rank_ = conf.read<int>(propName, -1);
         sprintf(propName, pattern, w_type, "anim");
         anim_ = conf.read<int>(propName);
         sprintf(propName, pattern, w_type, "ammopershot");
-        ammo_per_shot_ = conf.read<int>(propName);
+        ammo_per_shot_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "timeforshot");
-        time_for_shot_ = conf.read<int>(propName);
+        time_for_shot_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "timereload");
-        time_reload_ = conf.read<int>(propName);
+        time_reload_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "damagerange");
-        range_dmg_ = conf.read<int>(propName);
+        range_dmg_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "shotangle");
-        shot_angle_ = conf.read<double>(propName);
+        shot_angle_ = conf.read<double>(propName, 0.0);
         sprintf(propName, pattern, w_type, "shotaccuracy");
-        shot_accuracy_ = conf.read<double>(propName);
+        shot_accuracy_ = conf.read<double>(propName, 0.0);
         sprintf(propName, pattern, w_type, "shotspeed");
-        shot_speed_ = conf.read<int>(propName);
+        shot_speed_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "dmg_per_shot");
-        dmg_per_shot_ = conf.read<int>(propName);
-        sprintf(propName, pattern, w_type, "shots_per_ammo");
-        shots_per_ammo_ = conf.read<int>(propName);
+        dmg_per_shot_ = conf.read<int>(propName, 0);
+        sprintf(propName, pattern, w_type, "ammo.impactNb");
+        impactsPerAmmo_ = conf.read<int>(propName, 0);
         sprintf(propName, pattern, w_type, "weight");
         weight_ = conf.read<int>(propName);
         sprintf(propName, pattern, w_type, "auto.fire_rate");
@@ -249,7 +249,7 @@ void Weapon::initFromConfig(WeaponType w_type, ConfigFile &conf) {
     }
 }
 
-int Weapon::getReloadingCost(int remaingAmmo) {
+int Weapon::calculateReloadingCost(int remaingAmmo) {
     return (ammo_ - remaingAmmo) * ammo_cost_;
 }
 
@@ -423,7 +423,7 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         }
     }  else if (isInstanceOf(Weapon::TimeBomb)) {
         updateStats = false;
-        map_ = -1;
+        setDrawable(false);
         health_ = 0;
         deactivate();
         Explosion::createExplosion(pMission, this,

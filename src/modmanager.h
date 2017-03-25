@@ -29,7 +29,7 @@
 #include <fstream>
 
 #include "common.h"
-#include "mod.h"
+#include "model/mod.h"
 #include "utils/seqmodel.h"
 #include "utils/portablefile.h"
 
@@ -49,7 +49,7 @@ public:
     void reset();
     //! Cheating mode to enable all mods
     void cheatEnableAllMods();
-    
+
     Mod *getMod(Mod::EModType mt, Mod::EModVersion ver);
 
     //! Enable mod of given type and version

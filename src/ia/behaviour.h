@@ -140,6 +140,7 @@ public:
 private:
     /*! Flag to indicate an agent can use his persuadotron.*/
     bool doUsePersuadotron_;
+    int persuadotronRange_;
 };
 
 /*!

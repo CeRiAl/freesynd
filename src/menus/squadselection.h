@@ -23,7 +23,7 @@
 #ifndef MENUS_SQUADSELECTION_H_
 #define MENUS_SQUADSELECTION_H_
 
-#include "core/squad.h"
+#include "model/squad.h"
 #include "agentmanager.h"
 #include "model/position.h"
 

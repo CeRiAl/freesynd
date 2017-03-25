@@ -27,8 +27,8 @@
 #include <list>
 #include <fstream>
 
-#include "weapon.h"
-#include "mod.h"
+#include "model/weapon.h"
+#include "model/mod.h"
 #include "utils/portablefile.h"
 
 /*!

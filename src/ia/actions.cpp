@@ -28,12 +28,13 @@
 #include "ia/actions.h"
 #include "app.h"
 #include "ped.h"
-#include "weapon.h"
+#include "model/weapon.h"
 #include "model/vehicle.h"
 #include "model/train.h"
+#include "model/squad.h"
 #include "mission.h"
 #include "agentmanager.h"
-#include "core/squad.h"
+
 
 //*************************************
 // Constant definition

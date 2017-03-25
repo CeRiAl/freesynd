@@ -91,18 +91,31 @@ public:
     Weapon(WeaponType w_type, ConfigFile &conf);
 
     WeaponType getType() { return type_; }
+
     const char *getName() { return name_.c_str(); }
+    int getSmallIconId() { return small_icon_; }
+    int getBigIconId() { return big_icon_; }
+    int anim() { return anim_; }
 
     int cost() { return cost_; }
     int ammo() { return ammo_; }
+    int ammoCost() { return ammo_cost_; }
     int range() { return range_; }
     int damagePerShot() { return dmg_per_shot_; }
+    int ammoPerShot() { return ammo_per_shot_; }
+    int timeForShot() { return time_for_shot_; }
+    int reloadTime() { return time_reload_; }
+    int rangeDmg() { return range_dmg_; }
+    double shotAngle() { return shot_angle_; }
+    double shotAcurracy() { return shot_accuracy_; }
+    int shotSpeed() { return shot_speed_; }
+    int impactsPerAmmo() { return impactsPerAmmo_; }
+    //! Returns the fire rate expressed in time between two shots
+    int fireRate() { return fireRate_; }
     int rank() { return rank_; }
-    int anim() { return anim_; }
     int weight() {return weight_; }
+
     snd::InGameSample getSound() { return sample_; }
-    int getSmallIconId() { return small_icon_; }
-    int getBigIconId() { return big_icon_; }
 
     int selector() {
         return small_icon_ == 28 ? 1618 : small_icon_ - 14 + 1602;
@@ -112,10 +125,6 @@ public:
     MapObject::DamageType dmgType() { return dmg_type_; }
 
     bool operator==(Weapon weapon) { return this->type_ == weapon.getType(); }
-
-    int ammoPerShot() { return ammo_per_shot_; }
-    int timeForShot() { return time_for_shot_; }
-    int reloadTime() { return time_reload_; }
 
     bool wasSubmittedToSearch() { return submittedToSearch_; }
     void submitToSearch() { submittedToSearch_ = true; }
@@ -198,14 +207,7 @@ public:
     unsigned int shotProperty() { return shot_property_; }
 
     ImpactAnims * impactAnims() { return &impactAnims_; }
-    int rangeDmg() { return range_dmg_; }
-    double shotAngle() { return shot_angle_; }
-    double shotAcurracy() { return shot_accuracy_; }
-    int ammoCost() { return ammo_cost_; }
-    int shotSpeed() { return shot_speed_; }
-    int shotsPerAmmo() { return shots_per_ammo_; }
-    //! Returns the fire rate expressed in time between two shots
-    int fireRate() { return fireRate_; }
+
     bool usesAmmo() {
         return (shotProperty() & Weapon::spe_UsesAmmo) != 0;
     }
@@ -219,7 +221,7 @@ public:
     }
 
     //! Return the cost of reloading the weapon
-    int getReloadingCost(int remaingAmmo);
+    int calculateReloadingCost(int remaingAmmo);
 protected:
     //! Init weapon from given config file
     void initFromConfig(WeaponType w_type, ConfigFile &conf);
@@ -232,7 +234,8 @@ protected:
     /*! The price to reload the weapon.*/
     int ammo_cost_;
     int ammo_, range_, dmg_per_shot_;
-    int rank_;  //!> weapon rank
+    /*!Rank is used to order shooting weapons by value.*/
+    int rank_;
     WeaponType type_;
     MapObject::DamageType dmg_type_;
     int ammo_per_shot_;
@@ -251,8 +254,8 @@ protected:
     double shot_accuracy_;
     //! only projectiles have this set (gauss, flamer)
     int shot_speed_;
-    //! shotgun only for now
-    int shots_per_ammo_;
+    //! When shooting one ammo, how much impacts are caused
+    int impactsPerAmmo_;
     //! The weight of a weapon influences the agent's speed
     int weight_;
     //! The fire rate expressed by time between two shots. Only for automatic weapons

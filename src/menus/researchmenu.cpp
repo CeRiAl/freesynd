@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "app.h"
-#include "core/research.h"
+#include "model/research.h"
 #include "researchmenu.h"
 #include "menus/gamemenuid.h"
 
