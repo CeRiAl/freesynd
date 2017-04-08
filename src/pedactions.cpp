@@ -365,6 +365,13 @@ uint8 PedInstance::addActionShootAt(const WorldPoint &aimedLocW) {
 /*!
  * Adds an action to use the medikit on the owner.
  */
-void PedInstance::addActionUseMedikit() {
-    pUseWeaponAction_ = new UseMedikitAction();
+void PedInstance::addActionUseMedikit(WeaponInstance *pMedikit) {
+    pUseWeaponAction_ = new UseMedikitAction(pMedikit);
+}
+
+/*!
+ * Adds an action to use the energy shield on the owner.
+ */
+void PedInstance::addActionUseEnergyShield(WeaponInstance *pEnergyShield) {
+    pUseWeaponAction_ = new UseEnergyShieldAction(pEnergyShield);
 }

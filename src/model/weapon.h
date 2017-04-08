@@ -355,7 +355,6 @@ public:
     //! Use weapon
     void fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed);
 
-protected:
     bool consumeAmmoForEnergyShield(int elapsed);
 
 protected:

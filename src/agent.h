@@ -36,8 +36,6 @@
 #include "modowner.h"
 #include "utils/portablefile.h"
 
-class WeaponInstance;
-
 /*!
  * Stores information about agent health, weapons inventory and modifications.
  */

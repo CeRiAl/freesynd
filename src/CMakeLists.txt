@@ -252,19 +252,17 @@ if (BUILD_DEV_TOOLS)
 		ped.cpp
 		pedactions.cpp
 		pedpathfinding.cpp
-		mod.cpp
 		modmanager.cpp
 		missionmanager.cpp
 		model/vehicle.cpp
 		model/train.cpp
-		weapon.cpp
 		weaponmanager.cpp
 		core/gamecontroller.cpp
 		core/gamesession.cpp
 		core/missionbriefing.cpp
 		core/researchmanager.cpp
-		core/research.cpp
-		core/squad.cpp
+		model/research.cpp
+		model/squad.cpp
 		model/objectivedesc.cpp
 		model/shot.cpp
 		model/weaponholder.cpp

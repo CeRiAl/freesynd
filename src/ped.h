@@ -188,9 +188,8 @@ public:
         // of persuader only if persuader shoots at it
         pd_smSupporter = 0x0004,
         pd_smEnemyInSight = 0x0008,
-        // only if all weapon has no ammunition, persuadatron excludes this
-        // should not be used for hostile_desc_
-        pd_smNoAmmunition = 0x0010,
+        //! Energy shield protects the ped
+        pd_smShieldProtected = 0x0010,
         // all non-player controllled peds should have this set
         pd_smAutoAction = 0x0020,
         /*! When a mission's objective is to kill a ped and this ped has
@@ -341,7 +340,9 @@ public:
     //! Adds action to shoot somewhere
     uint8 addActionShootAt(const WorldPoint &aimedPt);
     //! Adds action to use medikit
-    void addActionUseMedikit();
+    void addActionUseMedikit(WeaponInstance *pMedikit);
+    //! Adds action to use Energy Shield
+    void addActionUseEnergyShield(WeaponInstance *pMedikit);
     //! Creates and insert a HitAction for the ped
     void insertHitAction(DamageInflictType &d);
 
@@ -366,8 +367,10 @@ public:
     //*************************************
     //! Return true if ped is currently using a weapon (ie there's an active action)
     bool isUsingWeapon() { return pUseWeaponAction_ != NULL; }
-    //! Make the ped stop using weapon (mainly for automatic weapon)
+    //! Make the ped stop using weapon
     void stopUsingWeapon();
+    //! Make the ped stop using a weapon that shoots
+    void stopShooting();
     //! Update the ped's shooting target
     void updateShootingTarget(const WorldPoint &aimedPt);
     //! Adjust aimed point with user accuracy and weapon max range
@@ -377,6 +380,10 @@ public:
 
     //! Forces agent to kill himself
     void commitSuicide();
+
+    //! Return true if ped has activated his energy shield
+    bool isEnergyShieldActivated() { return IS_FLAG_SET(desc_state_, pd_smShieldProtected); }
+    void setEnergyActivated(bool status);
 
     //! Return the damage after applying protection of Mod
     int getRealDamage(ShootableMapObject::DamageInflictType &d);
@@ -641,7 +648,7 @@ public:
     bool hasAccessCard();
 
     void cpyEnemyDefs(Mmuu32_t &eg_defs) { eg_defs = enemy_group_defs_; }
-    bool isArmed() { return (desc_state_ & pd_smArmed) != 0; }
+    bool isArmed() { return selectedWeapon() != NULL; }
 
     IPAStim *adrenaline_;
     IPAStim *perception_;
@@ -660,10 +667,17 @@ protected:
     //! See WeaponHolder::handleWeaponSelected()
     void handleWeaponSelected(WeaponInstance * wi, WeaponInstance * previousWeapon);
 
+    //! Called when a weapon has no ammo to select another one
+    void handleSelectedWeaponHasNoAmmo();
+
     //! Returns the number of points an agent must have to persuade a ped of given type
     uint16 getRequiredPointsToPersuade(PedType type);
     //! When a ped dies, changes the persuaded owner/persuaded_group relation.
     void updatePersuadedRelations(Squad *pSquad);
+
+private:
+    inline int getClosestDirs(int dir, int& closest, int& closer);
+
 protected:
 
     Ped *ped_;
@@ -730,9 +744,8 @@ protected:
     std::set <PedInstance *> persuadedSet_;
     //! Tells whether the panic can react to panic or not
     bool panicImmuned_;
-
-private:
-    inline int getClosestDirs(int dir, int& closest, int& closer);
+    //! This field is used to select a weapon after medikit was used
+    WeaponInstance *pSelectedWeaponBeforeMedikit_;
 };
 
 #endif

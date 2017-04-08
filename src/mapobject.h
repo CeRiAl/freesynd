@@ -65,7 +65,7 @@ public:
     const char* natureName();
 
     //! Return the object's id
-    uint16 id() { return id_; }
+    uint16 id() const { return id_; }
 
     void setDrawable(bool drawable) {
         isDrawable_ = drawable;

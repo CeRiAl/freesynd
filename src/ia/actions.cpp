@@ -694,28 +694,13 @@ MovementAction(kActTypeWaitShoot, true), waitTimer_(2000) {
     pTarget_ = pPed;
 }
 
-/*!
- * Select a weapon for the ped if he has no weapon out.
- * \param pPed The police man.
- */
-void WaitBeforeShootingAction::selectWeaponIfNecessary(PedInstance *pPed) {
-    WeaponInstance *pWeapon = pPed->selectedWeapon();
-    if (pWeapon == NULL) {
-        // Select a loaded weapon for ped
-        WeaponHolder::WeaponSelectCriteria crit;
-        crit.desc = WeaponHolder::WeaponSelectCriteria::kCritLoadedShoot;
-        crit.use_ranks = true;
-        pPed->selectRequiredWeapon(&crit);
-    }
-}
-
 void WaitBeforeShootingAction::doStart(Mission *pMission, PedInstance *pPed) {
     if (pTarget_->isDead()) {
         setFailed();
     } else {
         waitTimer_.reset();
         pPed->clearDestination();
-        selectWeaponIfNecessary(pPed);
+        pPed->selectShootingWeaponWithAmmo();
     }
 }
 
@@ -1124,4 +1109,42 @@ bool UseMedikitAction::execute(int elapsed, Mission *pMission, PedInstance *pPed
     }
 
     return update;
+}
+
+/*!
+ * Execute the Use medikit action.
+ * \param elapsed Time since last frame.
+ * \param pMission Mission data
+ * \param pPed The ped executing the action.
+ * \return true to redraw
+ */
+bool UseEnergyShieldAction::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
+    if (status_ == kActStatusNotStarted) {
+        status_ = kActStatusRunning;
+
+        if (!pWeapon_->isInstanceOf(Weapon::EnergyShield)) {
+            setFailed();
+            return false;
+        } else {
+            //pWeapon_->playSound();
+            ShootableMapObject::DamageInflictType dmg;
+            pWeapon_->fire(pMission, dmg, elapsed);
+        }
+    } else if (status_ == kActStatusRunning) {
+        if (pWeapon_->consumeAmmoForEnergyShield(elapsed)) {
+            // no more ammo
+            pPed->setEnergyActivated(false);
+            setSucceeded();
+        }
+    }
+
+    return true;
+}
+
+void UseEnergyShieldAction::stop() {
+    if (status_ == kActStatusRunning) {
+        PedInstance *pPed = pWeapon_->owner();
+        pPed->setEnergyActivated(false);
+        setSucceeded();
+    }
 }

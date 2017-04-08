@@ -425,11 +425,6 @@ bool PedInstance::animate(int elapsed, Mission *mission) {
         }
     }
 
-    WeaponInstance *pWeapon = selectedWeapon();
-    if (pWeapon && pWeapon->isInstanceOf(Weapon::EnergyShield)) {
-        pWeapon->animate(elapsed);
-    }
-
     return update;
 }
 
@@ -509,28 +504,47 @@ bool PedInstance::executeUseWeaponAction(int elapsed, Mission *pMission) {
         // execute action
         updated |= pUseWeaponAction_->execute(elapsed, pMission, this);
         if (pUseWeaponAction_->isFinished()) {
-            if (selectedWeapon() && selectedWeapon()->ammoRemaining() == 0) {
-                // when weapon is empty persuaded will drop weapon
-                if (isPersuaded()) {
-                    // we should be able to suspend as by default it should be a follow action
-                    currentAction_->suspend(this);
-                    PutdownWeaponAction *pDrop = new PutdownWeaponAction(0);
-                    pDrop->setWarnBehaviour(true);
-                    //
-                    pDrop->link(currentAction_);
-                    currentAction_ = pDrop;
-                } else {
-                    // others will use another weapon
-                    selectNextWeapon();
-                }
-            }
             // erase action
             delete pUseWeaponAction_;
             pUseWeaponAction_ = NULL;
+
+            // then select another weapon maybe
+            if (selectedWeapon() && selectedWeapon()->ammoRemaining() == 0) {
+                handleSelectedWeaponHasNoAmmo();
+            }
         }
     }
 
     return updated;
+}
+
+void PedInstance::handleSelectedWeaponHasNoAmmo() {
+    // when weapon is empty persuaded will drop weapon
+    if (isPersuaded()) {
+        // we should be able to suspend as by default it should be a follow action
+        currentAction_->suspend(this);
+        PutdownWeaponAction *pDrop = new PutdownWeaponAction(0);
+        pDrop->setWarnBehaviour(true);
+        //
+        pDrop->link(currentAction_);
+        currentAction_ = pDrop;
+    } else {
+        // first deselect empty weapon
+        WeaponInstance *pDeselectedWeapon = deselectWeapon();
+        // selection was a shooting weapon so replace with the same type
+        // or something else
+        if (pDeselectedWeapon->canShoot()) {
+            selectShootingWeaponWithSameTypeFirst(pDeselectedWeapon);
+        } else if (pDeselectedWeapon->isInstanceOf(Weapon::EnergyShield)) {
+            // Use another energy shield
+            selectMedikitOrShield(Weapon::EnergyShield);
+        } else if (pDeselectedWeapon->isInstanceOf(Weapon::MediKit)) {
+            if (pSelectedWeaponBeforeMedikit_ != NULL) {
+                selectWeapon(*pSelectedWeaponBeforeMedikit_);
+                pSelectedWeaponBeforeMedikit_ = NULL;
+            }
+        }
+    }
 }
 
 /*!
@@ -557,6 +571,15 @@ bool PedInstance::canAddUseWeaponAction(WeaponInstance *pWeapon) {
  */
 void PedInstance::stopUsingWeapon() {
     if (isUsingWeapon()) {
+        pUseWeaponAction_->stop();
+    }
+}
+
+/*!
+ * Terminate the current action of using weapon that shoots.
+ */
+void PedInstance::stopShooting() {
+    if (isUsingWeapon()&& pUseWeaponAction_->type() == Action::kActTypeShoot) {
         // stop shooting in case of automatic shooting
         pUseWeaponAction_->stop();
     }
@@ -606,6 +629,14 @@ void PedInstance::commitSuicide() {
         dit.dvalue = PedInstance::kAgentMaxHealth;
 
         handleHit(dit);
+    }
+}
+
+void PedInstance::setEnergyActivated(bool isActivated) {
+    if (isActivated) {
+        SET_FLAG(desc_state_, pd_smShieldProtected);
+    } else {
+        desc_state_ &= pd_smAll ^ pd_smShieldProtected;
     }
 }
 
@@ -701,6 +732,7 @@ PedInstance::PedInstance(Ped *ped, uint16 anId, int m, bool isOur) :
     pUseWeaponAction_ = NULL;
     panicImmuned_ = false;
     totalPersuasionPoints_ = 0;
+    pSelectedWeaponBeforeMedikit_ = NULL;
 }
 
 PedInstance::~PedInstance()
@@ -884,12 +916,9 @@ bool PedInstance::canSelectWeapon(WeaponInstance *pNewWeapon) {
  * \param wi The deselected weapon
  */
 void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
-    if (wi->isInstanceOf(Weapon::EnergyShield)) {
-        wi->deactivate();
-    } else if (wi->isInstanceOf(Weapon::AccessCard)) {
+    if (wi->isInstanceOf(Weapon::AccessCard)) {
         rmEmulatedGroupDef(4, og_dmPolice);
     }
-    desc_state_ &= (pd_smAll ^ (pd_smArmed | pd_smNoAmmunition));
 
     if (wi->isInstanceOf(Weapon::Persuadatron)) {
         behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtPersuadotronDeactivated);
@@ -905,17 +934,6 @@ void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
  * \param previousWeapon The previous selected weapon (can be null if no weapon was selected)
  */
 void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * previousWeapon) {
-    if (wi->usesAmmo()) {
-        if (wi->ammoRemaining() == 0) {
-            desc_state_ |= pd_smNoAmmunition;
-            return;
-        } else {
-            desc_state_ &= pd_smAll ^ pd_smNoAmmunition;
-        }
-    } else {
-        desc_state_ &= pd_smAll ^ pd_smNoAmmunition;
-    }
-
     if (wi->doesPhysicalDmg())
         desc_state_ |= pd_smArmed;
     else
@@ -923,13 +941,18 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
 
     switch(wi->getClass()->getType()) {
     case Weapon::EnergyShield:
-        wi->activate();
+        addActionUseEnergyShield(wi);
         break;
     case Weapon::AccessCard:
         addEmulatedGroupDef(4, og_dmPolice);
         break;
     case Weapon::MediKit:
-        addActionUseMedikit();
+        if (previousWeapon != NULL &&
+            previousWeapon->getClass()->canShoot() &&
+            previousWeapon->ammoRemaining() > 0) {
+            pSelectedWeaponBeforeMedikit_ = previousWeapon;
+        }
+        addActionUseMedikit(wi);
         break;
     case Weapon::Persuadatron:
         behaviour_.handleBehaviourEvent(Behaviour::kBehvEvtPersuadotronActivated);

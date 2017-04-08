@@ -161,12 +161,22 @@ void SquadSelection::checkLeader(size_t agentNo) {
 }
 
 /*!
- * Deselects all selected agents selected weapon.
+ * Deselects the leader selected weapon and for the other agents, it depends
+ * on the leader's weapon.
  */
-void SquadSelection::deselectAllWeapons() {
+void SquadSelection::deselectWeaponOfSameCategory(Weapon *pWeaponFromLeader) {
+    bool categoryShooting = pWeaponFromLeader->canShoot();
     for (SquadSelection::Iterator it = begin(); it != end(); ++it) {
         PedInstance *pAgent = *it;
-        pAgent->deselectWeapon();
+        WeaponInstance *pWeaponToDeselect = pAgent->selectedWeapon();
+        if (pWeaponToDeselect != NULL) {
+            if (pAgent == leader() ||
+                (categoryShooting && pWeaponToDeselect->getClass()->canShoot()) ||
+                (pWeaponToDeselect->isInstanceOf(pWeaponFromLeader->getType()))) {
+                pAgent->stopUsingWeapon();
+                pAgent->deselectWeapon();
+            }
+        }
     }
 }
 
@@ -176,12 +186,9 @@ void SquadSelection::deselectAllWeapons() {
  * \param weapon_idx The index in the leader inventory of the weapon to select.
  * \param apply_to_all In case of Medikit, all selected agents must use one.
  */
-void SquadSelection::selectWeaponFromLeader(int weapon_idx, bool apply_to_all) {
+void SquadSelection::selectWeaponFromLeader(int weapon_idx, bool applySelectionToAll) {
     PedInstance *pLeader = leader();
-    PedInstance::WeaponSelectCriteria pw_to_use;
-    pw_to_use.desc = WeaponHolder::WeaponSelectCriteria::kCritPlayerSelection;
-    pw_to_use.criteria.wi = pLeader->weapon(weapon_idx);
-    pw_to_use.apply_to_all = apply_to_all;
+    WeaponInstance *pLeaderWeapon = pLeader->weapon(weapon_idx);
 
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
@@ -189,9 +196,10 @@ void SquadSelection::selectWeaponFromLeader(int weapon_idx, bool apply_to_all) {
         if (pLeader == ped) {
             // Forces selection of the weapon for the leader
             pLeader->selectWeapon(weapon_idx);
-        } else {
-            // For other agents, it depends on their actual selection
-           ped->selectRequiredWeapon(&pw_to_use);
+        } else if (pLeaderWeapon->getClass()->canShoot()) {
+            ped->selectShootingWeaponWithSameTypeFirst(pLeaderWeapon);
+        } else if (applySelectionToAll) {
+            ped->selectMedikitOrShield(pLeaderWeapon->getClass()->getType());
         }
     } // end for
 }

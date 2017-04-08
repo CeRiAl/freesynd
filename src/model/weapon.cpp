@@ -286,13 +286,7 @@ WeaponInstance::WeaponInstance(Weapon * pWeaponClass, uint16 anId, int remaining
 bool WeaponInstance::animate(int elapsed) {
 
     if (activated_) {
-        if (isInstanceOf(Weapon::EnergyShield)) {
-            if (ammo_remaining_ && consumeAmmoForEnergyShield(elapsed)) {
-                // no more ammo so deselect shield
-                pOwner_->deselectWeapon();
-            }
-            return true;
-        } else if (isInstanceOf(Weapon::TimeBomb)) {
+        if (isInstanceOf(Weapon::TimeBomb)) {
             if (bombSoundTimer.update(elapsed)) {
                 g_App.gameSounds().play(snd::TIMEBOMB);
             }
@@ -312,11 +306,17 @@ bool WeaponInstance::animate(int elapsed) {
     return false;
 }
 
+/**
+ * Calculate amount of ammo consummed in the elapsed time
+ * \param elapsed int
+ * \return bool return true if there is no more ammo
+ *
+ */
 bool WeaponInstance::consumeAmmoForEnergyShield(int elapsed) {
     int timeForShot = pWeaponClass_->timeForShot();
     shieldTimeUsed_ += elapsed;
 
-    if (shieldTimeUsed_ >= timeForShot) {
+    if (ammo_remaining_ > 0 && shieldTimeUsed_ >= timeForShot) {
         // here time for shot is the unit of time for spending ammo
         // there's no time for reloading
 
@@ -356,7 +356,6 @@ void WeaponInstance::playSound() {
 
 void WeaponInstance::activate() {
     activated_ = true;
-    shieldTimeUsed_ = 0;
 }
 
 void WeaponInstance::deactivate() {
@@ -428,6 +427,11 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
         deactivate();
         Explosion::createExplosion(pMission, this,
             (double)pWeaponClass_->rangeDmg(), pWeaponClass_->damagePerShot());
+    } else if (isInstanceOf(Weapon::EnergyShield)) {
+        pOwner_->setEnergyActivated(true);
+        shieldTimeUsed_ = 0;
+        // return now because ammo is decreased in UseEnergyShieldAction
+        return;
     } else {
         // For other weapons, damage are done immediatly because projectile speed
         // is too high to draw them

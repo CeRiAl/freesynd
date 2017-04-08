@@ -38,40 +38,6 @@
  */
 class WeaponHolder {
 public:
-    struct WeaponSelectCriteria {
-        union {
-            //! weapon index from weapons_ in mission_
-            uint32 indx;
-            //! use only this weapon for attack
-            WeaponInstance *wi;
-            //! use only this type of weapon
-            Weapon::WeaponType wpn_type;
-            //! use weapon that inflicts this type of damage
-            //! MapObject::DamageType
-            uint32 dmg_type;
-        } criteria;
-
-        enum CriteriaType {
-            kCritNotSet = 0,             // No criteria is set
-            kCritIndex = 1,             // indx
-            kCritPointer = 2,           // wi
-            kCritWeaponType = 3,        // wpn_type
-            kCritDamageStrict = 4,      // type == dmg_type
-            kCritDamageNonStrict = 5,   // type & dmg_type != 0
-            kCritPlayerSelection = 6,   // Manage selection from weapon selector
-            kCritLoadedShoot = 7        // select weapon who can shoot and has ammo
-        };
-        //! Union descriptor
-        CriteriaType desc;
-        bool use_ranks;
-        /*!
-         * When in kCritPlayerSelection mode and a medikit was selected for an agent,
-         * if this field is true, all selected agent will use a medikit.
-         */
-        bool apply_to_all;
-    };
-
-public:
     //! This constat indicates that there is no weapon selected.
     static const int kNoWeaponSelected;
     /*! Defines the maximum number of weapons an agent can carry.*/
@@ -99,6 +65,8 @@ public:
 
     //! Selects the weapon at given index in the inventory
     void selectWeapon(uint8 n);
+    //! Selects the weapon in the inventory
+    void selectWeapon(const WeaponInstance &weaponToSelect);
     //! Deselects a selected weapon if any
     WeaponInstance * deselectWeapon();
 
@@ -109,12 +77,40 @@ public:
             ? weapons_[selected_weapon_] : NULL;
     }
 
-    //! Selects a weapon based on the given criteria
-    bool selectRequiredWeapon(WeaponSelectCriteria *pw_to_use = NULL);
-    //! Called when a weapon has no ammo to select another one
-    void selectNextWeapon();
+    //! Select any shooting weapon with ammo
+    void selectShootingWeaponWithAmmo();
+    //! Select a shooting weapon of same type or another type if there is no of first type
+    void selectShootingWeaponWithSameTypeFirst(WeaponInstance *pLeaderWeapon);
+    void selectMedikitOrShield(Weapon::WeaponType weaponType);
 
 protected:
+    struct WeaponSelectCriteria {
+        union {
+            //! weapon index from weapons_ in mission_
+            uint32 indx;
+            //! use only this weapon for attack
+            WeaponInstance *wi;
+            //! use only this type of weapon
+            Weapon::WeaponType wpn_type;
+            //! use weapon that inflicts this type of damage
+            //! MapObject::DamageType
+            uint32 dmg_type;
+        } criteria;
+
+        enum CriteriaType {
+            kCritPointer = 2,           // wi
+            kCritWeaponType = 3,        // wpn_type
+            kCritDamageStrict = 4,      // type == dmg_type
+            kCritDamageNonStrict = 5,   // type & dmg_type != 0
+            kCritPlayerSelection = 6,   // Manage selection from weapon selector
+            kCritLoadedShoot = 7        // select weapon who can shoot and has ammo
+        };
+        //! Union descriptor
+        CriteriaType desc;
+        //! Search weapon based on the rank attribute
+        bool use_ranks;
+    };
+
     /*!
      * Called before a weapon is selected to check if weapon can be selected.
      * \param wi The weapon to select
@@ -131,8 +127,9 @@ protected:
      * \param previousWeapon The previous selected weapon (can be null if no weapon was selected)
      */
     virtual void handleWeaponSelected(WeaponInstance * wi, WeaponInstance * previousWeapon) {}
-    //! Updates the prefered weapon criteria based on current selection
-    void updtPreferedWeapon();
+
+    //! Selects a weapon based on the given criteria
+    bool selectRequiredWeapon(const WeaponSelectCriteria &criteria);
 protected:
     /*!
      * The list of weapons carried by the holder.

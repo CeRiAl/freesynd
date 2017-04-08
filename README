@@ -75,6 +75,8 @@ Commands
  * F5 - F12 : each key selects/deselects one item in the inventory.
 	Pressing CTRL-Fx to select a Medikit will apply Medikit on all selected agents
 	that own one.
+	Pressing CTRL-Fx to select an EnergyShield will select an Energy Shield on all selected agents
+	that own one.
  * 1-4 : Numeric key selects the corresponding agent.
  * 0   : Key 0 selects all agents or selects only the leader.
  * Left,Right,Up,Down : Scrolls the map.

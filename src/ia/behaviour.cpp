@@ -439,7 +439,7 @@ void PoliceBehaviourComponent::handleBehaviourEvent(PedInstance *pPed, Behaviour
         // our target has dropped his weapon
         if (status_ == kPoliceStatusFollowAndShootTarget && pTarget_ == pCtxt) {
             status_ = kPoliceStatusPendingEndFollow;
-            pPed->stopUsingWeapon();
+            pPed->stopShooting();
 
             // just wait a few time before engaging another target or simply
             // continue with default behavior
@@ -562,7 +562,7 @@ void PlayerHostileBehaviourComponent::execute(int elapsed, Mission *pMission, Pe
     } else if (status_ == kHostileStatusFollowAndShoot && pTarget_->isDead()) {
         status_ = kHostileStatusPendingEndFollow;
         pTarget_ = NULL;
-        pPed->stopUsingWeapon();
+        pPed->stopShooting();
         // just wait a few time before engaging another target or simply
         // continue with default behavior
         WaitAction *pWait = new WaitAction(WaitAction::kWaitWeapon);

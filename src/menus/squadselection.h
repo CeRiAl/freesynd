@@ -167,7 +167,7 @@ class SquadSelection {
     // Action on multiple agents
     //*************************************
     //! Deselects all selected agents weapons
-    void deselectAllWeapons();
+    void deselectWeaponOfSameCategory(Weapon *pWeaponFromLeader);
     //! Select a weapon for the leader and for all selected agents
     void selectWeaponFromLeader(int weapon_idx, bool apply_to_all);
     //! Go and pick up weapon

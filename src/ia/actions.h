@@ -529,8 +529,6 @@ protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 
-    void selectWeaponIfNecessary(PedInstance *pPed);
-
 protected:
     /*! The ped watched by this ped.*/
     PedInstance *pTarget_;
@@ -721,13 +719,27 @@ protected:
  */
 class UseMedikitAction : public UseWeaponAction {
 public:
-    UseMedikitAction() : UseWeaponAction(NULL) {}
+    UseMedikitAction(WeaponInstance *pMedikit) : UseWeaponAction(pMedikit) {}
 
     //! Entry point to execute the action
     bool execute(int elapsed, Mission *pMission, PedInstance *pPed);
 protected:
     //! Time to wait between two weapon actions
     int timeToWait_;
+};
+
+/*!
+ * This action is used when player activates an energy shield.
+ */
+class UseEnergyShieldAction : public UseWeaponAction {
+public:
+    UseEnergyShieldAction(WeaponInstance *pEnergyShield) : UseWeaponAction(pEnergyShield) {}
+
+    //! Entry point to execute the action
+    bool execute(int elapsed, Mission *pMission, PedInstance *pPed);
+    void stop();
+protected:
+
 };
 
 #endif // IA_ACTIONS_H_

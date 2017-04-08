@@ -643,7 +643,7 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
             g_System.usePointerYellowCursor();
     }
 
-    if (x < 129) {
+    if (x < 129 && isPlayerShooting_) {
         stopShootingEvent();
     }
 
@@ -877,7 +877,7 @@ void GameplayMenu::stopShootingEvent()
     for (SquadSelection::Iterator it = selection_.begin(); it != selection_.end(); ++it) {
         PedInstance *pAgent = *it;
 
-        pAgent->stopUsingWeapon();
+        pAgent->stopShooting();
     }
 }
 
@@ -1435,16 +1435,16 @@ void GameplayMenu::updateSelectAll() {
 /*!
  *
  */
-void GameplayMenu::handleWeaponSelection(uint8 weapon_idx, bool ctrl) {
+void GameplayMenu::handleWeaponSelection(uint8 selectorIndex, bool ctrl) {
     PedInstance *pLeader = selection_.leader();
 
-    if (weapon_idx < pLeader->numWeapons()) {
-        WeaponInstance *wi = pLeader->weapon(weapon_idx);
+    if (selectorIndex < pLeader->numWeapons()) {
+        WeaponInstance *wi = pLeader->weapon(selectorIndex);
         if (pLeader->selectedWeapon() == wi) {
             // Player clicked on an already selected weapon -> deselect
-            selection_.deselectAllWeapons();
+            selection_.deselectWeaponOfSameCategory(wi->getClass());
         } else {
-            selection_.selectWeaponFromLeader(weapon_idx, ctrl);
+            selection_.selectWeaponFromLeader(selectorIndex, ctrl);
         }
     }
     g_App.gameSounds().play(snd::SPEECH_SELECTED);

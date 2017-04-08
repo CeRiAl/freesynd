@@ -37,7 +37,6 @@ const uint8 WeaponHolder::kMaxHoldedWeapons = 8;
 WeaponHolder::WeaponHolder() {
     // -1 means no weapon is selected
     selected_weapon_ = kNoWeaponSelected;
-    updtPreferedWeapon();
 }
 
 WeaponHolder::~WeaponHolder() {
@@ -126,7 +125,21 @@ void WeaponHolder::selectWeapon(uint8 n) {
 
         selected_weapon_ = n;
         handleWeaponSelected(pNewWeapon, prevSelectedWeapon);
-        updtPreferedWeapon();
+    }
+}
+
+/**
+ * Selects the given weapon if it is in the inventory.
+ * \param weapon The weapon to select
+ * \return void
+ *
+ */
+void WeaponHolder::selectWeapon(const WeaponInstance &weaponToSelect) {
+    for (uint8 i = 0; i < numWeapons(); ++i) {
+        if (weaponToSelect.id() == weapons_[i]->id()) {
+            selectWeapon(i);
+            return;
+        }
     }
 }
 
@@ -141,48 +154,26 @@ WeaponInstance * WeaponHolder::deselectWeapon() {
         wi = weapons_[selected_weapon_];
         selected_weapon_ = kNoWeaponSelected;
         handleWeaponDeselected(wi);
-        updtPreferedWeapon();
     }
 
     return wi;
 }
 
 /*!
- * Updates the prefered weapon criteria based on current selection.
- */
-void WeaponHolder::updtPreferedWeapon() {
-    if (selected_weapon_ != kNoWeaponSelected) {
-        WeaponInstance *wi = weapons_[selected_weapon_];
-        prefered_weapon_.desc = WeaponSelectCriteria::kCritPointer;
-        prefered_weapon_.criteria.wi = wi;
-    } else {
-        prefered_weapon_.desc = WeaponSelectCriteria::kCritDamageNonStrict;
-        prefered_weapon_.criteria.dmg_type = MapObject::dmg_Physical;
-    }
-}
-
-/*!
  * Selects a weapon based on given criteria.
- * \param pw_to_use The criteria.
+ * \param criteria The criteria.
  * \return True if selection has changed
  */
-bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
+bool WeaponHolder::selectRequiredWeapon(const WeaponSelectCriteria &criteria) {
     WeaponInstance *wi = selectedWeapon();
     // pair <rank, indx>
     std::vector < std::pair<int, int> > found_weapons;
     uint8 sz = weapons_.size();
 
-    if (!pw_to_use) {
-        pw_to_use = &prefered_weapon_;
-    } else if (prefered_weapon_.desc != WeaponHolder::WeaponSelectCriteria::kCritDamageNonStrict) {
-        // overriding selection to respect users choice
-        pw_to_use = &prefered_weapon_;
-    }
-
     bool found = false;
-    switch (pw_to_use->desc) {
+    switch (criteria.desc) {
         case WeaponSelectCriteria::kCritPointer:
-            if (pw_to_use->criteria.wi == wi) {
+            if (criteria.criteria.wi == wi) {
                 found = true;
             } else {
                 for (uint8 i = 0; i < sz; ++i) {
@@ -197,7 +188,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
         case WeaponSelectCriteria::kCritWeaponType:
             for (uint8 i = 0; i < sz; ++i) {
                 WeaponInstance *pWI = weapons_[i];
-                if (pWI->isInstanceOf(pw_to_use->criteria.wpn_type)) {
+                if (pWI->isInstanceOf(criteria.criteria.wpn_type)) {
                     if (pWI->usesAmmo()) {
                         if (pWI->ammoRemaining()) {
                             found = true;
@@ -216,7 +207,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
             for (uint8 i = 0; i < sz; ++i) {
                 WeaponInstance *pWI = weapons_[i];
                 if (pWI->canShoot()
-                    && pWI->doesDmgStrict(pw_to_use->criteria.dmg_type))
+                    && pWI->doesDmgStrict(criteria.criteria.dmg_type))
                 {
                     if (pWI->usesAmmo()) {
                         if (pWI->ammoRemaining()) {
@@ -235,7 +226,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
             for (uint8 i = 0; i < sz; ++i) {
                 WeaponInstance *pWI = weapons_[i];
                 if (pWI->canShoot()
-                    && pWI->doesDmgNonStrict(pw_to_use->criteria.dmg_type))
+                    && pWI->doesDmgNonStrict(criteria.criteria.dmg_type))
                 {
                     if (pWI->usesAmmo()) {
                         if (pWI->ammoRemaining()) {
@@ -250,7 +241,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
             }
             break;
         case WeaponSelectCriteria::kCritPlayerSelection:
-            if (pw_to_use->criteria.wi->canShoot()) {
+            if (criteria.criteria.wi->canShoot()) {
                 // If the selected weapon was a shooting one
                 // select a shooting weapon for the agent, choosing
                 // first a weapon of same type then any shooting weapon
@@ -259,7 +250,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
                         WeaponInstance *pWI = weapons_[i];
                         if (pWI->canShoot() && pWI->ammoRemaining() > 0)
                         {
-                            if (*pWI == *(pw_to_use->criteria.wi)) {
+                            if (*pWI == *(criteria.criteria.wi)) {
                                 found_weapons.clear();
                                 found_weapons.push_back(std::make_pair(pWI->rank(), i));
                                 break;
@@ -269,15 +260,6 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
                                 found_weapons.push_back(std::make_pair(pWI->rank(), i));
                             }
                         }
-                    }
-                }
-            } else if (pw_to_use->criteria.wi->isInstanceOf(Weapon::MediKit) &&
-                pw_to_use->apply_to_all) {
-                for (uint8 i = 0; i < sz; ++i) {
-                    WeaponInstance *pWI = weapons_[i];
-                    if (pWI->isInstanceOf(Weapon::MediKit) && pWI->ammoRemaining() > 0) {
-                        found_weapons.push_back(std::make_pair(pWI->rank(), i));
-                        break;
                     }
                 }
             }
@@ -297,7 +279,7 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
     if (!found_weapons.empty()) {
         int best_rank = -1;
         int indx = found_weapons[0].second;
-        if (pw_to_use->use_ranks) {
+        if (criteria.use_ranks) {
             sz = found_weapons.size();
             for (uint8 i = 0; i < sz; ++i) {
                 if (best_rank < found_weapons[i].first) {
@@ -312,56 +294,34 @@ bool WeaponHolder::selectRequiredWeapon(WeaponSelectCriteria *pw_to_use) {
     return found;
 }
 
-void WeaponHolder::selectNextWeapon() {
-    int nextWeapon = -1;
-    WeaponInstance *cur_sel_weapon = weapon(selected_weapon_);
-
-    if (cur_sel_weapon) {
-        // first, search a weapon of same type with the highest ammo
-        // don't bother looking for a weapon of same type if current weapon
-        // is not shooting weapon (for example a Medikit)
-        if (cur_sel_weapon->canShoot()) {
-            for (int i = 0; i < numWeapons(); ++i) {
-                WeaponInstance * wi = weapons_[i];
-                if (i != selected_weapon_ && wi->ammoRemaining()
-                        && wi->hasSameTypeAs(*cur_sel_weapon))
-                {
-                    if (nextWeapon == -1)
-                        nextWeapon = i;
-                    else {
-                        if (wi->ammoRemaining()
-                            < weapon(nextWeapon)->ammoRemaining())
-                        {
-                            nextWeapon = i;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Next, search a weapon who can shoot with highest ammo
-        if (nextWeapon == -1) {
-            for (int i = 0; i < numWeapons(); ++i) {
-                WeaponInstance * wi = weapons_[i];
-                if (i != selected_weapon_ && wi->canShoot() && wi->ammoRemaining())
-                {
-                    if (nextWeapon == -1)
-                        nextWeapon = i;
-                    else {
-                        if (wi->ammoRemaining()
-                            < weapon(nextWeapon)->ammoRemaining())
-                        {
-                            nextWeapon = i;
-                        }
-                    }
-                }
-            }
-        }
+/*!
+ * Select a weapon for the ped if he has no weapon out.
+ */
+void WeaponHolder::selectShootingWeaponWithAmmo() {
+    if (selected_weapon_ == kNoWeaponSelected) {
+        // Select a loaded weapon for ped
+        WeaponSelectCriteria crit;
+        crit.desc = WeaponSelectCriteria::kCritLoadedShoot;
+        crit.use_ranks = true;
+        selectRequiredWeapon(crit);
     }
+}
 
-    if (nextWeapon == -1) {
-        selectRequiredWeapon();
-    } else {
-        selectWeapon(nextWeapon);
+void WeaponHolder::selectShootingWeaponWithSameTypeFirst(WeaponInstance *pLeaderWeapon) {
+    WeaponSelectCriteria criteria;
+    criteria.desc = WeaponSelectCriteria::kCritPlayerSelection;
+    criteria.criteria.wi = pLeaderWeapon;
+    selectRequiredWeapon(criteria);
+}
+
+void WeaponHolder::selectMedikitOrShield(Weapon::WeaponType weaponType) {
+    if (weaponType == Weapon::MediKit || weaponType == Weapon::EnergyShield) {
+        for (uint8 i = 0; i < numWeapons(); ++i) {
+            WeaponInstance *pWI = weapons_[i];
+            if (pWI->isInstanceOf(weaponType) && pWI->ammoRemaining() > 0) {
+                selectWeapon(i);
+                break;
+            }
+        }
     }
 }
