@@ -934,11 +934,6 @@ void PedInstance::handleWeaponDeselected(WeaponInstance * wi) {
  * \param previousWeapon The previous selected weapon (can be null if no weapon was selected)
  */
 void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * previousWeapon) {
-    if (wi->doesPhysicalDmg())
-        desc_state_ |= pd_smArmed;
-    else
-        desc_state_ &= pd_smAll ^ pd_smArmed;
-
     switch(wi->getClass()->getType()) {
     case Weapon::EnergyShield:
         addActionUseEnergyShield(wi);
@@ -978,6 +973,9 @@ void PedInstance::handleWeaponSelected(WeaponInstance * wi, WeaponInstance * pre
  * \return the instance of dropped weapon
  */
 WeaponInstance * PedInstance::dropWeapon(uint8 index) {
+    if (selected_weapon_ == index) {
+        stopUsingWeapon();
+    }
     WeaponInstance *pWeapon = removeWeaponAtIndex(index);
 
     if(pWeapon) {

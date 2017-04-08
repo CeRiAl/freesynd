@@ -734,6 +734,9 @@ void FireWeaponAction::doStart(Mission *pMission, PedInstance *pPed) {
     } else if (pPed->type() == PedInstance::kPedTypePolice && pTarget_->selectedWeapon() == NULL) {
         // Police man don't shoot on peds that don't have gun out
         setFailed();
+    } else if (pTarget_->isEnergyShieldActivated()) {
+        // Don't shoot if target has an energy shield
+        setFailed();
     } else {
         WorldPoint targetLocW(pTarget_->position());
 

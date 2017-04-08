@@ -245,20 +245,18 @@ bool WeaponHolder::selectRequiredWeapon(const WeaponSelectCriteria &criteria) {
                 // If the selected weapon was a shooting one
                 // select a shooting weapon for the agent, choosing
                 // first a weapon of same type then any shooting weapon
-                if (selected_weapon_ == kNoWeaponSelected) {
-                    for (uint8 i = 0; i < sz; ++i) {
-                        WeaponInstance *pWI = weapons_[i];
-                        if (pWI->canShoot() && pWI->ammoRemaining() > 0)
-                        {
-                            if (*pWI == *(criteria.criteria.wi)) {
-                                found_weapons.clear();
-                                found_weapons.push_back(std::make_pair(pWI->rank(), i));
-                                break;
-                            } else {
-                                // We found a loaded weapon of different type
-                                // save it for after
-                                found_weapons.push_back(std::make_pair(pWI->rank(), i));
-                            }
+                for (uint8 i = 0; i < sz; ++i) {
+                    WeaponInstance *pWI = weapons_[i];
+                    if (pWI->canShoot() && pWI->ammoRemaining() > 0)
+                    {
+                        if (pWI->hasSameTypeAs(*(criteria.criteria.wi))) {
+                            found_weapons.clear();
+                            found_weapons.push_back(std::make_pair(pWI->rank(), i));
+                            break;
+                        } else {
+                            // We found a loaded weapon of different type
+                            // save it for after
+                            found_weapons.push_back(std::make_pair(pWI->rank(), i));
                         }
                     }
                 }

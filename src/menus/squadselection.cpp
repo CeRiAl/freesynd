@@ -193,10 +193,11 @@ void SquadSelection::selectWeaponFromLeader(int weapon_idx, bool applySelectionT
     for (SquadSelection::Iterator it = begin(); it != end(); ++it)
     {
         PedInstance *ped = *it;
+        ped->stopUsingWeapon();
         if (pLeader == ped) {
             // Forces selection of the weapon for the leader
             pLeader->selectWeapon(weapon_idx);
-        } else if (pLeaderWeapon->getClass()->canShoot()) {
+        } else if (pLeaderWeapon->canShoot()) {
             ped->selectShootingWeaponWithSameTypeFirst(pLeaderWeapon);
         } else if (applySelectionToAll) {
             ped->selectMedikitOrShield(pLeaderWeapon->getClass()->getType());

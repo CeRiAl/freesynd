@@ -336,11 +336,6 @@ public:
 
     void reload() { ammo_remaining_ = pWeaponClass_->ammo(); }
 
-    bool operator==(WeaponInstance wi) {
-        // TODO : check if this method is necessary
-        return hasSameTypeAs(wi);
-    }
-
     //! Plays the weapon's sound.
     void playSound();
 

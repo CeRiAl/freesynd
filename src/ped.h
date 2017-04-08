@@ -180,24 +180,6 @@ public:
         kPedTypeCriminal = 0x10
     } ;
 
-    enum pedDescStateMasks {
-        pd_smUndefined = 0x0,
-        pd_smControlled = 0x0001,
-        pd_smArmed = 0x0002,
-        // no active action should be done, ex. persuaded ped will shoot target
-        // of persuader only if persuader shoots at it
-        pd_smSupporter = 0x0004,
-        pd_smEnemyInSight = 0x0008,
-        //! Energy shield protects the ped
-        pd_smShieldProtected = 0x0010,
-        // all non-player controllled peds should have this set
-        pd_smAutoAction = 0x0020,
-        /*! When a mission's objective is to kill a ped and this ped has
-        escaped, this value is used to indicate he's escaped.*/
-        pd_smEscaped = 0x0080,
-        pd_smAll = 0xFFFF
-    };
-
     PedInstance(Ped *ped, uint16 id, int m, bool isOur);
     ~PedInstance();
 
@@ -679,6 +661,17 @@ private:
     inline int getClosestDirs(int dir, int& closest, int& closer);
 
 protected:
+    enum pedDescStateMasks {
+        pd_smUndefined = 0x0,
+        //! Set when a ped has been persuaded
+        pd_smControlled = 0x0001,
+        //! Energy shield protects the ped
+        pd_smShieldProtected = 0x0010,
+        /*! When a mission's objective is to kill a ped and this ped has
+        escaped, this value is used to indicate he's escaped.*/
+        pd_smEscaped = 0x0080,
+        pd_smAll = 0xFFFF
+    };
 
     Ped *ped_;
     //! Type of Ped

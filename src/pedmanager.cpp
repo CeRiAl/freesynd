@@ -250,7 +250,6 @@ void PedManager::initOurAgent(Agent *pAgent, unsigned int obj_group_id, PedInsta
     pPed->setObjGroupDef(PedInstance::og_dmAgent);
     pPed->addEnemyGroupDef(2);
     pPed->addEnemyGroupDef(3);
-    pPed->setHostileDesc(PedInstance::pd_smArmed);
     pPed->setSightRange(7 * 256);
     pPed->setBaseSpeed(256);
     pPed->setTimeBeforeCheck(400);
@@ -315,7 +314,6 @@ void PedManager::initPolice(PedInstance *pPed) {
     LOG(Log::k_FLG_GAME, "PedManager","initPolice", ("Create police with id %d", pPed->id()))
 
     pPed->setObjGroupID(4);
-    pPed->setHostileDesc(PedInstance::pd_smArmed);
     pPed->setBaseSpeed(160);
     pPed->setTimeBeforeCheck(400);
     pPed->setBaseModAcc(0.4);
@@ -334,7 +332,6 @@ void PedManager::initCivilian(PedInstance *pPed) {
 
     pPed->setObjGroupID(5);
     pPed->addEnemyGroupDef(6);
-    pPed->setHostileDesc(PedInstance::pd_smArmed);
     pPed->setBaseSpeed(128);
     pPed->setTimeBeforeCheck(600);
     pPed->setBaseModAcc(0.2);
