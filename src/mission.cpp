@@ -443,7 +443,7 @@ bool Mission::setSurfaces() {
     mdpoints_cp_ = (floodPointDesc *)malloc(mmax_m_all * sizeof(floodPointDesc));
     if(mtsurfaces_ == NULL || mdpoints_ == NULL || mdpoints_cp_ == NULL) {
         clrSurfaces();
-        printf("ERROR: memory allocation failed in Mission::setSurfaces");
+        FSERR(Log::k_FLG_GAME, "Mission", "setSurfaces", ("Memory allocation error\n"));
         return false;
     }
     mmax_m_xy = mmax_x_ * mmax_y_;
@@ -453,7 +453,7 @@ bool Mission::setSurfaces() {
         for (int iy = 0; iy < mmax_y_; ++iy) {
             for (int iz = 0; iz < mmax_z_; ++iz) {
                 mtsurfaces_[ix + iy * mmax_x_ + iz * mmax_m_xy].twd =
-                    g_App.walkdata_p_[p_map_->tileAt(ix, iy, iz)];
+                    p_map_->getTileAt(ix, iy, iz)->getWalkData();
             }
         }
     }

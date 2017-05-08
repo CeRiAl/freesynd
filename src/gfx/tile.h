@@ -55,10 +55,10 @@ public:
      */
     enum EType {
         kNone = 0x00,       // non-surface/non-walkable(if above surface is walkable)
-        kSlopeSN = 0x01,
-        kSlopeNS = 0x02,
-        kSlopeEW = 0x03,
-        kSlopeWE = 0x04,
+        kSlopeSN = 0x01,    // stairs that climbs along the Y axis from left to right
+        kSlopeNS = 0x02,    // stairs that climbs along the Y axis from right to left
+        kSlopeEW = 0x03,    // stairs that climbs along the X axis from left to right
+        kSlopeWE = 0x04,    // stairs that climbs along the X axis from right to left
         kGround = 0x05,
         kRoadSideEW = 0x06,
         kRoadSideWE = 0x07,
@@ -77,7 +77,7 @@ public:
     Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set);
     ~Tile();
 
-    //! Returns the tile id 
+    //! Returns the tile id
     uint8 id() { return i_id_; }
     //! Returns the tile type
     EType type() { return e_type_; }
@@ -90,6 +90,8 @@ public:
     bool isStairs() {
         return e_type_ > kNone && e_type_ < kGround;
     }
+
+    uint8 getWalkData();
 
     //! Draws the tile to the given surface
     bool drawTo(uint8 *screen, int swidth, int sheight, int x, int y);

@@ -39,7 +39,7 @@ Tile::Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set)
     not_alpha_ = not_alpha;
 }
 
-Tile::~Tile() 
+Tile::~Tile()
 {
     delete[] a_pixels_;
 }
@@ -80,4 +80,24 @@ bool Tile::drawTo(uint8 * screen, int swidth, int sheight, int x, int y)
 bool Tile::drawToScreen(int x, int y)
 {
     return drawTo((uint8*) g_Screen.pixels(), g_Screen.gameScreenWidth(), g_Screen.gameScreenHeight(), x, y);
+}
+
+uint8 Tile::getWalkData() {
+    // little patch to enable full surface description
+    // and eliminate unnecessary data
+    // 0x10 - non-surface/non-walkable, always above train stop
+    // 0x11, 0x12 - train entering surface
+    switch (i_id_) {
+    case 0x80 :
+        return 0x11;
+    case 0x81 :
+        return 0x12;
+    case 0x8F :
+        return 0x00;
+    case 0x93 :
+        return 0x00;
+    default:
+        // else return the type of the tile
+        return e_type_;
+    }
 }

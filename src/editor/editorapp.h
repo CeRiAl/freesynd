@@ -54,9 +54,6 @@ class EditorApp : public Singleton < EditorApp > {
     //! Initialize application
     bool initialize(const std::string& iniPath);
 
-    // patched version
-    uint8 walkdata_p_[256];
-
     GameSpriteManager &gameSprites() {
         return game_sprites_;
     }
@@ -112,9 +109,6 @@ private:
 
     //! Tests Syndicate original data for existence and correctness
     bool testOriginalData();
-
-    //! Loads walk data
-    bool loadWalkData();
 
     //! Sets the intro flag to false in the config file
     void updateIntroFlag();

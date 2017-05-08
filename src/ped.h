@@ -659,6 +659,7 @@ protected:
 
 private:
     inline int getClosestDirs(int dir, int& closest, int& closer);
+    void buildDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, int x, int y, int z, int ox, int oy);
 
 protected:
     enum pedDescStateMasks {

@@ -28,6 +28,7 @@
 #include "mission.h"
 #include "ped.h"
 #include "pathsurfaces.h"
+#include "gfx/tile.h"
 
 #if 0
 #include "SDL.h"
@@ -60,7 +61,7 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
     m->get_map()->adjXYZ(x, y, z);
     dest_path_.clear();
 
-    if (map_ == -1 || health_ <= 0)
+    if (health_ <= 0)
         return false;
 
     floodPointDesc *targetd = &(m->mdpoints_[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
@@ -90,7 +91,7 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
 #endif
 
     //return;
-    if(targetd->t == m_fdNonWalkable || map_ == -1 || health_ <= 0) {
+    if(targetd->t == m_fdNonWalkable) {
         printf("==== unwalk target: x %i; y %i; z %i, ox %i, oy %i\n",
             x, y, z, ox, oy);
         printf("setDestinationP, Movement to nonwalkable postion\n");
@@ -1755,26 +1756,54 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
     // TODO: smoother path
     // stairs to surface, surface to stairs correction
     if (!cdestpath.empty()) {
-        TilePoint prvpn = TilePoint(pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy);
-        for (std::vector <TilePoint>::iterator it = cdestpath.begin();
+        buildDestinationPath(m, cdestpath, x, y, z, ox, oy);
+    }
+
+    if (dest_path_.empty()) {
+        // destination was not set -> stop ped
+        speed_ = 0;
+        return false;
+    } else {
+        return true;
+    }
+#ifdef EXECUTION_SPEED_TIME
+    printf("smoothing time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
+#endif
+
+#if 0
+    for (std::list <TilePoint>::iterator it = dest_path_.begin();
+        it != dest_path_.end(); ++it) {
+        printf("x %i, y %i, z %i\n", it->tileX(),it->tileY(),it->tileZ());
+    }
+#endif
+#ifdef EXECUTION_SPEED_TIME
+    dest_path_.clear();
+    printf("+++++++++++++++++++++++++++");
+    printf("end time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
+#endif
+}
+
+void PedInstance::buildDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, int x, int y, int z, int ox, int oy) {
+    TilePoint prvpn = TilePoint(pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy);
+    for (std::vector <TilePoint>::iterator it = cdestpath.begin();
             it != cdestpath.end(); ++it) {
-            std::vector <TilePoint>::iterator fit = it + 1;
-            bool modified = false;
-            unsigned char twd = m->mtsurfaces_[prvpn.tx
-                + prvpn.ty * m->mmax_x_
-                + prvpn.tz * m->mmax_m_xy].twd;
-            unsigned char twdn = m->mtsurfaces_[it->tx
-                + it->ty * m->mmax_x_
-                + it->tz * m->mmax_m_xy].twd;
-            char xf = prvpn.tx - it->tx;
-            char yf = prvpn.ty - it->ty;
-            char zf = prvpn.tz - it->tz;
+        std::vector <TilePoint>::iterator fit = it + 1;
+        bool modified = false;
+        unsigned char twd = m->mtsurfaces_[prvpn.tx
+            + prvpn.ty * m->mmax_x_
+            + prvpn.tz * m->mmax_m_xy].twd;
+        unsigned char twdn = m->mtsurfaces_[it->tx
+            + it->ty * m->mmax_x_
+            + it->tz * m->mmax_m_xy].twd;
+        char xf = prvpn.tx - it->tx;
+        char yf = prvpn.ty - it->ty;
+        char zf = prvpn.tz - it->tz;
             if (twd > 0x0 && twd < 0x05) {
                 if (twdn > 0x0 && twdn < 0x05) {
                     dest_path_.push_back(*it);
                 } else {
                     switch (twd) {
-                        case 0x01:
+                        case Tile::kSlopeSN:
                             if (zf == -1) {
                                 if (xf == 0) {
                                     dest_path_.push_back(*it);
@@ -2264,30 +2293,6 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 }
             }
         }
-    }
-
-    if (dest_path_.empty()) {
-        // destination was not set -> stop ped
-        speed_ = 0;
-        return false;
-    } else {
-        return true;
-    }
-#ifdef EXECUTION_SPEED_TIME
-    printf("smoothing time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
-#endif
-
-#if 0
-    for (std::list <TilePoint>::iterator it = dest_path_.begin();
-        it != dest_path_.end(); ++it) {
-        printf("x %i, y %i, z %i\n", it->tileX(),it->tileY(),it->tileZ());
-    }
-#endif
-#ifdef EXECUTION_SPEED_TIME
-    dest_path_.clear();
-    printf("+++++++++++++++++++++++++++");
-    printf("end time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
-#endif
 }
 
 bool PedInstance::doMove(int elapsed, Mission *pMission)

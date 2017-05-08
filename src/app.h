@@ -64,9 +64,6 @@ class App : public Singleton < App > {
     //! Initialize application
     bool initialize(const std::string& iniPath);
 
-    // patched version
-    uint8 walkdata_p_[256];
-
     void setCheatCode(const char *name);
 
     GameSpriteManager &gameSprites() {
@@ -129,9 +126,6 @@ private:
 
     //! Tests Syndicate original data for existence and correctness
     bool testOriginalData();
-
-    //! Loads walk data
-    bool loadWalkData();
 
     //! Sets the intro flag to false in the config file
     void updateIntroFlag();
