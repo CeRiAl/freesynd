@@ -162,6 +162,33 @@ namespace fs_cmn {
     static const uint8 kColorBlue = 15;
     /*! Color constant : Dark Green */
     static const uint8 kColorDarkGreen = 16;
+
+    /*!
+     * Turn bits given by mask on in the given bitfield.
+     * \param bitfield the bitfield to update
+     * \param mask The bitmask to apply
+     */
+    inline void setBitsWithMask(uint32 *bitfield, const uint32 mask) {
+        *bitfield |= mask;
+    }
+
+    /*!
+     * Return true is bits identified by mask are set in the bitfield
+     * \param bitfield the bitfield to query
+     * \param mask The bitmask to apply
+     */
+    inline bool isBitsOnWithMask(const uint32 bitfield, const uint32 mask) {
+        return (bitfield & mask) != 0;
+    }
+
+    /*!
+     * Return true is bits identified by mask are set in the bitfield
+     * \param bitfield 8 bits bitfield to query
+     * \param mask 8 bits bitmask to apply
+     */
+    inline bool isBitsOnWithMask(const uint8 bitfield, const uint8 mask) {
+        return (bitfield & mask) != 0;
+    }
 };
 
 inline void boxify(int &left, int &width, int x1, int x2)
@@ -177,8 +204,5 @@ struct Point2D {
     int x;
     int y;
 };
-
-#define IS_FLAG_SET(field, flags) (field & flags) != 0
-#define SET_FLAG(field, flags) field |= flags
 
 #endif

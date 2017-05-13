@@ -31,7 +31,8 @@
         unsigned char twd;
     }surfaceDesc;
 
-    typedef struct {
+    class floodPointDesc {
+    public:
         // mapFloodDesc
         // 0 - not defined, 0b - base point, 1b - target point,
         // 2b - link (when base point reaches target point or vice versa),
@@ -45,12 +46,41 @@
         // 0x10 = (x, y - 1, z); 0x20 = (x - 1, y - 1, z);
         // 0x40 = (x - 1, y, z); 0x80 = (x - 1, y + 1, z)
         // can be combined 0x01 | 0x02; 0x01 | 0x10 | 0x40 etc.
-        unsigned char dirh;
-        unsigned char dirm;
-        unsigned char dirl;
+        uint8 dirh;
+        uint8 dirm;
+        uint8 dirl;
 
         unsigned short lvl;
-    }floodPointDesc;
+
+        bool isDirectionUpContains(uint8 bmDirection) {
+            return fs_cmn::isBitsOnWithMask(dirh, bmDirection);
+        }
+
+        bool isDirectionGroundContains(uint8 bmDirection) {
+            return fs_cmn::isBitsOnWithMask(dirm, bmDirection);
+        }
+
+        bool isDirectionDownContains(uint8 bmDirection) {
+            return fs_cmn::isBitsOnWithMask(dirl, bmDirection);
+        }
+
+        //! In path finding, identify the direction to North
+        static const uint8 kBMaskDirNorth;
+        //! In path finding, identify the direction to North-East
+        static const uint8 kBMaskDirNorthEast;
+        //! In path finding, identify the direction to East
+        static const uint8 kBMaskDirEast;
+        //! In path finding, identify the direction to South-East
+        static const uint8 kBMaskDirSouthEast;
+        //! In path finding, identify the direction to South
+        static const uint8 kBMaskDirSouth;
+        //! In path finding, identify the direction to South-West
+        static const uint8 kBMaskDirSouthWest;
+        //! In path finding, identify the direction to West
+        static const uint8 kBMaskDirWest;
+        //! In path finding, identify the direction to North-West
+        static const uint8 kBMaskDirNorthWest;
+    };
 
     typedef enum {
         m_fdNotDefined    = 0,

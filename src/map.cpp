@@ -33,13 +33,9 @@
 #include "gfx/tilemanager.h"
 #include "gfx/screen.h"
 
-#if 0
-#define EXECUTION_SPEED_TIME
-#endif
-
-Map::Map(TileManager * tileManager, uint16 i_id) : tile_manager_(tileManager)
+Map::Map(TileManager * tileManager, uint16 anId) : tile_manager_(tileManager)
 {
-    i_id_ = i_id;
+    id_ = anId;
     a_tiles_ = NULL;
 }
 
@@ -50,7 +46,7 @@ Map::~Map()
 
 bool Map::loadMap(uint8 * mapData)
 {
-    LOG(Log::k_FLG_GFX, "Map", "loadMap", ("Loading Map %d.", i_id_));
+    LOG(Log::k_FLG_GFX, "Map", "loadMap", ("Loading Map %d.", id_));
     max_x_ = READ_LE_UINT32(mapData + 0);
     max_y_ = READ_LE_UINT32(mapData + 4);
     max_z_ = READ_LE_UINT32(mapData + 8);
@@ -127,6 +123,24 @@ void Map::clip(Point2D *pPoint) {
         pPoint->y = 0;
     } else if (pPoint->y >= maxY()) {
         pPoint->y = maxY();
+    }
+}
+
+void Map::clip(TilePoint *pPoint) {
+    if (pPoint->tx < 0) {
+        pPoint->tx = 0;
+    } else if (pPoint->tx >= maxX()) {
+        pPoint->tx = maxX() - 1;
+    }
+
+    if (pPoint->ty < 0) {
+        pPoint->ty = 0;
+    } else if (pPoint->ty >= maxY()) {
+        pPoint->ty = maxY() - 1;
+    }
+
+    if (pPoint->tz < 0 || pPoint->tz >= maxZ()) {
+        pPoint->tz = 0;
     }
 }
 

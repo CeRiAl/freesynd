@@ -29,11 +29,21 @@
 #include "ped.h"
 #include "pathsurfaces.h"
 #include "gfx/tile.h"
+#include "utils/log.h"
 
 #if 0
 #include "SDL.h"
 #define EXECUTION_SPEED_TIME
 #endif
+
+const uint8 floodPointDesc::kBMaskDirNorth = 0x10;
+const uint8 floodPointDesc::kBMaskDirNorthEast = 0x08;
+const uint8 floodPointDesc::kBMaskDirEast = 0x04;
+const uint8 floodPointDesc::kBMaskDirSouth = 0x01;
+const uint8 floodPointDesc::kBMaskDirSouthEast = 0x02;
+const uint8 floodPointDesc::kBMaskDirSouthWest = 0x80;
+const uint8 floodPointDesc::kBMaskDirWest = 0x40;
+const uint8 floodPointDesc::kBMaskDirNorthWest = 0x20;
 
 /*!
  * Sets a destination point for the ped to reach at given speed.
@@ -42,15 +52,16 @@
  * \param newSpeed Speed of movement
  * \return true if destination has been set correctly.
  */
-//bool PedInstance::setDestination(Mission *m, const TilePoint &locT, int newSpeed) {
 bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destinationPt, int newSpeed) {
-    // if no speed was set, use ped's default speed
-    speed_ = newSpeed != -1 ? newSpeed : getDefaultSpeed();
-    int x = destinationPt.tx;
-    int y = destinationPt.ty;
-    int z = destinationPt.tz;
-    int ox = destinationPt.ox;
-    int oy = destinationPt.oy;
+
+    dest_path_.clear();
+
+    if (health_ <= 0) {
+        return false;
+    }
+
+    TilePoint clippedDestPt(destinationPt);
+    m->get_map()->clip(&clippedDestPt);
 
     // NOTE: this is a "flood" algorithm, it expands until it reaches other's
     // flood point, then it removes unrelated points
@@ -58,13 +69,9 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
     printf("---------------------------");
     printf("start time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
 #endif
-    m->get_map()->adjXYZ(x, y, z);
-    dest_path_.clear();
 
-    if (health_ <= 0)
-        return false;
 
-    floodPointDesc *targetd = &(m->mdpoints_[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
+    floodPointDesc *targetd = &(m->mdpoints_[clippedDestPt.tx + clippedDestPt.ty * m->mmax_x_ + clippedDestPt.tz * m->mmax_m_xy]);
 
     floodPointDesc *based = &(m->mdpoints_[pos_.tx
         + pos_.ty * m->mmax_x_ + pos_.tz * m->mmax_m_xy]);
@@ -90,23 +97,23 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
 #endif
 #endif
 
-    //return;
     if(targetd->t == m_fdNonWalkable) {
-        printf("==== unwalk target: x %i; y %i; z %i, ox %i, oy %i\n",
-            x, y, z, ox, oy);
-        printf("setDestinationP, Movement to nonwalkable postion\n");
+        std::string posAsStr;
+        clippedDestPt.toString(&posAsStr);
+        LOG(Log::k_FLG_GAME, "PedInstance", "initMovementToDestination", ("Ped %d : Movement to nonwalkable position %s", id_, posAsStr.c_str()));
         return false;
     }
 
     if(based->t == m_fdNonWalkable) {
-        printf("==== unwalk pos: x %i; y %i; z %i, ox %i, oy %i, oz %i\n",
-            pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy, pos_.oz);
-        printf("setDestinationP, Movement from nonwalkable postion\n");
+        std::string posAsStr;
+        position().toString(&posAsStr);
+        LOG(Log::k_FLG_GAME, "PedInstance", "initMovementToDestination", ("Ped %d : Movement from nonwalkable position %s", id_, posAsStr.c_str()));
         return false;
     }
 
-    if (pos_.tx == x && pos_.ty == y && pos_.tz == z) {
-        dest_path_.push_back(TilePoint(x, y, z, ox, oy));
+    if (sameTile(clippedDestPt)) {
+        // TODO : check if this case can be removed to follow the regular
+        // path finding even if costly
         return false;
     }
 #ifdef EXECUTION_SPEED_TIME
@@ -138,11 +145,11 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
     sadd.coords.z = pos_.tz;
     sadd.p = pfdp;
     bv.push_back(sadd);
-    pfdp = &(mdpmirror[x + y * m->mmax_x_ + z * m->mmax_m_xy]);
+    pfdp = &(mdpmirror[clippedDestPt.tx + clippedDestPt.ty * m->mmax_x_ + clippedDestPt.tz * m->mmax_m_xy]);
     pfdp->t |= (m_fdTargetPoint | m_fdConstant);
-    sadd.coords.x = x;
-    sadd.coords.y = y;
-    sadd.coords.z = z;
+    sadd.coords.x = clippedDestPt.tx;
+    sadd.coords.y = clippedDestPt.ty;
+    sadd.coords.z = clippedDestPt.tz;
     sadd.p = pfdp;
     tv.push_back(sadd);
     // for setting lvls data
@@ -1238,35 +1245,66 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
 #ifdef EXECUTION_SPEED_TIME
     printf("non-related removed time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
 #endif
-#if 0
-    bn.clear();
-    tn.clear();
-    bv.clear();
-    tv.clear();
-#endif
 
     // path is created here
-    WorldPoint ctile;
-    ctile.x = pos_.tx;
-    ctile.y = pos_.ty;
-    ctile.z = pos_.tz;
-    unsigned char ct = m_fdBasePoint;
-    bool tnr = true, np = true;
     std::vector<TilePoint> cdestpath;
     cdestpath.reserve(256);
+
+    createPath(m, mdpmirror, cdestpath);
+
+#ifdef EXECUTION_SPEED_TIME
+    printf("path creation time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
+#endif
+
+    // TODO: smoother path
+    // stairs to surface, surface to stairs correction
+    if (!cdestpath.empty()) {
+        buildFinalDestinationPath(m, cdestpath, clippedDestPt);
+    }
+
+    if (dest_path_.empty()) {
+        // destination was not set -> stop ped
+        speed_ = 0;
+        return false;
+    } else {
+        // if no speed was set, use ped's default speed
+        speed_ = newSpeed != -1 ? newSpeed : getDefaultSpeed();
+        return true;
+    }
+
+#if 0
+    for (std::list <TilePoint>::iterator it = dest_path_.begin();
+        it != dest_path_.end(); ++it) {
+        printf("x %i, y %i, z %i\n", it->tileX(),it->tileY(),it->tileZ());
+    }
+#endif
+#ifdef EXECUTION_SPEED_TIME
+    dest_path_.clear();
+    printf("+++++++++++++++++++++++++++");
+    printf("end time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
+#endif
+}
+
+void PedInstance::createPath(Mission *m, floodPointDesc *mdpmirror, std::vector<TilePoint> &pathToDestination) {
+    TilePoint currentTile(pos_.tx, pos_.ty, pos_.tz);
+    unsigned char ct = m_fdBasePoint;
+    bool tnr = true, np = true;
+    floodPointDesc *pfdp;
+    toSetDesc sadd;
+
     do {
         unsigned char nt = ct;
-        WorldPoint toadd;
         char dist = 5;
-        pfdp = &(mdpmirror[ctile.x + ctile.y * m->mmax_x_
-                    + ctile.z * m->mmax_m_xy]);
+        WorldPoint toadd;
+        pfdp = &(mdpmirror[currentTile.tx + currentTile.ty * m->mmax_x_
+                    + currentTile.tz * m->mmax_m_xy]);
         uint16 lvl_child = ct == m_fdBasePoint ? pfdp->lvl + 1
             : pfdp->lvl - 1;
         if (pfdp->dirh != 0) {
-            if ((pfdp->dirh & 0x01) == 0x01) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y + 1;
-                sadd.coords.z = ctile.z + 1;
+            if (pfdp->isDirectionUpContains(floodPointDesc::kBMaskDirSouth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty + 1;
+                sadd.coords.z = currentTile.tz + 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1287,10 +1325,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirh & 0x04) == 0x04) {
-                sadd.coords.x = ctile.x + 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z + 1;
+            if (pfdp->isDirectionUpContains(floodPointDesc::kBMaskDirEast)) {
+                sadd.coords.x = currentTile.tx + 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz + 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1311,10 +1349,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirh & 0x10) == 0x10) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y - 1;
-                sadd.coords.z = ctile.z + 1;
+            if (pfdp->isDirectionUpContains(floodPointDesc::kBMaskDirNorth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty - 1;
+                sadd.coords.z = currentTile.tz + 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1335,10 +1373,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirh & 0x40) == 0x40) {
-                sadd.coords.x = ctile.x - 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z + 1;
+            if (pfdp->isDirectionUpContains(floodPointDesc::kBMaskDirWest)) {
+                sadd.coords.x = currentTile.tx - 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz + 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1361,10 +1399,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
             }
         }
         if (pfdp->dirl != 0) {
-            if ((pfdp->dirl & 0x01) == 0x01) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y + 1;
-                sadd.coords.z = ctile.z - 1;
+            if (pfdp->isDirectionDownContains(floodPointDesc::kBMaskDirSouth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty + 1;
+                sadd.coords.z = currentTile.tz - 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1385,10 +1423,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirl & 0x04) == 0x04) {
-                sadd.coords.x = ctile.x + 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z - 1;
+            if (pfdp->isDirectionDownContains(floodPointDesc::kBMaskDirEast)) {
+                sadd.coords.x = currentTile.tx + 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz - 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1409,10 +1447,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirl & 0x10) == 0x10) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y - 1;
-                sadd.coords.z = ctile.z - 1;
+            if (pfdp->isDirectionDownContains(floodPointDesc::kBMaskDirNorth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty - 1;
+                sadd.coords.z = currentTile.tz - 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1433,10 +1471,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirl & 0x40) == 0x40) {
-                sadd.coords.x = ctile.x - 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z - 1;
+            if (pfdp->isDirectionDownContains(floodPointDesc::kBMaskDirWest)) {
+                sadd.coords.x = currentTile.tx - 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz - 1;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1459,10 +1497,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
             }
         }
         if (pfdp->dirm != 0) {
-            if ((pfdp->dirm & 0x01) == 0x01) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y + 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirSouth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty + 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1504,10 +1542,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x02) == 0x02) {
-                sadd.coords.x = ctile.x + 1;
-                sadd.coords.y = ctile.y + 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirSouthEast)) {
+                sadd.coords.x = currentTile.tx + 1;
+                sadd.coords.y = currentTile.ty + 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1528,10 +1566,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x04) == 0x04) {
-                sadd.coords.x = ctile.x + 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirEast)) {
+                sadd.coords.x = currentTile.tx + 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1573,10 +1611,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x08) == 0x08) {
-                sadd.coords.x = ctile.x + 1;
-                sadd.coords.y = ctile.y - 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirNorthEast)) {
+                sadd.coords.x = currentTile.tx + 1;
+                sadd.coords.y = currentTile.ty - 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1597,10 +1635,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x10) == 0x10) {
-                sadd.coords.x = ctile.x;
-                sadd.coords.y = ctile.y - 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirNorth)) {
+                sadd.coords.x = currentTile.tx;
+                sadd.coords.y = currentTile.ty - 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1642,10 +1680,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x20) == 0x20) {
-                sadd.coords.x = ctile.x - 1;
-                sadd.coords.y = ctile.y - 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirNorthWest)) {
+                sadd.coords.x = currentTile.tx - 1;
+                sadd.coords.y = currentTile.ty - 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1666,10 +1704,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x40) == 0x40) {
-                sadd.coords.x = ctile.x - 1;
-                sadd.coords.y = ctile.y;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirWest)) {
+                sadd.coords.x = currentTile.tx - 1;
+                sadd.coords.y = currentTile.ty;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1711,10 +1749,10 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
                 if ((sadd.p->t & m_fdConstant) != 0)
                     tnr = false;
             }
-            if ((pfdp->dirm & 0x80) == 0x80) {
-                sadd.coords.x = ctile.x - 1;
-                sadd.coords.y = ctile.y + 1;
-                sadd.coords.z = ctile.z;
+            if (pfdp->isDirectionGroundContains(floodPointDesc::kBMaskDirSouthWest)) {
+                sadd.coords.x = currentTile.tx - 1;
+                sadd.coords.y = currentTile.ty + 1;
+                sadd.coords.z = currentTile.tz;
                 sadd.p = &(mdpmirror[sadd.coords.x
                     + sadd.coords.y * m->mmax_x_
                     + sadd.coords.z * m->mmax_m_xy]);
@@ -1740,50 +1778,17 @@ bool PedInstance::initMovementToDestination(Mission *m, const TilePoint &destina
             np = false;
             ct = nt;
         }
-        cdestpath.push_back(TilePoint(toadd.x, toadd.y, toadd.z));
+        pathToDestination.push_back(TilePoint(toadd.x, toadd.y, toadd.z));
         // this assert might save from memory fill up,
-        assert(ctile.x != toadd.x || ctile.y != toadd.y || ctile.z != toadd.z);
-        //if(toadd.x == 49 && toadd.y == 86 && toadd.z == 1)
-            //toadd.x = 49;
-        //if(ctile.x == toadd.x && ctile.y == toadd.y && ctile.z == toadd.z)
-            //ctile = toadd;
-        ctile = toadd;
+        assert(currentTile.tx != toadd.x || currentTile.ty != toadd.y || currentTile.tz != toadd.z);
+
+        currentTile.tx = toadd.x;
+        currentTile.ty = toadd.y;
+        currentTile.tz = toadd.z;
     } while (tnr);
-#ifdef EXECUTION_SPEED_TIME
-    printf("path creation time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
-#endif
-
-    // TODO: smoother path
-    // stairs to surface, surface to stairs correction
-    if (!cdestpath.empty()) {
-        buildDestinationPath(m, cdestpath, x, y, z, ox, oy);
-    }
-
-    if (dest_path_.empty()) {
-        // destination was not set -> stop ped
-        speed_ = 0;
-        return false;
-    } else {
-        return true;
-    }
-#ifdef EXECUTION_SPEED_TIME
-    printf("smoothing time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
-#endif
-
-#if 0
-    for (std::list <TilePoint>::iterator it = dest_path_.begin();
-        it != dest_path_.end(); ++it) {
-        printf("x %i, y %i, z %i\n", it->tileX(),it->tileY(),it->tileZ());
-    }
-#endif
-#ifdef EXECUTION_SPEED_TIME
-    dest_path_.clear();
-    printf("+++++++++++++++++++++++++++");
-    printf("end time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
-#endif
 }
 
-void PedInstance::buildDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, int x, int y, int z, int ox, int oy) {
+void PedInstance::buildFinalDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, const TilePoint &destinationPt) {
     TilePoint prvpn = TilePoint(pos_.tx, pos_.ty, pos_.tz, pos_.ox, pos_.oy);
     for (std::vector <TilePoint>::iterator it = cdestpath.begin();
             it != cdestpath.end(); ++it) {
@@ -2261,38 +2266,42 @@ void PedInstance::buildDestinationPath(Mission *m, std::vector<TilePoint> &cdest
                     dest_path_.push_back(*it);
                 }
             }
-            prvpn = *it;
-            if (fit == cdestpath.end()) {
-                if (modified) {
-                    dest_path_.push_back(TilePoint(x,y,z,ox,oy));
-                } else {
-                    // untill correct smoothing implemented this
-                    // will prevent walking on non-walkable tile
-                    if (xf == -1 && yf == -1) {
-                        dest_path_.back().ox = 0;
-                        dest_path_.back().oy = 0;
-                        dest_path_.push_back(prvpn);
-                    }
-                    if (xf == 1 && yf == -1) {
-                        dest_path_.back().ox = 255;
-                        dest_path_.back().oy = 0;
-                        dest_path_.push_back(prvpn);
-                    }
-                    if (xf == 1 && yf == 1) {
-                        dest_path_.back().ox = 255;
-                        dest_path_.back().oy = 255;
-                        dest_path_.push_back(prvpn);
-                    }
-                    if (xf == -1 && yf == 1) {
-                        dest_path_.back().ox = 0;
-                        dest_path_.back().oy = 255;
-                        dest_path_.push_back(prvpn);
-                    }
-                    dest_path_.back().ox = ox;
-                    dest_path_.back().oy = oy;
+        prvpn = *it;
+        if (fit == cdestpath.end()) {
+            if (modified) {
+                dest_path_.push_back(TilePoint(destinationPt));
+            } else {
+                // untill correct smoothing implemented this
+                // will prevent walking on non-walkable tile
+                if (xf == -1 && yf == -1) {
+                    dest_path_.back().ox = 0;
+                    dest_path_.back().oy = 0;
+                    dest_path_.push_back(prvpn);
                 }
+                if (xf == 1 && yf == -1) {
+                    dest_path_.back().ox = 255;
+                    dest_path_.back().oy = 0;
+                    dest_path_.push_back(prvpn);
+                }
+                if (xf == 1 && yf == 1) {
+                    dest_path_.back().ox = 255;
+                    dest_path_.back().oy = 255;
+                    dest_path_.push_back(prvpn);
+                }
+                if (xf == -1 && yf == 1) {
+                    dest_path_.back().ox = 0;
+                    dest_path_.back().oy = 255;
+                    dest_path_.push_back(prvpn);
+                }
+                dest_path_.back().ox = destinationPt.ox;
+                dest_path_.back().oy = destinationPt.oy;
             }
         }
+    }
+
+#ifdef EXECUTION_SPEED_TIME
+    printf("smoothing time %i.%i\n", SDL_GetTicks()/1000, SDL_GetTicks()%1000);
+#endif
 }
 
 bool PedInstance::doMove(int elapsed, Mission *pMission)

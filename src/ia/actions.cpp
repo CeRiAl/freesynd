@@ -430,7 +430,6 @@ bool FollowAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed) 
         setFailed();
     } else {
         if (pPed->speed() != 0) {
-            //IS_FLAG_SET(pPed->stateMasks(), PedInstance::pa_smWalking)
             if (pPed->isCloseTo(pTarget_, kFollowDistance)) {
                 // We reached the target so stop moving temporarily
                 pPed->clearDestination();

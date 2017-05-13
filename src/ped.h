@@ -194,9 +194,9 @@ public:
     //! Returns the ped's behaviour
     Behaviour & behaviour() { return behaviour_; }
     //! Return true if ped has escaped the map
-    bool hasEscaped() { return IS_FLAG_SET(desc_state_, pd_smEscaped); }
+    bool hasEscaped() { return fs_cmn::isBitsOnWithMask(desc_state_, pd_smEscaped); }
     //! Indicate that the ped has escaped
-    void escape() { SET_FLAG(desc_state_, pd_smEscaped); }
+    void escape() { fs_cmn::setBitsWithMask(&desc_state_, pd_smEscaped); }
     //! Return true if ped don't panic
     bool isPanicImmuned() { return panicImmuned_; }
     //! Tells the ped not to panic
@@ -364,7 +364,7 @@ public:
     void commitSuicide();
 
     //! Return true if ped has activated his energy shield
-    bool isEnergyShieldActivated() { return IS_FLAG_SET(desc_state_, pd_smShieldProtected); }
+    bool isEnergyShieldActivated() { return fs_cmn::isBitsOnWithMask(desc_state_, pd_smShieldProtected); }
     void setEnergyActivated(bool status);
 
     //! Return the damage after applying protection of Mod
@@ -378,7 +378,7 @@ public:
     // Persuasion
     //*************************************
     //! Return true if ped is persuaded
-    bool isPersuaded() { return IS_FLAG_SET(desc_state_, pd_smControlled); }
+    bool isPersuaded() { return fs_cmn::isBitsOnWithMask(desc_state_, pd_smControlled); }
     //! Returns true if this ped can persuade that ped
     bool canPersuade(PedInstance *pOtherPed, const int persuadotronRange);
     //! Return owner of persuaded
@@ -659,7 +659,8 @@ protected:
 
 private:
     inline int getClosestDirs(int dir, int& closest, int& closer);
-    void buildDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, int x, int y, int z, int ox, int oy);
+    void createPath(Mission *m, floodPointDesc *mdpmirror, std::vector<TilePoint> &cdestpath);
+    void buildFinalDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, const TilePoint &destinationPt);
 
 protected:
     enum pedDescStateMasks {

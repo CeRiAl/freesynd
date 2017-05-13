@@ -28,8 +28,6 @@
 #include "common.h"
 #include "model/position.h"
 
-#define NUM_MAPS               59
-
 class Tile;
 class TileManager;
 class MapObject;
@@ -40,12 +38,12 @@ class MapObject;
  */
 class Map {
 public:
-    Map(TileManager *tileManager, uint16 i_id);
+    Map(TileManager *tileManager, uint16 anId);
     ~Map();
 
     bool loadMap(uint8 *mapData);
 
-    uint16 id() { return i_id_; }
+    uint16 id() { return id_; }
     int width() { return map_width_; }
     int height() { return map_height_; }
     void mapDimensions(int *x, int *y, int *z);
@@ -53,6 +51,8 @@ public:
     void adjXYZ(int &x, int &y, int &z);
     //! Clip x and y to map dimensions.
     void clip(Point2D *point);
+    //! Clip x, y and z to map dimensions.
+    void clip(TilePoint *point);
 
     //! Converts a Map tile position to a screen position
     void tileToScreenPoint(int x, int y, int z, int pX, int pY, Point2D *pScp);
@@ -74,7 +74,7 @@ public:
 protected:
     /*!  Every map has a unique ID which is used to identify the
     name of the file containing map data.*/
-    uint16 i_id_;
+    uint16 id_;
     int max_x_, max_y_, max_z_;
     Tile **a_tiles_;
     TileManager *tile_manager_;

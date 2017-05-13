@@ -28,6 +28,9 @@
 #ifndef MODEL_POSITION_H_
 #define MODEL_POSITION_H_
 
+#include <iostream>
+#include <sstream>
+
 /*!
  * This a convenient structure to store a position
  * in map tile coordinates.
@@ -106,6 +109,13 @@ public:
         int a = tx | (ty << 16);
         int b = other.tx | (other.ty << 16);
         return a < b;
+    }
+
+    void toString(std::string *buffer) const {
+        std::ostringstream out;
+
+        out << "(" << tx << ", " << ty << ", " << tz << " - " << ox << ", " << oy << ", " << oz << ")";
+        buffer->append(out.str());
     }
 };
 
