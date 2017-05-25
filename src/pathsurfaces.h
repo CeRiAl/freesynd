@@ -26,20 +26,24 @@
 #include "common.h"
 #include "model/position.h"
 
-    typedef struct {
-        // tile walkable data from g_App.walkdata_p_[]
-        unsigned char twd;
-    }surfaceDesc;
 
     class floodPointDesc {
     public:
-        // mapFloodDesc
-        // 0 - not defined, 0b - base point, 1b - target point,
-        // 2b - link (when base point reaches target point or vice versa),
-        // 3b - walkable, 4b - constant, 5b - non walkable, 6b - needs to
-        // be defined, after tiles are defined as walkable this flag will
-        // have meaning of safe walking ground (non-highway, non-railway tiles)
-        unsigned char t;
+        /*! Description of the node.
+         * If value is 0 - not defined,
+         * Bitfield :
+         * 0b - base point,
+         * 1b - target point,
+         * 2b - link (when base point reaches target point or vice versa),
+         * 3b - walkable,
+         * 4b - constant,
+         * 5b - non walkable,
+         * 6b - needs to be defined, after tiles are defined as walkable this flag
+         *      will have meaning of safe walking ground (non-highway, non-railway
+         *      tiles)
+        * \see mapFloodDesc
+        */
+        uint8 bfNodeDesc;
         // dirh(z + 1), dirm(z), dirl(z - 1) - directions
         // 0x01 = (x, y + 1, z); 0x02 = (x + 1, y + 1, z);
         // 0x04 = (x + 1, y, z); 0x08 = (x + 1, y - 1, z);
@@ -96,7 +100,7 @@
 
     struct toSetDesc {
         WorldPoint coords;
-        floodPointDesc *p;
+        floodPointDesc *pNode;
     };
     typedef struct {
         uint16 indxs;

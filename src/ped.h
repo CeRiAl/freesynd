@@ -659,6 +659,9 @@ protected:
 
 private:
     inline int getClosestDirs(int dir, int& closest, int& closer);
+    bool floodMap(Mission *m, const TilePoint &clippedDestPt, floodPointDesc *mdpmirror);
+    void removeTilesWithNoChildsFromBase(Mission *m, unsigned short blvl, std::vector <toSetDesc> &bv, std::vector <lvlNodesDesc> &bn, floodPointDesc *mdpmirror);
+    void removeTilesWithNoChildsFromTarget(Mission *m, unsigned short tlvl, std::vector <toSetDesc> &tv, std::vector <lvlNodesDesc> &tn, floodPointDesc *mdpmirror);
     void createPath(Mission *m, floodPointDesc *mdpmirror, std::vector<TilePoint> &cdestpath);
     void buildFinalDestinationPath(Mission *m, std::vector<TilePoint> &cdestpath, const TilePoint &destinationPt);
 

@@ -996,7 +996,7 @@ WeaponInstance * PedInstance::dropWeapon(uint8 index) {
 void PedInstance::dropAllWeapons() {
     Mission *m = g_Session.getMission();
     uint8 twd = m->mtsurfaces_[pos_.tx + m->mmax_x_ * pos_.ty
-        + m->mmax_m_xy * pos_.tz].twd;
+        + m->mmax_m_xy * pos_.tz];
 
     while (weapons_.size()) {
         WeaponInstance *w = dropWeapon(0);

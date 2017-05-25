@@ -295,9 +295,8 @@ public:
     //! Returns the distance between a ped and a object if a path exists between the two
     uint8 getPathLengthBetween(PedInstance *pPed, ShootableMapObject* objectToReach, double distanceMax, double *length);
 
-    // map-tile surfaces
-    // x + y * mmax_x_ + z * mmax_m_xy
-    surfaceDesc *mtsurfaces_;
+    //! map-tile surfaces : x + y * mmax_x_ + z * mmax_m_xy
+    uint8 *mtsurfaces_;
     // map-directions points
     floodPointDesc *mdpoints_;
     // for copy in pathfinding
@@ -306,7 +305,7 @@ public:
     // map maximum x,y,z values
     int mmax_x_, mmax_y_, mmax_z_;
     // initialized in setSurfaces, used for in-class calculations
-    int mmax_m_all, mmax_m_xy;
+    int mmax_m_xy;
 
     MiniMap * getMiniMap() { return p_minimap_; }
     /*!

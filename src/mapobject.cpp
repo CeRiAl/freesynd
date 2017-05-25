@@ -1607,7 +1607,7 @@ void Semaphore::handleHit(DamageInflictType &d) {
             while (z != 0) {
                 z--;
                 indx -= m->mmax_m_xy;
-                int twd = m->mtsurfaces_[indx].twd;
+                int twd = m->mtsurfaces_[indx];
                 if (twd == 0x0F) {
                     elapsed_left_bigger_ = (pos_.tz - z) * 128 + pos_.oz;
                     break;
