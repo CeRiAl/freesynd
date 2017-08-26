@@ -50,7 +50,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Pistol:
             idx_ = Weapon::Pistol_Anim;
             sample_ = snd::PISTOL;
-            dmg_type_ = MapObject::dmg_Bullet;
+            dmg_type_ = fs_dmg::kDmgTypeBullet;
             shot_property_ = Weapon::wspt_Pistol;
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
@@ -60,7 +60,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Minigun:
             idx_ = Weapon::Minigun_Anim;
             sample_ = snd::MINIGUN;
-            dmg_type_ = MapObject::dmg_Bullet;
+            dmg_type_ = fs_dmg::kDmgTypeBullet;
             shot_property_ = Weapon::wspt_Minigun;
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
@@ -70,7 +70,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Flamer:
             idx_ = Weapon::Flamer_Anim;
             sample_ = snd::FLAME;
-            dmg_type_ = MapObject::dmg_Burn;
+            dmg_type_ = fs_dmg::kDmgTypeBurn;
             shot_property_ = Weapon::wspt_Flamer;
             impactAnims_.groundHit = SFXObject::sfxt_FlamerFire;
             impactAnims_.objectHit = SFXObject::sfxt_FlamerFire;
@@ -80,7 +80,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::LongRange:
             idx_ = Weapon::LongRange_Anim;
             sample_ = snd::LONGRANGE;
-            dmg_type_ = MapObject::dmg_Bullet;
+            dmg_type_ = fs_dmg::kDmgTypeBullet;
             shot_property_ = Weapon::wspt_LongRange;
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
@@ -90,7 +90,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::EnergyShield:
             idx_ = Weapon::EnergyShield_Anim;
             sample_ = snd::NO_SOUND;
-            dmg_type_ = MapObject::dmg_None;
+            dmg_type_ = fs_dmg::kDmgTypeNone;
             shot_property_ = Weapon::wspt_EnergyShield;
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -100,7 +100,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Uzi:
             idx_ = Weapon::Uzi_Anim;
             sample_ = snd::UZI;
-            dmg_type_ = MapObject::dmg_Bullet;
+            dmg_type_ = fs_dmg::kDmgTypeBullet;
             shot_property_ = Weapon::wspt_Uzi;
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
@@ -110,7 +110,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Laser:
             idx_ = Weapon::Laser_Anim;
             sample_ = snd::LASER;
-            dmg_type_ = MapObject::dmg_Laser;
+            dmg_type_ = fs_dmg::kDmgTypeLaser;
             shot_property_ = Weapon::wspt_Laser;
             impactAnims_.groundHit = SFXObject::sfxt_Fire_LongSmoke;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -120,7 +120,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::GaussGun:
             idx_ = Weapon::Gauss_Anim;
             sample_ = snd::GAUSSGUN;
-            dmg_type_ = MapObject::dmg_Explosion;
+            dmg_type_ = fs_dmg::kDmgTypeExplosion;
             shot_property_ = Weapon::wspt_GaussGun;
             impactAnims_.groundHit = SFXObject::sfxt_ExplosionFire;
             impactAnims_.objectHit = SFXObject::sfxt_ExplosionBall;
@@ -130,7 +130,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Shotgun:
             idx_ = Weapon::Shotgun_Anim;
             sample_ = snd::SHOTGUN;
-            dmg_type_ = MapObject::dmg_Bullet;
+            dmg_type_ = fs_dmg::kDmgTypeBullet;
             shot_property_ = Weapon::wspt_Shotgun;
             impactAnims_.groundHit = SFXObject::sfxt_BulletHit;
             impactAnims_.objectHit = SFXObject::sfxt_BulletHit;
@@ -140,7 +140,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::MediKit:
             idx_ = Weapon::Unarmed_Anim;
             sample_ = snd::NO_SOUND;
-            dmg_type_ = MapObject::dmg_Heal;
+            dmg_type_ = fs_dmg::kDmgTypeNone;
             shot_property_ = Weapon::wspt_MediKit;
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -150,7 +150,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Scanner:
             idx_ = Weapon::Unarmed_Anim;
             sample_ = snd::NO_SOUND;
-            dmg_type_ = MapObject::dmg_None;
+            dmg_type_ = fs_dmg::kDmgTypeNone;
             shot_property_ = Weapon::wspt_Scanner;
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -160,7 +160,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::AccessCard:
             idx_ = Weapon::Unarmed_Anim;
             sample_ = snd::NO_SOUND;
-            dmg_type_ = MapObject::dmg_None;
+            dmg_type_ = fs_dmg::kDmgTypeNone;
             shot_property_ = Weapon::wspt_AccessCard;
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -170,7 +170,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::TimeBomb:
             idx_ = Weapon::Unarmed_Anim;
             sample_ = snd::EXPLOSION;
-            dmg_type_ = MapObject::dmg_Explosion;
+            dmg_type_ = fs_dmg::kDmgTypeExplosion;
             shot_property_ = Weapon::wspt_TimeBomb;
             impactAnims_.groundHit = SFXObject::sfxt_ExplosionFire;
             impactAnims_.objectHit = SFXObject::sfxt_ExplosionBall;
@@ -180,7 +180,7 @@ Weapon::Weapon(WeaponType w_type, ConfigFile &conf)
         case Weapon::Persuadatron:
             idx_ = Weapon::Unarmed_Anim;
             sample_ = snd::PERSUADE;
-            dmg_type_ = MapObject::dmg_Persuasion;
+            dmg_type_ = fs_dmg::kDmgTypePersuasion;
             shot_property_ = Weapon::wspt_Persuadatron;
             impactAnims_.groundHit = SFXObject::sfxt_Unknown;
             impactAnims_.objectHit = SFXObject::sfxt_Unknown;
@@ -292,7 +292,7 @@ bool WeaponInstance::animate(int elapsed) {
             }
 
             if (bombExplosionTimer.update(elapsed)) {
-                ShootableMapObject::DamageInflictType dmg;
+                fs_dmg::DamageToInflict dmg;
                 fire(g_Session.getMission(), dmg, elapsed);
                 return true;
             }
@@ -369,7 +369,7 @@ void WeaponInstance::deactivate() {
  * \param dmg Information on the damage to perform
  * \param elapsed Time since last frame
  */
-void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed) {
+void WeaponInstance::fire(Mission *pMission, fs_dmg::DamageToInflict &dmg, int elapsed) {
     bool updateStats = true;
     if (isInstanceOf(Weapon::MediKit)) {
         dmg.d_owner->resetHealth();
@@ -452,11 +452,12 @@ void WeaponInstance::fire(Mission *pMission, ShootableMapObject::DamageInflictTy
     }
 }
 
-void WeaponInstance::handleHit(ShootableMapObject::DamageInflictType & d)
+void WeaponInstance::handleHit(fs_dmg::DamageToInflict & d)
 {
     // When a bomb is hit, it explodes
-    if (isInstanceOf(Weapon::TimeBomb) && health_ > 0) {
-        // we pass the given DamageInflictType just for the compiler
+    if (isInstanceOf(Weapon::TimeBomb) && health_ > 0 &&
+        (d.dtype == fs_dmg::kDmgTypeLaser || d.dtype == fs_dmg::kDmgTypeBullet || d.dtype == fs_dmg::kDmgTypeExplosion)) {
+        // we pass the given DamageToInflict just for the compiler
         // as it is not used by the fire method for a Bomb
         // same for elapsed
         fire(g_Session.getMission(), d, 0);

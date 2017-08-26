@@ -288,31 +288,31 @@ void PedInstance::addActionDriveVehicle(
  * Insert an action of type HitAction before any action in list and suspend
  * currently executing action.
  */
-void PedInstance::insertHitAction(DamageInflictType &d) {
+void PedInstance::insertHitAction(fs_dmg::DamageToInflict &d) {
     HitAction *pHitAct = NULL;
     if (d.d_owner == this) { // it's a suicide
-        if (d.dtype == dmg_Bullet) {
+        if (d.dtype == fs_dmg::kDmgTypeBullet) {
             // Ped's instantly dead
             pHitAct = new FallDeadHitAction(d);
         } else {
             // it's an explosion : walk and burn
             pHitAct = new WalkBurnHitAction(d);
         }
-    } else if (d.dtype == dmg_Explosion) {
+    } else if (d.dtype == fs_dmg::kDmgTypeExplosion) {
         if (hasMinimumVersionOfMod(Mod::MOD_CHEST, Mod::MOD_V2)) {
             pHitAct = new RecoilHitAction(d);
         } else {
             pHitAct = new WalkBurnHitAction(d);
         }
-    } else if (d.dtype & (dmg_Bullet | dmg_Collision)) {
+    } else if (d.dtype & (fs_dmg::kDmgTypeBullet | fs_dmg::kDmgTypeCollision)) {
         // When hit by a bullet or collision, ped is ejected
         pHitAct = new RecoilHitAction(d);
-    } else if (d.dtype == dmg_Burn) {
+    } else if (d.dtype == fs_dmg::kDmgTypeBurn) {
         pHitAct = new WalkBurnHitAction(d);
-    } else if (d.dtype == dmg_Laser) {
+    } else if (d.dtype == fs_dmg::kDmgTypeLaser) {
         // When hit by a laser, ped is vaporized
         pHitAct = new LaserHitAction(d);
-    } else if (d.dtype == dmg_Persuasion) {
+    } else if (d.dtype == fs_dmg::kDmgTypePersuasion) {
         pHitAct = new PersuadedHitAction(d);
     }
 

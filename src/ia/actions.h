@@ -565,13 +565,13 @@ protected:
 class HitAction : public MovementAction {
 public:
     //! Constructor of the class
-    HitAction(ShootableMapObject::DamageInflictType &d);
+    HitAction(fs_dmg::DamageToInflict &d);
 
     //! HitAction cannot be suspended
     bool suspend(PedInstance *pPed) { return false; }
 protected:
     //! Stores the damage received
-    ShootableMapObject::DamageInflictType damage_;
+    fs_dmg::DamageToInflict damage_;
 };
 
 /*!
@@ -580,7 +580,7 @@ protected:
 class FallDeadHitAction : public HitAction {
 public:
     //!
-    FallDeadHitAction(ShootableMapObject::DamageInflictType &d);
+    FallDeadHitAction(fs_dmg::DamageToInflict &d);
 protected:
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
 };
@@ -592,7 +592,7 @@ protected:
 class RecoilHitAction : public HitAction {
 public:
     //!
-    RecoilHitAction(ShootableMapObject::DamageInflictType &d);
+    RecoilHitAction(fs_dmg::DamageToInflict &d);
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -604,7 +604,7 @@ protected:
 class LaserHitAction : public HitAction {
 public:
     //!
-    LaserHitAction(ShootableMapObject::DamageInflictType &d);
+    LaserHitAction(fs_dmg::DamageToInflict &d);
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -617,7 +617,7 @@ protected:
 class WalkBurnHitAction : public HitAction {
 public:
     //!
-    WalkBurnHitAction(ShootableMapObject::DamageInflictType &d);
+    WalkBurnHitAction(fs_dmg::DamageToInflict &d);
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -645,7 +645,7 @@ protected:
 class PersuadedHitAction : public HitAction {
 public:
     //!
-    PersuadedHitAction(ShootableMapObject::DamageInflictType &d);
+    PersuadedHitAction(fs_dmg::DamageToInflict &d);
 protected:
     void doStart(Mission *pMission, PedInstance *pPed);
     bool doExecute(int elapsed, Mission *pMission, PedInstance *pPed);
@@ -692,7 +692,7 @@ public:
     void setAimedAt(const WorldPoint &aimedAt);
 protected:
     //! Fills the ShotAttributes with values
-    void fillDamageDesc(Mission *pMission, PedInstance *pShooter, WeaponInstance *pWeapon, ShootableMapObject::DamageInflictType &dmg);
+    void fillDamageDesc(Mission *pMission, PedInstance *pShooter, WeaponInstance *pWeapon, fs_dmg::DamageToInflict &dmg);
 protected:
     //! Where the player aimed with the mouse
     WorldPoint aimedAt_;

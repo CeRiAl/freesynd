@@ -757,7 +757,7 @@ bool FireWeaponAction::doExecute(int elapsed, Mission *pMission, PedInstance *pP
     return true;
 }
 
-HitAction::HitAction(ShootableMapObject::DamageInflictType &d) :
+HitAction::HitAction(fs_dmg::DamageToInflict &d) :
 MovementAction(kActTypeHit) {
     damage_.aimedLocW = d.aimedLocW;
     damage_.dtype = d.dtype;
@@ -767,7 +767,7 @@ MovementAction(kActTypeHit) {
     damage_.pWeapon = d.pWeapon;
 }
 
-FallDeadHitAction::FallDeadHitAction(ShootableMapObject::DamageInflictType &d) :
+FallDeadHitAction::FallDeadHitAction(fs_dmg::DamageToInflict &d) :
 HitAction(d) {
     targetState_ = PedInstance::pa_smNone;
 }
@@ -786,7 +786,7 @@ bool FallDeadHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
     return true;
 }
 
-RecoilHitAction::RecoilHitAction(ShootableMapObject::DamageInflictType &d) :
+RecoilHitAction::RecoilHitAction(fs_dmg::DamageToInflict &d) :
 HitAction(d) {
     targetState_ = PedInstance::pa_smHit;
 }
@@ -818,7 +818,7 @@ bool RecoilHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPe
     return true;
 }
 
-LaserHitAction::LaserHitAction(ShootableMapObject::DamageInflictType &d) :
+LaserHitAction::LaserHitAction(fs_dmg::DamageToInflict &d) :
 HitAction(d) {
     targetState_ = PedInstance::pa_smHitByLaser;
 }
@@ -850,7 +850,7 @@ bool LaserHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *pPed
     return true;
 }
 
-WalkBurnHitAction::WalkBurnHitAction(ShootableMapObject::DamageInflictType &d) :
+WalkBurnHitAction::WalkBurnHitAction(fs_dmg::DamageToInflict &d) :
 HitAction(d),burnTimer_(kTimeToWalkBurning) {
     targetState_ = PedInstance::pa_smWalkingBurning;
 }
@@ -889,7 +889,7 @@ bool WalkBurnHitAction::doExecute(int elapsed, Mission *pMission, PedInstance *p
     return true;
 }
 
-PersuadedHitAction::PersuadedHitAction(ShootableMapObject::DamageInflictType &d) :
+PersuadedHitAction::PersuadedHitAction(fs_dmg::DamageToInflict &d) :
 HitAction(d) {
     targetState_ = PedInstance::pa_smHitByPersuadotron;
     warnBehaviour_ = true;
@@ -945,7 +945,7 @@ bool ShootAction::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
         // Turn to target
         pPed->setDirectionTowardPosition(aimedAt_);
         // Shoot
-        ShootableMapObject::DamageInflictType dmg;
+        fs_dmg::DamageToInflict dmg;
         fillDamageDesc(pMission, pPed, pWeapon_, dmg);
         pWeapon_->playSound();
         pWeapon_->fire(pMission, dmg, elapsed);
@@ -982,7 +982,7 @@ bool ShootAction::execute(int elapsed, Mission *pMission, PedInstance *pPed) {
 void ShootAction::fillDamageDesc(Mission *pMission,
                                     PedInstance *pShooter,
                                     WeaponInstance *pWeapon,
-                                    ShootableMapObject::DamageInflictType &dmg) {
+                                    fs_dmg::DamageToInflict &dmg) {
     dmg.pWeapon = pWeapon;
     dmg.dtype = pWeapon->getClass()->dmgType();
     dmg.dvalue =  pWeapon->getClass()->damagePerShot();
@@ -1049,7 +1049,7 @@ bool AutomaticShootAction::execute(int elapsed, Mission *pMission, PedInstance *
             stop();
         } else if (firstTime || fireRateTimer_.update(elapsed)) {
             pPed->setDirectionTowardPosition(aimedAt_);
-            ShootableMapObject::DamageInflictType dmg;
+            fs_dmg::DamageToInflict dmg;
             fillDamageDesc(pMission, pPed, pWeapon_, dmg);
             pWeapon_->playSound();
             pWeapon_->fire(pMission, dmg, elapsed);
@@ -1096,7 +1096,7 @@ bool UseMedikitAction::execute(int elapsed, Mission *pMission, PedInstance *pPed
             setFailed();
         } else {
             pWeapon_->playSound();
-            ShootableMapObject::DamageInflictType dmg;
+            fs_dmg::DamageToInflict dmg;
             dmg.d_owner = pPed;
             pWeapon_->fire(pMission, dmg, elapsed);
             update = true;
@@ -1129,7 +1129,7 @@ bool UseEnergyShieldAction::execute(int elapsed, Mission *pMission, PedInstance 
             return false;
         } else {
             //pWeapon_->playSound();
-            ShootableMapObject::DamageInflictType dmg;
+            fs_dmg::DamageToInflict dmg;
             pWeapon_->fire(pMission, dmg, elapsed);
         }
     } else if (status_ == kActStatusRunning) {

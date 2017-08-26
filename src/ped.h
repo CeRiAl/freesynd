@@ -326,7 +326,7 @@ public:
     //! Adds action to use Energy Shield
     void addActionUseEnergyShield(WeaponInstance *pMedikit);
     //! Creates and insert a HitAction for the ped
-    void insertHitAction(DamageInflictType &d);
+    void insertHitAction(fs_dmg::DamageToInflict &d);
 
     //*************************************
     // Movement management
@@ -368,11 +368,11 @@ public:
     void setEnergyActivated(bool status);
 
     //! Return the damage after applying protection of Mod
-    int getRealDamage(ShootableMapObject::DamageInflictType &d);
+    int getRealDamage(fs_dmg::DamageToInflict &d);
     //! Method called when object is hit by a weapon shot.
-    void handleHit(ShootableMapObject::DamageInflictType &d);
+    void handleHit(fs_dmg::DamageToInflict &d);
     //! Method called to check if ped has died
-    bool handleDeath(Mission *pMission, ShootableMapObject::DamageInflictType &d);
+    bool handleDeath(Mission *pMission, fs_dmg::DamageToInflict &d);
 
     //*************************************
     // Persuasion

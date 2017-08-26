@@ -1231,8 +1231,8 @@ bool LargeDoor::animate(int elapsed, Mission *obj)
                     it != found_peds_mid.end(); ++it )
                 {
                     p = *it;
-                    ShootableMapObject::DamageInflictType d;
-                    d.dtype = MapObject::dmg_Collision;
+                    fs_dmg::DamageToInflict d;
+                    d.dtype = fs_dmg::kDmgTypeCollision;
                     d.d_owner = NULL;
                     d.dvalue = 1024;
                     d.ddir = -1;
@@ -1463,9 +1463,9 @@ bool Tree::animate(int elapsed, Mission *obj) {
  * Implementation for the Tree. Tree burns only when hit by laser of fire.
  * \param d Damage information
  */
-void Tree::handleHit(DamageInflictType &d) {
+void Tree::handleHit(fs_dmg::DamageToInflict &d) {
     if (isAlive() &&
-        (d.dtype == dmg_Laser || d.dtype == dmg_Burn || d.dtype == dmg_Explosion)) {
+        (d.dtype == fs_dmg::kDmgTypeLaser || d.dtype == fs_dmg::kDmgTypeBurn || d.dtype == fs_dmg::kDmgTypeExplosion)) {
         decreaseHealth(d.dvalue);
         if (isDead()) {
             state_ = Static::stttree_Burning;
@@ -1502,9 +1502,9 @@ void WindowObj::draw(int x, int y)
  * Implementation for the Tree. Tree burns only when hit by laser of fire.
  * \param d Damage information
  */
-void WindowObj::handleHit(DamageInflictType &d) {
+void WindowObj::handleHit(fs_dmg::DamageToInflict &d) {
     if (isAlive() &&
-        (d.dtype == dmg_Bullet || d.dtype == dmg_Explosion)) {
+        (d.dtype == fs_dmg::kDmgTypeBullet || d.dtype == fs_dmg::kDmgTypeExplosion)) {
         decreaseHealth(d.dvalue);
         if (isDead()) {
             state_ = Static::sttwnd_Breaking;
@@ -1593,9 +1593,9 @@ bool Semaphore::animate(int elapsed, Mission *obj) {
  * Implementation for the Semaphore.
  * \param d Damage information
  */
-void Semaphore::handleHit(DamageInflictType &d) {
+void Semaphore::handleHit(fs_dmg::DamageToInflict &d) {
     if (isAlive() &&
-        (d.dtype == dmg_Laser || d.dtype == dmg_Explosion)) {
+        (d.dtype == fs_dmg::kDmgTypeLaser || d.dtype == fs_dmg::kDmgTypeExplosion)) {
         decreaseHealth(d.dvalue);
         if (isDead()) {
             state_ = Static::sttsem_Damaged;

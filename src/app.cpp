@@ -456,7 +456,7 @@ void App::cheatEquipFancyWeapons() {
         g_gameCtrl.agents().agent(i)->addWeapon(
             WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::EnergyShield)));
         g_gameCtrl.agents().agent(i)->addWeapon(
-            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::AccessCard)));
+            WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Shotgun)));
 #else
         g_gameCtrl.agents().agent(i)->addWeapon(
                 WeaponInstance::createInstance(g_gameCtrl.weaponManager().getWeapon(Weapon::Minigun)));

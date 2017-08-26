@@ -139,8 +139,8 @@ void PersuaderBehaviourComponent::execute(int elapsed, Mission *pMission, PedIns
         for (size_t i = pMission->getSquad()->size(); i < pMission->numPeds(); i++) {
             PedInstance *pOtherPed = pMission->ped(i);
             if (pPed->canPersuade(pOtherPed, persuadotronRange_)) {
-                ShootableMapObject::DamageInflictType dmg;
-                dmg.dtype = MapObject::dmg_Persuasion;
+                fs_dmg::DamageToInflict dmg;
+                dmg.dtype = fs_dmg::kDmgTypePersuasion;
                 dmg.d_owner = pPed;
                 pOtherPed->insertHitAction(dmg);
             }

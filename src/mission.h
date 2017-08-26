@@ -126,6 +126,11 @@ public:
         kMissionStatusCompleted = 3
     };
 
+    //! Bit mask for methods on checking on blockers
+    static const uint8 kBMaskBlockerTargetOutOfMap;
+    static const uint8 kBMaskBlockerTargetObjectUpdated;
+    static const uint8 kBMaskBlockerTargetPosUpdated;
+
     Mission(const LevelData::MapInfos & map_infos);
     virtual ~Mission();
 

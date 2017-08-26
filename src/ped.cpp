@@ -622,8 +622,8 @@ void PedInstance::commitSuicide() {
         Explosion::createExplosion(g_Session.getMission(), this, 512.0, 16);
     } else {
         // else he just shoot himself
-        ShootableMapObject::DamageInflictType dit;
-        dit.dtype = MapObject::dmg_Bullet;
+        fs_dmg::DamageToInflict dit;
+        dit.dtype = fs_dmg::kDmgTypeBullet;
         dit.d_owner = this;
         // force damage value to agent health so he's killed at once
         dit.dvalue = PedInstance::kAgentMaxHealth;
@@ -1195,7 +1195,7 @@ bool PedInstance::handleDrawnAnim(int elapsed) {
  * Return the damage after applying reduction of Mod protection.
  * \param d Damage description
  */
-int PedInstance::getRealDamage(ShootableMapObject::DamageInflictType &d) {
+int PedInstance::getRealDamage(fs_dmg::DamageToInflict &d) {
     // TODO : implement
     return d.dvalue;
 }
@@ -1204,7 +1204,7 @@ int PedInstance::getRealDamage(ShootableMapObject::DamageInflictType &d) {
  * Method called when object is hit by a weapon shot.
  * \param d Damage description
  */
-void PedInstance::handleHit(DamageInflictType &d) {
+void PedInstance::handleHit(fs_dmg::DamageToInflict &d) {
     if (health_ > 0) {
         decreaseHealth(getRealDamage(d));
 
@@ -1228,25 +1228,25 @@ void PedInstance::handleHit(DamageInflictType &d) {
  * \param d Damage description
  * \return true if Ped has died
  */
-bool PedInstance::handleDeath(Mission *pMission, ShootableMapObject::DamageInflictType &d) {
+bool PedInstance::handleDeath(Mission *pMission, fs_dmg::DamageToInflict &d) {
     if (health_ == 0) {
         clearDestination();
         switchActionStateTo(PedInstance::pa_smDead);
 
         switch (d.dtype) {
-            case MapObject::dmg_Bullet:
+            case fs_dmg::kDmgTypeBullet:
                 setDrawnAnim(PedInstance::ad_DieAnim);
                 dropAllWeapons();
                 break;
-            case MapObject::dmg_Laser:
+            case fs_dmg::kDmgTypeLaser:
                 if (is_our_) {
                     setDrawnAnim(PedInstance::ad_DeadAgentAnim);
                 } else {
                     setDrawnAnim(PedInstance::ad_NoAnimation);
                 }
                 break;
-            case MapObject::dmg_Explosion:
-            case MapObject::dmg_Burn:
+            case fs_dmg::kDmgTypeExplosion:
+            case fs_dmg::kDmgTypeBurn:
                 if (hasMinimumVersionOfMod(Mod::MOD_CHEST, Mod::MOD_V2) &&
                     d.d_owner != this) {
                     setDrawnAnim(PedInstance::ad_DieAnim);
@@ -1371,7 +1371,7 @@ void PedInstance::verifyHostilesFound(Mission *m) {
     int check_rng = sight_range_;
 
     WeaponInstance *wi = selectedWeapon();
-    if (wi && wi->doesPhysicalDmg() && wi->canShoot() && wi->range() > check_rng)
+    if (wi && wi->canShoot() && wi->range() > check_rng)
         check_rng = wi->range();
 
     // removing destroyed, friends, objects out of shot/sight range

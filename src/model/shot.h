@@ -31,7 +31,6 @@
 #include <vector>
 #include <list>
 
-#include "path.h"
 #include "mapobject.h"
 
 class Mission;
@@ -44,17 +43,17 @@ class PedInstance;
  */
 class Shot {
  public:
-    explicit Shot(const ShootableMapObject::DamageInflictType &dmg) {
+    explicit Shot(const fs_dmg::DamageToInflict &dmg) {
         dmg_ = dmg;
     }
     virtual ~Shot() {}
 
     virtual void inflictDamage(Mission *pMission) = 0;
 
-    ShootableMapObject::DamageInflictType & getAttributes() { return dmg_; }
+    fs_dmg::DamageToInflict & getAttributes() { return dmg_; }
  protected:
-    // The damage that will be inflicted by this shot
-    ShootableMapObject::DamageInflictType dmg_;
+    //! The damage that will be inflicted by this shot
+    fs_dmg::DamageToInflict dmg_;
 };
 
 /*!
@@ -65,7 +64,7 @@ class Shot {
 class InstantImpactShot : public Shot {
  public:
     explicit InstantImpactShot(
-        const ShootableMapObject::DamageInflictType &dmg) : Shot(dmg) {}
+        const fs_dmg::DamageToInflict &dmg) : Shot(dmg) {}
 
     void inflictDamage(Mission *pMission);
  private:
@@ -93,7 +92,7 @@ class Explosion : public Shot {
                                 const WorldPoint &location, double range,
                                 int dmgValue);
 
-    explicit Explosion(const ShootableMapObject::DamageInflictType &dmg);
+    explicit Explosion(const fs_dmg::DamageToInflict &dmg);
 
     void inflictDamage(Mission *pMission);
  private:
@@ -115,7 +114,7 @@ class Explosion : public Shot {
 class ProjectileShot: public Shot {
  public:
     //! Constructor
-    explicit ProjectileShot(const ShootableMapObject::DamageInflictType &dmg);
+    explicit ProjectileShot(const fs_dmg::DamageToInflict &dmg);
 
     //! Animate the shot
     virtual bool animate(int elapsed, Mission *m);
@@ -165,7 +164,7 @@ class ProjectileShot: public Shot {
 class GaussGunShot: public ProjectileShot {
  public:
     //! Constructor
-    explicit GaussGunShot(const ShootableMapObject::DamageInflictType &dmg);
+    explicit GaussGunShot(const fs_dmg::DamageToInflict &dmg);
     //! Destructor
     ~GaussGunShot() {}
 
@@ -184,7 +183,7 @@ class GaussGunShot: public ProjectileShot {
 class FlamerShot: public ProjectileShot {
  public:
     //! Constructor
-    explicit FlamerShot(Mission *pMission, const ShootableMapObject::DamageInflictType &dmg);
+    explicit FlamerShot(Mission *pMission, const fs_dmg::DamageToInflict &dmg);
     //! Desctructor
     ~FlamerShot();
 

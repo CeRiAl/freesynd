@@ -31,6 +31,7 @@
 #include <math.h>
 #include <list>
 #include "model/position.h"
+#include "model/damage.h"
 #include "path.h"
 #include "pathsurfaces.h"
 
@@ -84,32 +85,6 @@ public:
     void setMap(int new_map) { map_ = new_map; }
 
     virtual void draw(int x, int y) = 0;
-    enum DamageType {
-        dmg_None = 0x0000,
-        dmg_Bullet = 0x0001,
-        dmg_Laser = 0x0002,
-        dmg_Burn = 0x0004,
-        dmg_Explosion = 0x0008,
-        dmg_Collision = 0x0010, // By car or door
-        dmg_Physical = (dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion | dmg_Collision),
-        dmg_Persuasion = 0x0020,
-        dmg_Heal = 0x0040,
-        dmg_Panic = 0x0080,
-        // dmg_Mental = (dmg_Persuasion | dmg_Panic), not used
-        dmg_All = 0xFFFF
-    };
-
-    typedef enum {
-        ddmg_Invulnerable = dmg_None,
-        ddmg_Ped = dmg_All,
-        ddmg_PedPanicImmune = dmg_All ^ dmg_Panic,
-        ddmg_PedWithEnergyShield = dmg_Explosion | dmg_Collision | dmg_Heal | dmg_Panic,
-        ddmg_Vehicle = dmg_Bullet | dmg_Laser | dmg_Burn | dmg_Explosion,
-        ddmg_StaticTree = dmg_Laser | dmg_Burn | dmg_Explosion,
-        ddmg_StaticWindow = dmg_Bullet | dmg_Explosion,
-        ddmg_StaticGeneral = dmg_Laser | dmg_Explosion,
-        ddmg_WeaponBomb = dmg_Bullet | dmg_Laser | dmg_Explosion
-    } DefDamageType;
 
     const TilePoint & position()const { return pos_; }
 
@@ -398,29 +373,6 @@ protected:
  */
 class ShootableMapObject : public MapObject {
 public:
-    /*!
-     * This structure holds informations on the damage inflicted to a ShootableMapObject.
-     */
-    struct DamageInflictType {
-        //! The type of damage
-        DamageType dtype;
-        //! Range of damage
-        double range;
-        //! The value of the damage
-        int dvalue;
-        //! direction damage comes from, should be angle 256 degree based
-        int ddir;
-        //! Location of aimed point
-        WorldPoint aimedLocW;
-        //! Location of origin of shot
-        WorldPoint originLocW;
-        //! The object that inflicted the damage
-        ShootableMapObject * d_owner;
-        //! The weapon that generated this damage
-        WeaponInstance *pWeapon;
-    };
-
-public:
     ShootableMapObject(uint16 id, int m, ObjectNature nature);
     virtual ~ShootableMapObject() {}
 
@@ -486,7 +438,7 @@ public:
      * to react to a shot.
      * \param d Damage description
      */
-    virtual void handleHit(DamageInflictType &d) {}
+    virtual void handleHit(fs_dmg::DamageToInflict &d) {}
 
     bool isAlive() { return health_ > 0; }
     bool isDead() { return health_ <= 0; }
@@ -699,7 +651,7 @@ public:
 
     void draw(int x, int y);
     bool animate(int elapsed, Mission *obj);
-    void handleHit(DamageInflictType &d);
+    void handleHit(fs_dmg::DamageToInflict &d);
 
 protected:
     int anim_, burning_anim_, damaged_anim_;
@@ -716,7 +668,7 @@ public:
 
     bool animate(int elapsed, Mission *obj);
     void draw(int x, int y);
-    void handleHit(DamageInflictType &d);
+    void handleHit(fs_dmg::DamageToInflict &d);
 
 protected:
     int anim_, open_anim_, breaking_anim_, damaged_anim_;
@@ -762,7 +714,7 @@ public:
     bool animate(int elapsed, Mission *obj);
     void draw(int x, int y);
 
-    void handleHit(DamageInflictType &d);
+    void handleHit(fs_dmg::DamageToInflict &d);
 
 protected:
     int anim_, damaged_anim_;

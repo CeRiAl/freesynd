@@ -122,7 +122,7 @@ public:
     }
 
     WeaponAnimIndex index() { return idx_; }
-    MapObject::DamageType dmgType() { return dmg_type_; }
+    fs_dmg::DamageType dmgType() { return dmg_type_; }
 
     bool operator==(Weapon weapon) { return this->type_ == weapon.getType(); }
 
@@ -132,10 +132,6 @@ public:
 
     bool canShoot() {
         return (shot_property_ & Weapon::spe_CanShoot) != 0;
-    }
-
-    bool doesPhysicalDmg() {
-        return (dmg_type_ & MapObject::dmg_Physical) != 0;
     }
 
     enum ShotPropertyEnum {
@@ -237,7 +233,7 @@ protected:
     /*!Rank is used to order shooting weapons by value.*/
     int rank_;
     WeaponType type_;
-    MapObject::DamageType dmg_type_;
+    fs_dmg::DamageType dmg_type_;
     int ammo_per_shot_;
     //! time weapon uses to do a single shot
     int time_for_shot_;
@@ -310,17 +306,13 @@ public:
         return pWeaponClass_->canShoot();
     }
 
-    bool doesPhysicalDmg() {
-        return pWeaponClass_->doesPhysicalDmg();
-    }
-
     bool doesDmgStrict(uint32 dmg_type) {
         return pWeaponClass_->dmgType() == dmg_type;
     }
     bool doesDmgNonStrict(uint32 dmg_type) {
         return (pWeaponClass_->dmgType() & dmg_type) != 0;
     }
-    MapObject::DamageType dmgType() {
+    fs_dmg::DamageType dmgType() {
         return pWeaponClass_->dmgType();
     }
 
@@ -345,10 +337,10 @@ public:
     bool animate(int elapsed);
     void draw(int x, int y);
 
-    void handleHit(ShootableMapObject::DamageInflictType & d);
+    void handleHit(fs_dmg::DamageToInflict & d);
 
     //! Use weapon
-    void fire(Mission *pMission, ShootableMapObject::DamageInflictType &dmg, int elapsed);
+    void fire(Mission *pMission, fs_dmg::DamageToInflict &dmg, int elapsed);
 
     bool consumeAmmoForEnergyShield(int elapsed);
 

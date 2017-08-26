@@ -792,7 +792,7 @@ bool GenericCar::doMove(int elapsed, Mission *m)
  * Method called when object is hit by a weapon shot.
  * \param d Damage description
  */
-void GenericCar::handleHit(ShootableMapObject::DamageInflictType &d) {
+void GenericCar::handleHit(fs_dmg::DamageToInflict &d) {
     if (health_ <= 0)
         return;
 
@@ -800,10 +800,10 @@ void GenericCar::handleHit(ShootableMapObject::DamageInflictType &d) {
     if (health_ == 0) {
         clearDestination();
         switch ((unsigned int)d.dtype) {
-            case MapObject::dmg_Bullet:
-            case MapObject::dmg_Laser:
-            case MapObject::dmg_Burn:
-            case MapObject::dmg_Explosion:
+            case fs_dmg::kDmgTypeBullet:
+            case fs_dmg::kDmgTypeLaser:
+            case fs_dmg::kDmgTypeBurn:
+            case fs_dmg::kDmgTypeExplosion:
                 animation_->set_animation_type(VehicleAnimation::kOnFireAnim);
                 setTimeShowAnim(10000);
                 break;

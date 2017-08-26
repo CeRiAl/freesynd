@@ -179,7 +179,7 @@ public:
         return (pPed != NULL && pDriver_ == pPed);
     }
 
-    void handleHit(ShootableMapObject::DamageInflictType &d);
+    void handleHit(fs_dmg::DamageToInflict &d);
 
 protected:
     bool findPathToNearestWalkableTile(Map *pMap, const TilePoint &startPt, int *basex, int *basey, std::vector < TilePoint > *path2add);

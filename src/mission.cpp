@@ -39,6 +39,10 @@
 #include "model/squad.h"
 #include "model/shot.h"
 
+const uint8 Mission::kBMaskBlockerTargetOutOfMap = 0x20;
+const uint8 Mission::kBMaskBlockerTargetObjectUpdated = 0x02;
+const uint8 Mission::kBMaskBlockerTargetPosUpdated = 0x04;
+
 /*!
  * Initialize the statistics.
  * \param nbAgents Number of agents for the mission
@@ -171,7 +175,7 @@ void Mission::start()
     // creating a list of available weapons
     // TODO: consider weight of weapons when adding?
     std::vector <Weapon *> wpns;
-    g_gameCtrl.weaponManager().getAvailable(MapObject::dmg_Bullet, wpns);
+    g_gameCtrl.weaponManager().getAvailable(fs_dmg::kDmgTypeBullet, wpns);
     int indx_best = -1;
     int indx_second = -1;
     for (int i = 0, sz = wpns.size(), rank_best = -1, rank_second = -1;
@@ -2589,36 +2593,36 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
     int cy = originPosW.y;
     int cz = originPosW.z;
     if (cz > (mmax_z_ - 1) * 128)
-        return 32;
+        return kBMaskBlockerTargetOutOfMap;
 
     // This variable will store the target location as it may moves if
     // a tile blocks the path.
     WorldPoint tmpTargetWLoc = *pTargetPosW;
 
     if (tmpTargetWLoc.z > (mmax_z_ - 1) * 128)
-        return 32;
+        return kBMaskBlockerTargetOutOfMap;
 
-    // d is the distance between the origin and the target
-    double d = 0;
-    d = sqrt((double)((tmpTargetWLoc.x - cx) * (tmpTargetWLoc.x - cx) + (tmpTargetWLoc.y - cy) * (tmpTargetWLoc.y - cy)
+    // This is the distance between the origin and the target
+    double distanceToTarget = 0;
+    distanceToTarget = sqrt((double)((tmpTargetWLoc.x - cx) * (tmpTargetWLoc.x - cx) + (tmpTargetWLoc.y - cy) * (tmpTargetWLoc.y - cy)
         + (tmpTargetWLoc.z - cz) * (tmpTargetWLoc.z - cz)));
     uint8 block_mask = 1;
 
     if (pInitialDistance)
-        *pInitialDistance = d;
-    if (d == 0)
+        *pInitialDistance = distanceToTarget;
+    if (distanceToTarget == 0)
         return block_mask;
 
     double sx = (double) cx;
     double sy = (double) cy;
     double sz = (double) cz;
 
-    if (d >= distanceMax) {
-        // the distance we have to cross (d) is higher than the maximum
+    if (distanceToTarget >= distanceMax) {
+        // the distance we have to cross (distanceToTarget) is higher than the maximum
         // distance we are allowed to cross (distanceMax)
 
         // update target position according to distanceMax
-        double dist_k = (double)distanceMax / d;
+        double dist_k = (double)distanceMax / distanceToTarget;
         tmpTargetWLoc.x = cx + (int)((tmpTargetWLoc.x - cx) * dist_k);
         tmpTargetWLoc.y = cy + (int)((tmpTargetWLoc.y - cy) * dist_k);
         tmpTargetWLoc.z = cz + (int)((tmpTargetWLoc.z - cz) * dist_k);
@@ -2627,20 +2631,21 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
         if (updateLoc) {
             *pTargetPosW = tmpTargetWLoc;
         }
-        d = distanceMax;
+        distanceToTarget = distanceMax;
     }
 
-    // NOTE: these values are less then 1, if they are incremented time
-    // required to check range will be shorter less precise check, if
-    // decremented longer more precise. Increment is (n * 8)
-    double inc_x = ((tmpTargetWLoc.x - cx) * 8) / d;
-    double inc_y = ((tmpTargetWLoc.y - cy) * 8) / d;
-    double inc_z = ((tmpTargetWLoc.z - cz) * 8) / d;
+    // NOTE: these values are less then 1.
+    // If they are incremented, time required to check range will be shorter but less precise check,
+    // If decremented longer but more precise.
+    // Increment is (n * 8)
+    double incrX = ((tmpTargetWLoc.x - cx) * 8) / distanceToTarget;
+    double incrY = ((tmpTargetWLoc.y - cy) * 8) / distanceToTarget;
+    double incrZ = ((tmpTargetWLoc.z - cz) * 8) / distanceToTarget;
 
     int oldx = cx / 256;
     int oldy = cy / 256;
     int oldz = cz / 128;
-    double dist_close = d;
+    double dist_close = distanceToTarget;
     // look note before, should be same increment
     double dist_dec = 1.0 * 8;
 
@@ -2677,9 +2682,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
                         is_blocked = true;
                 }
                 if (is_blocked) {
-                    sx -= inc_x;
-                    sy -= inc_y;
-                    sz -= inc_z;
+                    sx -= incrX;
+                    sy -= incrY;
+                    sz -= incrZ;
                     double dsx = sx - (double)cx;
                     double dsy = sy - (double)cy;
                     double dsz = sz - (double)cz;
@@ -2704,9 +2709,9 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
             oldy = ny;
             oldz = nz;
         }
-        sx += inc_x;
-        sy += inc_y;
-        sz += inc_z;
+        sx += incrX;
+        sy += incrY;
+        sz += incrZ;
         dist_close -= dist_dec;
     } // end while
 
@@ -2714,7 +2719,14 @@ uint8 Mission::checkBlockedByTile(const WorldPoint & originPosW, WorldPoint *pTa
 }
 
 /*!
+ * \param originLoc
+ * \param pTarget
+ * \param pTargetPosW
+ * \param setBlocker
+ * \param checkTileOnly Check blockers only for map elements not objects.
  * \param maxr maximum distance we can run
+ * \param distTo
+ * \param pOrigin
  * \return mask where bits are:
  * - 0b : target in range(1)
  * - 1b : blocker is object, "t" is set(2)
@@ -2738,10 +2750,10 @@ uint8 Mission::checkIfBlockersInShootingLine(const WorldPoint & originLoc, Shoot
         tmpPosW = *pTargetPosW;
     }
 
-    uint8 block_mask = checkBlockedByTile(originLoc, &tmpPosW, true, maxr, distTo);
-    if (block_mask == 32) {
+    uint8 bfBlockerFound = checkBlockedByTile(originLoc, &tmpPosW, true, maxr, distTo);
+    if (bfBlockerFound == kBMaskBlockerTargetOutOfMap) {
         // coords are out of map limits
-        return block_mask;
+        return bfBlockerFound;
     }
 
     if (setBlocker) {
@@ -2749,51 +2761,49 @@ uint8 Mission::checkIfBlockersInShootingLine(const WorldPoint & originLoc, Shoot
     }
 
     if (checkTileOnly)
-        return block_mask;
+        return bfBlockerFound;
 
     WorldPoint tmpOrigin = originLoc;
     WorldPoint tmpEnd = tmpPosW;
 
     // We search for a possible object blocking the way on the path
     // between origin and the reached position
-    int tx = tmpPosW.x;
-    int ty = tmpPosW.y;
-    int tz = tmpPosW.z;
-    double dist_blocker = sqrt((double)((tx - originLoc.x) *
-        (tx - originLoc.x) + (ty - originLoc.y) * (ty - originLoc.y)
-        + (tz - originLoc.z) * (tz - originLoc.z)));
-    MapObject *blockerObj = checkBlockedByObject(&tmpOrigin, &tmpEnd, &dist_blocker, pOrigin);
+    int dx = tmpPosW.x - originLoc.x;
+    int dy = tmpPosW.y - originLoc.y;
+    int dz = tmpPosW.z - originLoc.z;
+    double distToBlocker = sqrt((double)(dx * dx + dy * dy + dz * dz));
+    MapObject *blockerObj = checkBlockedByObject(&tmpOrigin, &tmpEnd, &distToBlocker, pOrigin);
 
     if (blockerObj) {
-        if (block_mask == 1)
-            block_mask = 0;
+        if (bfBlockerFound == 1)
+            bfBlockerFound = 0;
 
         if (setBlocker) {
             if (pTargetPosW) {
                 *pTargetPosW = tmpOrigin;
-                block_mask |= 4;
+                bfBlockerFound |= kBMaskBlockerTargetPosUpdated;
             }
             if (pTarget) {
                 *pTarget = (ShootableMapObject *)blockerObj;
-                block_mask |= 2;
+                bfBlockerFound |= kBMaskBlockerTargetObjectUpdated;
             }
         } else {
             if (pTarget && *pTarget) {
                 if (*pTarget != blockerObj)
-                    block_mask |= 6;
+                    bfBlockerFound |= 6;
                 else
-                    block_mask = 1;
+                    bfBlockerFound = 1;
             } else
-                block_mask |= 6;
+                bfBlockerFound |= 6;
         }
     } else {
         if (setBlocker) {
-            if (block_mask != 1 && pTarget)
+            if (bfBlockerFound != 1 && pTarget)
                 *pTarget = NULL;
         }
     }
 
-    return block_mask;
+    return bfBlockerFound;
 }
 
 /*!

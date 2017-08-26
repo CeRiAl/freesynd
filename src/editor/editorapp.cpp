@@ -357,10 +357,6 @@ bool EditorApp::initialize(const std::string& iniPath) {
         return false;
     }
 
-    if (!loadWalkData()) {
-        return false;
-    }
-
     LOG(Log::k_FLG_INFO, "EditorApp", "initialize", ("loading game sprites..."))
     if (!gameSprites().loaded())
         gameSprites().load();
