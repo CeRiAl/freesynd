@@ -262,11 +262,13 @@ if (BUILD_DEV_TOOLS)
 		core/gamesession.cpp
 		core/missionbriefing.cpp
 		core/researchmanager.cpp
+		model/mod.cpp
 		model/research.cpp
 		model/squad.cpp
 		model/objectivedesc.cpp
 		model/shot.cpp
 		model/weaponholder.cpp
+		model/weapon.cpp
 		ia/actions.cpp
 		ia/behaviour.cpp
 		mission.cpp
