@@ -78,7 +78,7 @@ void SdlMixerSound::stop(int channel) const
 }
 
 /*!
- * Each sample has its own volume wich is taken into account
+ * Each sample has its own volume which is taken into account
  * on the mixing phase. This method sets the volume of this
  * sample.
  * \param A value between 0 and maximum volume.
