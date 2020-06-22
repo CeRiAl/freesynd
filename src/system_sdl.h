@@ -79,7 +79,7 @@ protected:
     bool loadCursorSprites();
 
     //! Sets the key arguments with some key codes
-    void checkKeyCodes(SDL_keysym sym, Key &key);
+    void checkKeyCodes(SDL_Keysym sym, Key &key);
 
 protected:
     /*! A constant that holds the cursor icon width and height.*/
@@ -97,13 +97,16 @@ protected:
     /*! Current cursor hotspot.*/
     int cursor_hs_y_;
 
+    SDL_Window *display_window_;
+    SDL_Renderer *display_renderer_;
     SDL_Surface *screen_surf_;
+    SDL_Texture *screen_texture_;
     SDL_Surface *temp_surf_;
     /*! 
      * A surface that holds all cursors
      * images.
      */
-    SDL_Surface *cursor_surf_;
+    SDL_Texture *cursor_texture_;
     /*! A rect that identify the part of
      * the cursor surface for the current cursor.*/
     SDL_Rect cursor_rect_;

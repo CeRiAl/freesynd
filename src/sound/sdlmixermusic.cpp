@@ -109,7 +109,7 @@ bool SdlMixerMusic::loadMusic(uint8 * musicData, int size)
         Audio::error("SdlMixerMusic", "loadMusic", "Failed creating SDL_RW buffer from memory");
         return false;
     }
-    Mix_Music *newmusic = Mix_LoadMUS_RW(rw);
+    Mix_Music *newmusic = Mix_LoadMUS_RW(rw, 1);
 
     if (!newmusic) {
         Audio::error("SdlMixerMusic", "loadMusic", "Failed loading music from SDL_RW buffer");
