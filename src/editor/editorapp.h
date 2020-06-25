@@ -126,11 +126,11 @@ private:
     std::string iniPath_;
 
     GameSpriteManager game_sprites_;
-    MenuManager menus_;
     MapManager maps_;
     SoundManager intro_sounds_;
     SoundManager game_sounds_;
     MusicManager music_;
+    MenuManager menus_;
     /*!
      * Use to store id of missions that are found in the search menu.
      */
