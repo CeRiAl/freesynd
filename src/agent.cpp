@@ -98,8 +98,8 @@ bool Agent::loadFromFile(PortableFile &infile, const FormatVersion& v) {
     male_ = infile.read8b();
     // active
     active_ = infile.read8b();
-    // health : not used
-    int health = infile.read32();
+    // health
+    // int health = infile.read32();    // FIXME: not used
 
     return true;
 }

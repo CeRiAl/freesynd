@@ -116,21 +116,21 @@ private:
 private:
     bool running_;
 
-    std::auto_ptr<Screen> screen_;
-    std::auto_ptr<System> system_;
+    std::unique_ptr<Screen> screen_;
+    std::unique_ptr<System> system_;
     /*! A structure to hold general application informations.*/
-    std::auto_ptr<AppContext> context_;
+    std::unique_ptr<AppContext> context_;
     /*! Controls the game logic. */
-    std::auto_ptr<GameController> game_ctlr_;
+    std::unique_ptr<GameController> game_ctlr_;
 
     std::string iniPath_;
 
     GameSpriteManager game_sprites_;
-    MenuManager menus_;
     MapManager maps_;
     SoundManager intro_sounds_;
     SoundManager game_sounds_;
     MusicManager music_;
+    MenuManager menus_;
     /*!
      * Use to store id of missions that are found in the search menu.
      */
