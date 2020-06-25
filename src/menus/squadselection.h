@@ -49,7 +49,7 @@ class SquadSelection {
             }
 
             ~Iterator() {
-                idx_ = idx_;
+                // idx_ = idx_;
             }
 
             // The assignment and relational operators are straightforward
