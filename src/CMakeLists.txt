@@ -201,7 +201,7 @@ source_group(IA REGULAR_EXPRESSION ia/*)
 
 add_executable (freesynd ${SOURCES} ${HEADERS})
 
-target_link_libraries (freesynd ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES})
+target_link_libraries (freesynd ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES} -lGL -lGLU)
 
 # Use -DBIN_DIR to override binary installation location
 if(NOT BIN_DIR)
@@ -291,7 +291,7 @@ if (BUILD_DEV_TOOLS)
 		system_sdl.cpp
 		${DEV_TOOLS_HEADERS}
 	)
-	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES})
+	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES} -lGL -lGLU)
 
 	target_compile_definitions (dump PRIVATE EDITOR_)
 else ()

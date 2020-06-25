@@ -30,6 +30,8 @@
 #include "utils/file.h"
 #include "utils/log.h"
 
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <SDL_image.h>
 
 SDL_Joystick *joy = NULL;
@@ -40,11 +42,12 @@ SystemSDL::SystemSDL(int depth) {
     depth_ = depth;
     keyModState_ = 0;
     screen_surf_ = NULL;
-    screen_texture_ = NULL;
+    screen_texture_ = 0;
     display_window_ = NULL;
     display_renderer_ = NULL;
+    gl_context_ = NULL;
     temp_surf_ = NULL;
-    cursor_texture_ = NULL;
+    cursor_texture_ = 0;
 }
 
 SystemSDL::~SystemSDL() {
@@ -56,12 +59,8 @@ SystemSDL::~SystemSDL() {
         SDL_FreeSurface(screen_surf_);
     }
 
-    if (cursor_texture_) {
-        SDL_DestroyTexture(cursor_texture_);
-    }
-
-    if (screen_texture_) {
-        SDL_DestroyTexture(screen_texture_);
+    if (gl_context_) {
+        SDL_GL_DeleteContext(gl_context_);
     }
 
 #ifdef HAVE_SDL_MIXER
@@ -119,17 +118,51 @@ bool SystemSDL::initialize(bool fullscreen) {
                                                           0));
     */
 
-    /* Construct a surface that's in a format close to the texture */
-    screen_surf_ = SDL_CreateRGBSurface(0,
-        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
-        32, 0, 0, 0, 0);
-
     display_window_ =
         SDL_CreateWindow("FreeSynd",
                          SDL_WINDOWPOS_UNDEFINED,
                          SDL_WINDOWPOS_UNDEFINED,
                          GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
-                         0);
+                         SDL_WINDOW_OPENGL);
+
+    /* Construct a surface that's in a format close to the texture */
+    screen_surf_ = SDL_CreateRGBSurface(0,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        32, 0, 0, 0, 0);
+
+	printf("Initializing OpenGL context.\n");
+	gl_context_ = SDL_GL_CreateContext(display_window_);
+	if(!gl_context_) {
+      fprintf(stderr, "Couldn't create OpenGL context: %s\n", SDL_GetError());
+    }
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    /*
+    //Initialize Projection Matrix
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+
+    //Initialize Modelview Matrix
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+
+    //Initialize clear color
+    glClearColor( 0.f, 0.f, 0.f, 1.f );
+    */
+
+    glClearColor(0.8, 0.8, 0.8, 1.0);
+
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.5);
+    glViewport (0, 0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+
+    //Check for error
+    GLenum error = glGetError();
+    if( error != GL_NO_ERROR ) {
+        printf( "Error initializing OpenGL! %s\n", gluErrorString( error ) );
+        return false;
+    }
+
 
     display_renderer_ = SDL_CreateRenderer(display_window_, -1, 0);
 
@@ -137,15 +170,33 @@ bool SystemSDL::initialize(bool fullscreen) {
         SDL_CreateRGBSurface(SDL_SWSURFACE, GAME_SCREEN_WIDTH,
                              GAME_SCREEN_HEIGHT, 8, 0, 0, 0, 0);
 
+    /*
     screen_texture_ = SDL_CreateTexture(display_renderer_,
                                         SDL_PIXELFORMAT_RGBA8888,
                                         SDL_TEXTUREACCESS_STREAMING,
                                         GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    */
+
+    glGenTextures(1, &screen_texture_);
+    glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    if(true) {  // _smooth
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+                GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_);
 
     // screen_texture_ = SDL_CreateTextureFromSurface(display_renderer_, temp_surf_);
 #endif
 
-    cursor_texture_ = NULL;
     // Init SDL_Image library
     int sdl_img_flags = IMG_INIT_PNG;
     int initted = IMG_Init(sdl_img_flags);
@@ -163,6 +214,222 @@ bool SystemSDL::initialize(bool fullscreen) {
     }
 
     return true;
+}
+
+bool SystemSDL::enterOnScreenMode(void) {
+  glPushAttrib(GL_TRANSFORM_BIT | GL_VIEWPORT_BIT) ; 
+
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+
+  glOrtho(0.0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, 0.0, 0.0, 1.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+    GLenum error = glGetError();
+    if( error != GL_NO_ERROR ) {
+        printf( "Error initializing OpenGL! %s\n", gluErrorString( error ) );
+        return false;
+    }
+
+  on_screen_mode_ = true;
+
+  return true;
+}
+
+bool SystemSDL::leaveOnScreenMode(void) {
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+
+  glPopAttrib();
+
+  on_screen_mode_ = false;
+
+  return true;
+}
+
+void errorcheck() {
+    int errormsg;
+    if ((errormsg = glGetError()) != GL_NO_ERROR)
+    {
+        printf("Unable to bind texture! SDL Error: %s\n", errormsg);
+        exit(0);
+    }
+}
+
+bool SystemSDL::renderScreen(void)
+{
+    // renderFrame(1374);
+    {
+        glEnable(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, screen_texture_);
+        float texw;
+        float texh;
+
+        /*
+        int res1 = SDL_GL_BindTexture(screen_texture_, &texw, &texh);
+
+        if (res1 != 0) {
+            printf("Unable to bind texture! SDL Error: %s\n", SDL_GetError());
+        }
+        */
+
+        if(true) {     // smooth?
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+
+        errorcheck();
+
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+        errorcheck();
+
+        static const float mult = 4.0 * sqrtf(2.0);
+        if(on_screen_mode_) {
+            // glClear( GL_COLOR_BUFFER_BIT );
+
+            /*
+            glBegin( GL_QUADS );
+                glVertex2f( -0.5f, -0.5f );
+                glVertex2f(  0.5f, -0.5f );
+                glVertex2f(  0.5f,  0.5f );
+                glVertex2f( -0.5f,  0.5f );
+            glEnd();
+            */
+
+            // glCallList(fullscreen);
+
+            GLfloat w = (float)screen_surf_->w;
+            GLfloat h = (float)screen_surf_->h;
+
+            glTexImage2D(
+                GL_TEXTURE_2D, 0, GL_RGBA, screen_surf_->w, screen_surf_->h, 0, GL_RGBA,
+                GL_UNSIGNED_BYTE, screen_surf_->pixels);
+
+
+            w = 100.0f;
+            h = 100.0f;
+
+            glBegin(GL_QUADS);
+                glTexCoord2f(0.0, 0.0); 
+                glVertex2f(0, 0);
+
+                glTexCoord2f(1, 0.0);
+                glVertex2f(w, 0.0);
+
+                glTexCoord2f(1, 1);
+                glVertex2f(w, h);
+
+                glTexCoord2f(0, 1);
+                glVertex2f(0, h);
+            glEnd();
+
+            errorcheck();
+        } else {
+            glPushMatrix();
+            glScalef(mult, mult, mult);
+            // glCallList(_frame_list_base + id);
+            glPopMatrix();
+        }
+
+        glDisable(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // SDL_GL_UnbindTexture(screen_texture_);
+
+    }
+
+
+    // glTranslatef(64,0,0);
+
+
+    return true;
+}
+
+void SystemSDL::renderCursor() {
+    /*** render cursor  ***/
+    if (cursor_visible_) {
+        SDL_Rect dst;
+
+        dst.w = cursor_rect_.w;
+        dst.h = cursor_rect_.h;
+        dst.x = cursor_x_ - cursor_hs_x_;
+        dst.y = cursor_y_ - cursor_hs_y_;
+        // SDL_RenderCopy(display_renderer_, cursor_texture_, &cursor_rect_, &dst);
+
+        {
+            // glUseProgramObjectARB(0);
+            glPushMatrix();
+    	    glTranslatef(dst.x, dst.y, 0);
+
+            glEnable(GL_TEXTURE_2D);
+
+            glBindTexture(GL_TEXTURE_2D, cursor_texture_);
+
+            GLint whichID;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &whichID);
+
+            /*
+            float texw;
+            float texh;
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            int res1 = SDL_GL_BindTexture(cursor_texture_, &texw, &texh);
+            if (res1 != 0) {
+                printf("Unable to bind texture! SDL Error: %s\n", SDL_GetError());
+            }
+            */
+
+            if(true) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            } else {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+
+            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+            glBegin(GL_QUADS);
+
+                glTexCoord2f(0.0, 0.0); 
+                glVertex2f(cursor_rect_.x, cursor_rect_.y);
+
+                glTexCoord2f(0.0, 1.0);
+                glVertex2f(cursor_rect_.x, cursor_rect_.y + cursor_rect_.h);
+
+                glTexCoord2f(1.0, 1.0);
+                glVertex2f(cursor_rect_.x + cursor_rect_.w, cursor_rect_.y + cursor_rect_.h);
+
+                glTexCoord2f(1.0, 0.0);
+                glVertex2f(cursor_rect_.x + cursor_rect_.w, cursor_rect_.y);
+
+            glEnd();
+
+            glDisable(GL_TEXTURE_2D);
+
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &whichID);
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+            // SDL_GL_UnbindTexture(cursor_texture_);
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+            glPopMatrix();
+        }
+
+        update_cursor_ = false;
+    }
 }
 
 void SystemSDL::updateScreen() {
@@ -187,9 +454,7 @@ void SystemSDL::updateScreen() {
 
         g_Screen.clearDirty();
 
-        // SDL_BlitSurface(temp_surf_, NULL, screen_surf_, NULL);
         //SDL_UpdateTexture(screen_texture_, NULL, temp_surf_->pixels, temp_surf_->pitch);
-
 
         /*
         * Blit 8-bit palette surface onto the window surface that's
@@ -210,35 +475,25 @@ void SystemSDL::updateScreen() {
         SDL_UnlockTexture(screen_texture_);
     
         // SDL_RenderClear(sdlRenderer);
-        SDL_Rect srcrect;
-        SDL_Rect dstrect;
 
-        srcrect.w = temp_surf_->w;
-        srcrect.h = temp_surf_->h;
-        srcrect.x = 0;
-        srcrect.y = 0;
+        /**********************/
+        /** render on screen **/
+        /**********************/
+        enterOnScreenMode();
+            /*** render screen  ***/
+            // SDL_RenderCopy(display_renderer_, screen_texture_, NULL, NULL);
+            // renderScreen();
 
-        dstrect.w = GAME_SCREEN_WIDTH;
-        dstrect.h = GAME_SCREEN_HEIGHT;
-        dstrect.x = 0;
-        dstrect.y = 0;
+            renderCursor();
+        leaveOnScreenMode();
 
-        // SDL_RenderCopy(display_renderer_, screen_texture_, &srcrect, &dstrect);
-        SDL_RenderCopy(display_renderer_, screen_texture_, NULL, NULL);
-
-        if (cursor_visible_) {
-            SDL_Rect dst;
-
-            dst.w = cursor_rect_.w;
-            dst.h = cursor_rect_.h;
-            dst.x = cursor_x_ - cursor_hs_x_;
-            dst.y = cursor_y_ - cursor_hs_y_;
-            SDL_RenderCopy(display_renderer_, cursor_texture_, &cursor_rect_, &dst);
-            update_cursor_ = false;
-        }
 
         // SDL_Flip(screen_surf_);
-        SDL_RenderPresent(display_renderer_);
+        // SDL_RenderPresent(display_renderer_);
+
+        glFlush();
+
+        SDL_GL_SwapWindow(display_window_);
     }
 }
 
@@ -476,6 +731,110 @@ void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
     SDL_SetPaletteColors(temp_surf_->format->palette, &color, 0, 1);
 }
 
+/* Quick utility function for texture creation */
+static int powerOfTwo(int input) {
+	int value = 1;
+
+	while (value < input) {
+		value <<= 1;
+	}
+	return value;
+}
+
+SDL_Surface *prepGLTexture(SDL_Surface *surface, GLfloat *texCoords, const bool freeSource) {
+	/* Use the surface width and height expanded to powers of 2 */
+	int w = powerOfTwo(surface->w);
+	int h = powerOfTwo(surface->h);
+	if (texCoords != 0) {
+		texCoords[0] = 0.0f;					/* Min X */
+		texCoords[1] = 0.0f;					/* Min Y */
+		texCoords[2] = (GLfloat)surface->w / w;	/* Max X */
+		texCoords[3] = (GLfloat)surface->h / h;	/* Max Y */
+	}
+
+	SDL_Surface *image = SDL_CreateRGBSurface(
+		SDL_SWSURFACE,
+		w, h,
+		32,
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN /* OpenGL RGBA masks */
+		0x000000FF, 
+		0x0000FF00, 
+		0x00FF0000, 
+		0xFF000000
+#else
+		0xFF000000,
+		0x00FF0000, 
+		0x0000FF00, 
+		0x000000FF
+#endif
+	);
+	if ( image == NULL ) {
+		return 0;
+	}
+
+	/* Save the alpha blending attributes */
+    /*
+	Uint32 savedFlags = surface->flags&(SDL_SRCALPHA|SDL_RLEACCELOK);
+	Uint8  savedAlpha = surface->format->alpha;
+	if ( (savedFlags & SDL_SRCALPHA) == SDL_SRCALPHA ) {
+		SDL_SetAlpha(surface, 0, 0);
+	}
+    */
+
+	SDL_Rect srcArea, destArea;
+	/* Copy the surface into the GL texture image */
+	srcArea.x = 0; destArea.x = 0;
+	/* Copy it in at the bottom, because we're going to flip
+	   this image upside-down in a moment
+	*/
+	srcArea.y = 0; destArea.y = h - surface->h;
+	srcArea.w = surface->w;
+	srcArea.h = surface->h;
+	SDL_BlitSurface(surface, &srcArea, image, &destArea);
+
+	/* Restore the alpha blending attributes */
+    /*
+	if ((savedFlags & SDL_SRCALPHA) == SDL_SRCALPHA) {
+		SDL_SetAlpha(surface, savedFlags, savedAlpha);
+	}
+    */
+
+	/* Turn the image upside-down, because OpenGL textures
+	   start at the bottom-left, instead of the top-left
+	*/
+#ifdef _MSC_VER
+	Uint8 *line = new Uint8[image->pitch];
+#else
+	Uint8 line[image->pitch];
+#endif
+	/* These two make the following more readable */
+	Uint8 *pixels = static_cast<Uint8*>(image->pixels);
+	Uint16 pitch = image->pitch;
+	int ybegin = 0;
+	int yend = image->h - 1;
+
+	// TODO: consider if this lock is legal/appropriate
+	if (SDL_MUSTLOCK(image)) { SDL_LockSurface(image); }
+	while (ybegin < yend) {
+		memcpy(line, pixels + pitch*ybegin, pitch);
+		memcpy(pixels + pitch*ybegin, pixels + pitch*yend, pitch);
+		memcpy(pixels + pitch*yend, line, pitch);
+		ybegin++;
+		yend--;
+	}
+	if (SDL_MUSTLOCK(image)) { SDL_UnlockSurface(image); }
+
+	if (freeSource) {
+		SDL_FreeSurface(surface);
+	}
+
+#ifdef _MSC_VER
+	delete[] line;
+#endif
+
+	return image;
+}
+
 /*!
  * This method uses the SDL_Image library to load a file called
  * cursors/cursors.png under the root path.
@@ -493,12 +852,22 @@ bool SystemSDL::loadCursorSprites() {
         return false;
     }
 
-    cursor_texture_ = SDL_CreateTextureFromSurface(display_renderer_, cursor_surf);
+    cursor_surf = prepGLTexture(cursor_surf);
 
+    /*
+    cursor_texture_ = SDL_CreateTextureFromSurface(display_renderer_, cursor_surf);
     if (!cursor_texture_) {
         printf("Unable to create texture for cursor! SDL Error: %s\n", SDL_GetError());
         return false;
     }
+    */
+
+    glGenTextures(1, &cursor_texture_);
+    glBindTexture(GL_TEXTURE_2D, cursor_texture_);
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA, cursor_surf->w, cursor_surf->h, 0, GL_RGBA,
+        GL_UNSIGNED_BYTE, cursor_surf->pixels);
 			
     SDL_FreeSurface(cursor_surf);
 

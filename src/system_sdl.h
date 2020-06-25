@@ -28,7 +28,12 @@
 
 #include <SDL.h>
 
+#include <GL/gl.h>
+#include <GL/glu.h>
+
 #include "keys.h"
+
+SDL_Surface *prepGLTexture(SDL_Surface *surface, GLfloat *texCoords = 0, bool freeSource = true);
 
 //! Implementation of the System interface for SDL.
 /*!
@@ -100,13 +105,15 @@ protected:
     SDL_Window *display_window_;
     SDL_Renderer *display_renderer_;
     SDL_Surface *screen_surf_;
-    SDL_Texture *screen_texture_;
+    GLuint screen_texture_;
     SDL_Surface *temp_surf_;
+
+    SDL_GLContext gl_context_;
     /*! 
      * A surface that holds all cursors
      * images.
      */
-    SDL_Texture *cursor_texture_;
+    GLuint cursor_texture_;
     /*! A rect that identify the part of
      * the cursor surface for the current cursor.*/
     SDL_Rect cursor_rect_;
@@ -119,6 +126,16 @@ protected:
      * See KeyMod enumeration to know all modifier buttons.
      */
     int keyModState_;
+
+private:
+    bool on_screen_mode_;
+
+    void renderCursor(void);
+    bool renderScreen(void);
+
+    bool enterOnScreenMode(void);
+    bool leaveOnScreenMode(void);
+
 };
 
 #endif

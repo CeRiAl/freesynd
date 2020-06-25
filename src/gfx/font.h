@@ -98,7 +98,6 @@ public:
 
 protected:
     using Font::getSprite;
-
     //! returns the sprite which can be highlighted or not
     virtual Sprite *getSprite(unsigned char dos_char, bool highlighted);
     //! draws a text at the given position
