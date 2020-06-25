@@ -513,7 +513,7 @@ uint32 XMidi::convertListToMTrk (unsigned char *buf, const midi_event *mlist)
     unsigned char    last_status = 0;
     uint32     i = 8;
     uint32     j;
-    int i_start;
+    // int i_start; // Unused
 
     /* This is set true to make the song end when an XMidiFile break is hit. */
     int    sshock_break = 0;
@@ -528,7 +528,7 @@ uint32 XMidi::convertListToMTrk (unsigned char *buf, const midi_event *mlist)
 
     for (const midi_event* event = mlist; event; event=event->next)
     {
-        i_start = i;
+        // i_start = i; // Unused
 
         /* If sshock_break is set, the delta is only 0 */
         delta = sshock_break?0:event->time - time;
