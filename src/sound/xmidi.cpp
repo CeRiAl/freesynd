@@ -717,23 +717,23 @@ bool XMidi::handleChunkXMID(XMidiFile* xmidi, const unsigned char* stream, uint3
     uint32 read_so_far = 0;
 
     do {
-    bool result;
+        bool result;
 
-    getIFFchunkHeader(chunk, stream);
-    stream += 8;
-    read_so_far += 8;
+        getIFFchunkHeader(chunk, stream);
+        stream += 8;
+        read_so_far += 8;
 
-    if (chunk.isType("FORM")) {
-        result = handleChunkFORM(xmidi, stream, chunk.size);
-    } else
-        if (chunk.isType("TIMB")) {
-        result = handleChunkTIMB(xmidi, stream, chunk.size);
+        if (chunk.isType("FORM")) {
+            result = handleChunkFORM(xmidi, stream, chunk.size);
         } else
-        if (chunk.isType("EVNT")) {
-            result = handleChunkEVNT(xmidi, stream, chunk.size);
-        } else {
-            return false; // We don't know how to handle this
-        }
+            if (chunk.isType("TIMB")) {
+            result = handleChunkTIMB(xmidi, stream, chunk.size);
+            } else
+            if (chunk.isType("EVNT")) {
+                result = handleChunkEVNT(xmidi, stream, chunk.size);
+            } else {
+                return false; // We don't know how to handle this
+            }
         if (!result) {
             return 0; // something failed
         }
