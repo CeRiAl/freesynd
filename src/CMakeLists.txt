@@ -28,7 +28,7 @@ set (SOURCES
 	ia/behaviour.cpp
 	default_ini.h
 	freesynd.cpp
-    ipastim.cpp
+	ipastim.cpp
 	gfx/dirtylist.cpp
 	gfx/fliplayer.cpp
 	gfx/font.cpp
@@ -99,7 +99,7 @@ set(HEADERS
 	common.h
 	config.h
 	cp437.h
-    ipastim.h
+	ipastim.h
 	keys.h
 	map.h
 	mapmanager.h
@@ -201,7 +201,7 @@ source_group(IA REGULAR_EXPRESSION ia/*)
 
 add_executable (freesynd ${SOURCES} ${HEADERS})
 
-target_link_libraries (freesynd ${PNG_LIBRARIES} ${SDL_LIBRARY} ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY})
+target_link_libraries (freesynd ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES})
 
 # Use -DBIN_DIR to override binary installation location
 if(NOT BIN_DIR)
@@ -223,6 +223,7 @@ if (BUILD_DEV_TOOLS)
 		editor/listmissionmenu.h)
 
 	add_executable (dump
+		default_ini.h
 		dump.cpp
 		gfx/dirtylist.cpp
 		gfx/fliplayer.cpp
@@ -290,7 +291,7 @@ if (BUILD_DEV_TOOLS)
 		system_sdl.cpp
 		${DEV_TOOLS_HEADERS}
 	)
-	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL_LIBRARY} ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY})
+	target_link_libraries (dump ${PNG_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES})
 
 	target_compile_definitions (dump PRIVATE EDITOR_)
 else ()

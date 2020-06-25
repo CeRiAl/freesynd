@@ -40,8 +40,11 @@ SystemSDL::SystemSDL(int depth) {
     depth_ = depth;
     keyModState_ = 0;
     screen_surf_ = NULL;
+    screen_texture_ = NULL;
+    display_window_ = NULL;
+    display_renderer_ = NULL;
     temp_surf_ = NULL;
-    cursor_surf_ = NULL;
+    cursor_texture_ = NULL;
 }
 
 SystemSDL::~SystemSDL() {
@@ -49,8 +52,16 @@ SystemSDL::~SystemSDL() {
         SDL_FreeSurface(temp_surf_);
     }
 
-    if (cursor_surf_) {
-        SDL_FreeSurface(cursor_surf_);
+    if (screen_surf_) {
+        SDL_FreeSurface(screen_surf_);
+    }
+
+    if (cursor_texture_) {
+        SDL_DestroyTexture(cursor_texture_);
+    }
+
+    if (screen_texture_) {
+        SDL_DestroyTexture(screen_texture_);
     }
 
 #ifdef HAVE_SDL_MIXER
@@ -83,11 +94,11 @@ bool SystemSDL::initialize(bool fullscreen) {
     }
 #endif
 
-    SDL_WM_SetCaption("FreeSynd", NULL);
+    // SDL_WM_SetCaption("FreeSynd", NULL);
 
     // Keyboard init
-    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-    SDL_EnableUNICODE(1);
+    // SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+    // SDL_EnableUNICODE(1);
 
     // Audio initialisation
     if (!Audio::init()) {
@@ -100,18 +111,41 @@ bool SystemSDL::initialize(bool fullscreen) {
     temp_surf_ =
         SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
 #else
+    /*
     screen_surf_ =
         SDL_SetVideoMode(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, depth_,
                          SDL_DOUBLEBUF | SDL_HWSURFACE | (fullscreen ?
                                                           SDL_FULLSCREEN :
                                                           0));
+    */
+
+    /* Construct a surface that's in a format close to the texture */
+    screen_surf_ = SDL_CreateRGBSurface(0,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        32, 0, 0, 0, 0);
+
+    display_window_ =
+        SDL_CreateWindow("FreeSynd",
+                         SDL_WINDOWPOS_UNDEFINED,
+                         SDL_WINDOWPOS_UNDEFINED,
+                         GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+                         0);
+
+    display_renderer_ = SDL_CreateRenderer(display_window_, -1, 0);
+
     temp_surf_ =
         SDL_CreateRGBSurface(SDL_SWSURFACE, GAME_SCREEN_WIDTH,
                              GAME_SCREEN_HEIGHT, 8, 0, 0, 0, 0);
 
+    screen_texture_ = SDL_CreateTexture(display_renderer_,
+                                        SDL_PIXELFORMAT_RGBA8888,
+                                        SDL_TEXTUREACCESS_STREAMING,
+                                        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+
+    // screen_texture_ = SDL_CreateTextureFromSurface(display_renderer_, temp_surf_);
 #endif
 
-    cursor_surf_ = NULL;
+    cursor_texture_ = NULL;
     // Init SDL_Image library
     int sdl_img_flags = IMG_INIT_PNG;
     int initted = IMG_Init(sdl_img_flags);
@@ -153,18 +187,58 @@ void SystemSDL::updateScreen() {
 
         g_Screen.clearDirty();
 
+        // SDL_BlitSurface(temp_surf_, NULL, screen_surf_, NULL);
+        //SDL_UpdateTexture(screen_texture_, NULL, temp_surf_->pixels, temp_surf_->pitch);
+
+
+        /*
+        * Blit 8-bit palette surface onto the window surface that's
+        * closer to the texture's format
+        */
         SDL_BlitSurface(temp_surf_, NULL, screen_surf_, NULL);
+
+        /* Modify the texture's pixels */
+        void *pixels;
+        int pitch;
+        
+        SDL_LockTexture(screen_texture_, NULL, &pixels, &pitch);
+        SDL_ConvertPixels(screen_surf_->w, screen_surf_->h,
+            screen_surf_->format->format,
+            screen_surf_->pixels, screen_surf_->pitch,
+            SDL_PIXELFORMAT_RGBA8888,
+            pixels, pitch);
+        SDL_UnlockTexture(screen_texture_);
+    
+        // SDL_RenderClear(sdlRenderer);
+        SDL_Rect srcrect;
+        SDL_Rect dstrect;
+
+        srcrect.w = temp_surf_->w;
+        srcrect.h = temp_surf_->h;
+        srcrect.x = 0;
+        srcrect.y = 0;
+
+        dstrect.w = GAME_SCREEN_WIDTH;
+        dstrect.h = GAME_SCREEN_HEIGHT;
+        dstrect.x = 0;
+        dstrect.y = 0;
+
+        // SDL_RenderCopy(display_renderer_, screen_texture_, &srcrect, &dstrect);
+        SDL_RenderCopy(display_renderer_, screen_texture_, NULL, NULL);
 
         if (cursor_visible_) {
             SDL_Rect dst;
 
+            dst.w = cursor_rect_.w;
+            dst.h = cursor_rect_.h;
             dst.x = cursor_x_ - cursor_hs_x_;
             dst.y = cursor_y_ - cursor_hs_y_;
-            SDL_BlitSurface(cursor_surf_, &cursor_rect_, screen_surf_, &dst);
+            SDL_RenderCopy(display_renderer_, cursor_texture_, &cursor_rect_, &dst);
             update_cursor_ = false;
         }
 
-        SDL_Flip(screen_surf_);
+        // SDL_Flip(screen_surf_);
+        SDL_RenderPresent(display_renderer_);
     }
 }
 
@@ -173,7 +247,7 @@ void SystemSDL::updateScreen() {
  * a not printable key) returns the corresponding entry in the KeyFunc enumeration.
  * \returns If key code is not a function key, returns KEY_UNKNOWN.
  */
-void SystemSDL::checkKeyCodes(SDL_keysym keysym, Key &key) {
+void SystemSDL::checkKeyCodes(SDL_Keysym keysym, Key &key) {
     key.keyFunc = KFC_UNKNOWN;
     key.keyVirt = KVT_UNKNOWN;
     switch(keysym.sym) {
@@ -263,20 +337,20 @@ bool SystemSDL::pumpEvents(FS_Event *pEvtOut) {
                     // not released.
                     pEvtOut->type = EVT_KEY_DOWN;
                     Key key;
-                    key.unicode = 0;
                     checkKeyCodes(evtIn.key.keysym, key);
-                    if (key.keyFunc == KFC_UNKNOWN) {
-                        key.unicode = evtIn.key.keysym.unicode;
 #if _DEBUG
+                    key.unicode = 0;
+                    if (key.keyFunc == KFC_UNKNOWN) {
+                        // key.unicode = evtIn.key.keysym.unicode;
                         printf( "Scancode: 0x%02X", evtIn.key.keysym.scancode );
                         printf( ", Name: %s", SDL_GetKeyName( evtIn.key.keysym.sym ) );
-                        printf(", Unicode: " );
-                        if( evtIn.key.keysym.unicode < 0x80 && evtIn.key.keysym.unicode > 0 ){
-                            printf( "%c (0x%04X)\n", (char)evtIn.key.keysym.unicode,
-                                    evtIn.key.keysym.unicode );
-                        } else{
-                            printf( "? (0x%04X)\n", evtIn.key.keysym.unicode );
-                        }
+                        // printf(", Unicode: " );
+                        // if( evtIn.key.keysym.unicode < 0x80 && evtIn.key.keysym.unicode > 0 ){
+                        //     printf( "%c (0x%04X)\n", (char)evtIn.key.keysym.unicode,
+                        //             evtIn.key.keysym.unicode );
+                        // } else{
+                        //     printf( "? (0x%04X)\n", evtIn.key.keysym.unicode );
+                        // }
 #endif
                     }
                     pEvtOut->key.key = key;
@@ -374,7 +448,8 @@ void SystemSDL::setPalette6b3(const uint8 * pal, int cols) {
 #endif
     }
 
-    SDL_SetColors(temp_surf_, palette, 0, cols);
+    // SDL_SetColors(temp_surf_, palette, 0, cols);
+    SDL_SetPaletteColors(temp_surf_->format->palette, palette, 0, cols);    
 }
 
 void SystemSDL::setPalette8b3(const uint8 * pal, int cols) {
@@ -386,7 +461,8 @@ void SystemSDL::setPalette8b3(const uint8 * pal, int cols) {
         palette[i].b = pal[i * 3 + 2];
     }
 
-    SDL_SetColors(temp_surf_, palette, 0, cols);
+    // SDL_SetColors(temp_surf_, palette, 0, cols);
+    SDL_SetPaletteColors(temp_surf_->format->palette, palette, 0, cols);
 }
 
 void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
@@ -396,7 +472,8 @@ void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
     color.g = g;
     color.b = b;
 
-    SDL_SetColors(temp_surf_, &color, index, 1);
+    // SDL_SetColors(temp_surf_, &color, index, 1);
+    SDL_SetPaletteColors(temp_surf_->format->palette, &color, 0, 1);
 }
 
 /*!
@@ -404,17 +481,26 @@ void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
  * cursors/cursors.png under the root path.
  * The file is loaded into the cursor surface.
  * \return False if the loading has failed. If it's the case, 
- * cursor_surf_ will be NULL.
+ * cursor_texture_ will be NULL.
  */
 bool SystemSDL::loadCursorSprites() {
     cursor_rect_.w = cursor_rect_.h = CURSOR_WIDTH;
 
-    cursor_surf_ = IMG_Load(File::dataFullPath("cursors/cursors.png").c_str());
+    SDL_Surface *cursor_surf = IMG_Load(File::dataFullPath("cursors/cursors.png").c_str());
 
-    if (!cursor_surf_) {
+    if (!cursor_surf) {
         printf("Cannot load cursors image: %s\n", IMG_GetError());
         return false;
     }
+
+    cursor_texture_ = SDL_CreateTextureFromSurface(display_renderer_, cursor_surf);
+
+    if (!cursor_texture_) {
+        printf("Unable to create texture for cursor! SDL Error: %s\n", SDL_GetError());
+        return false;
+    }
+			
+    SDL_FreeSurface(cursor_surf);
 
     return true;
 }
@@ -430,7 +516,7 @@ int SystemSDL::getMousePos(int *x, int *y) {
 }
 
 void SystemSDL::hideCursor() {
-    if (cursor_surf_ != NULL) {
+    if (cursor_texture_ != NULL) {
         cursor_visible_ = false;
     } else {
         // Custom cursor surface doesn't
@@ -440,7 +526,7 @@ void SystemSDL::hideCursor() {
 }
 
 void SystemSDL::showCursor() {
-    if (cursor_surf_ != NULL) {
+    if (cursor_texture_ != NULL) {
         cursor_visible_ = true;
     } else {
         // Custom cursor surface doesn't

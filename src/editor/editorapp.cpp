@@ -58,14 +58,17 @@
 #include "editor/editormenuid.h"
 
 EditorApp::EditorApp(bool disable_sound):
-    context_(new AppContext), game_ctlr_(new GameController),
-    screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT))
+    screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT)),
 #ifdef SYSTEM_SDL
-    , system_(new SystemSDL())
+    system_(new SystemSDL()),
 #else
 #error A suitable System object has not been defined!
 #endif
-    , intro_sounds_(disable_sound), game_sounds_(disable_sound), music_(disable_sound),
+    context_(new AppContext),
+    game_ctlr_(new GameController),
+    intro_sounds_(disable_sound),
+    game_sounds_(disable_sound),
+    music_(disable_sound),
     menus_(new EditorMenuFactory(), &game_sounds_)
 {
     running_ = true;

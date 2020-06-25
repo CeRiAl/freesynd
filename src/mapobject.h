@@ -587,6 +587,7 @@ public:
     //! Set whether to include static in search for blockers
     void setExcludedFromBlockers(bool exclude) { excludedFromBlockers_ = exclude; }
 
+    using MapObject::animate;
     virtual bool animate(int elapsed, Mission *obj) {
         return MapObject::animate(elapsed);
     }

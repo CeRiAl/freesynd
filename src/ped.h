@@ -260,6 +260,8 @@ public:
     bool switchActionStateTo(uint32 as);
     bool switchActionStateFrom(uint32 as);
     void synchDrawnAnimWithActionState(void);
+
+    using MapObject::animate;
     bool animate(int elapsed, Mission *mission);
 
     void drawSelectorAnim(int x, int y);

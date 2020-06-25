@@ -50,19 +50,21 @@ add_definitions (-DSYSTEM_SDL)
 add_definitions (-DPREFIX=\"${DATA_DIR}\")
 
 # Locate libs we depend on directly.
-find_package (SDL)
-if (NOT SDL_FOUND)
-	message (FATAL_ERROR "Unable to locate SDL")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+find_package (SDL2)
+if (NOT SDL2_LIBRARIES)
+	message (FATAL_ERROR "Unable to locate SDL2")
 endif ()
 
-find_package (SDL_image)
-if (NOT SDLIMAGE_FOUND)
-	message (FATAL_ERROR "Unable to locate SDL_image")
+find_package (SDL2_image)
+if (NOT SDL2_IMAGE_FOUND)
+	message (FATAL_ERROR "Unable to locate SDL2_image")
 endif ()
 
-find_package (SDL_mixer)
-if (NOT SDLMIXER_FOUND)
-	message (FATAL_ERROR "Unable to locate SDL_mixer")
+find_package (SDL2_mixer)
+if (NOT SDL2_MIXER_FOUND)
+	message (FATAL_ERROR "Unable to locate SDL2_mixer")
 endif ()
 
 find_package (PNG)
@@ -86,7 +88,7 @@ else ()
 endif ()
 
 # Make sure we can include from the libs we found.
-include_directories (${PNG_INCLUDE_DIR} ${SDL_INCLUDE_DIR} ${SDLIMAGE_INCLUDE_DIR} ${SDLMIXER_INCLUDE_DIR})
+include_directories (${PNG_INCLUDE_DIR} ${SDL2_INCLUDE_DIR} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_MIXER_INCLUDE_DIRS})
 
 # Build the sources in this subdirectory.
 subdirs (src)
