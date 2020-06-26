@@ -443,12 +443,5 @@ void EditorApp::run() {
         system_->updateScreen();
     }
 
-#ifdef GP2X
-#ifndef WIN32
-    // return to the menu
-    chdir("/usr/gp2x");
-    execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
-#endif
-#endif
 }
 

@@ -130,6 +130,9 @@ protected:
 private:
     bool on_screen_mode_;
 
+    void initScreen(void);
+    void initCursor(void);
+
     void renderCursor(void);
     bool renderScreen(void);
 

@@ -642,14 +642,6 @@ void App::run(int start_mission) {
         lasttick = curtick;
         system_->updateScreen();
     }
-
-#ifdef GP2X
-#ifndef WIN32
-    // return to the menu
-    chdir("/usr/gp2x");
-    execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
-#endif
-#endif
 }
 
 bool App::saveGameToFile(int fileSlot, std::string name) {

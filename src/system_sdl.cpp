@@ -36,6 +36,14 @@
 
 SDL_Joystick *joy = NULL;
 
+void errorcheck() {
+    GLenum error = glGetError();
+    if( error != GL_NO_ERROR ) {
+        printf( "OpenGL Error! %s\n", gluErrorString( error ) );
+        exit(0);
+    }
+}
+
 const int SystemSDL::CURSOR_WIDTH = 24;
 
 SystemSDL::SystemSDL(int depth) {
@@ -59,8 +67,16 @@ SystemSDL::~SystemSDL() {
         SDL_FreeSurface(screen_surf_);
     }
 
+    if (cursor_texture_) {
+        glDeleteTextures(1, &cursor_texture_);
+    }
+
     if (gl_context_) {
         SDL_GL_DeleteContext(gl_context_);
+    }
+
+    if (display_window_) {
+        SDL_DestroyWindow(display_window_);
     }
 
 #ifdef HAVE_SDL_MIXER
@@ -73,27 +89,52 @@ SystemSDL::~SystemSDL() {
     SDL_Quit();
 }
 
+void SystemSDL::initScreen(void) {
+    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    glGenTextures(1, &screen_texture_);
+    glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    if(true) {  // _smooth
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+                GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_);
+
+    // screen_texture_ = SDL_CreateTextureFromSurface(display_renderer_, temp_surf_);
+}
+
+void SystemSDL::initCursor(void) {
+    // Init SDL_Image library
+    int sdl_img_flags = IMG_INIT_PNG;
+    int initted = IMG_Init(sdl_img_flags);
+    if ( (initted & sdl_img_flags) != sdl_img_flags ) {
+        printf("Failed to init SDL_Image : %s\n", IMG_GetError());
+    } else {
+        // Load the cursor sprites
+        if (loadCursorSprites()) {
+            // Cursor movement is managed by the application
+            SDL_ShowCursor(SDL_DISABLE);
+        }
+        // At first the cursor is hidden
+        hideCursor();
+        useMenuCursor();
+    }
+}
+
 bool SystemSDL::initialize(bool fullscreen) {
-    if (SDL_Init(SDL_INIT_VIDEO
-#ifdef GP2X
-                 | SDL_INIT_JOYSTICK
-#endif
-        ) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("Critical error, SDL could not be initialized!");
         return false;
     }
-#ifdef GP2X
-    if (SDL_NumJoysticks() > 0) {
-        joy = SDL_JoystickOpen(0);
-        if (!joy) {
-            fprintf(stderr, "Couldn't open joystick 0: %s\n",
-                    SDL_GetError());
-        }
-        printf("found joystick\n");
-    }
-#endif
-
-    // SDL_WM_SetCaption("FreeSynd", NULL);
 
     // Keyboard init
     // SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
@@ -105,11 +146,6 @@ bool SystemSDL::initialize(bool fullscreen) {
     }
 
     // TODO(nobody): maybe use double buffering?
-#ifdef GP2X
-    screen_surf_ = SDL_SetVideoMode(320, 240, 16, SDL_SWSURFACE);
-    temp_surf_ =
-        SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
-#else
     /*
     screen_surf_ =
         SDL_SetVideoMode(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, depth_,
@@ -135,83 +171,23 @@ bool SystemSDL::initialize(bool fullscreen) {
 	if(!gl_context_) {
       fprintf(stderr, "Couldn't create OpenGL context: %s\n", SDL_GetError());
     }
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-    /*
-    //Initialize Projection Matrix
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-
-    //Initialize Modelview Matrix
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity();
-
-    //Initialize clear color
-    glClearColor( 0.f, 0.f, 0.f, 1.f );
-    */
 
     glClearColor(0.8, 0.8, 0.8, 1.0);
 
-    glEnable(GL_ALPHA_TEST);
-    glAlphaFunc(GL_GREATER, 0.5);
-    glViewport (0, 0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    // glEnable(GL_ALPHA_TEST);
+    // glAlphaFunc(GL_GREATER, 0.5);
+  
+    glViewport(0, 0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 
-    //Check for error
-    GLenum error = glGetError();
-    if( error != GL_NO_ERROR ) {
-        printf( "Error initializing OpenGL! %s\n", gluErrorString( error ) );
-        return false;
-    }
-
-
-    display_renderer_ = SDL_CreateRenderer(display_window_, -1, 0);
+    // display_renderer_ = SDL_CreateRenderer(display_window_, -1, 0);
 
     temp_surf_ =
         SDL_CreateRGBSurface(SDL_SWSURFACE, GAME_SCREEN_WIDTH,
                              GAME_SCREEN_HEIGHT, 8, 0, 0, 0, 0);
 
-    /*
-    screen_texture_ = SDL_CreateTexture(display_renderer_,
-                                        SDL_PIXELFORMAT_RGBA8888,
-                                        SDL_TEXTUREACCESS_STREAMING,
-                                        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-    */
+    initScreen();
 
-    glGenTextures(1, &screen_texture_);
-    glBindTexture(GL_TEXTURE_2D, screen_texture_);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    if(true) {  // _smooth
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    } else {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    }
-
-    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
-                GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_);
-
-    // screen_texture_ = SDL_CreateTextureFromSurface(display_renderer_, temp_surf_);
-#endif
-
-    // Init SDL_Image library
-    int sdl_img_flags = IMG_INIT_PNG;
-    int initted = IMG_Init(sdl_img_flags);
-    if ( (initted & sdl_img_flags) != sdl_img_flags ) {
-        printf("Failed to init SDL_Image : %s\n", IMG_GetError());
-    } else {
-        // Load the cursor sprites
-        if (loadCursorSprites()) {
-            // Cursor movement is managed by the application
-            SDL_ShowCursor(SDL_DISABLE);
-        }
-        // At first the cursor is hidden
-        hideCursor();
-        useMenuCursor();
-    }
+    initCursor();
 
     return true;
 }
@@ -228,12 +204,6 @@ bool SystemSDL::enterOnScreenMode(void) {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
-
-    GLenum error = glGetError();
-    if( error != GL_NO_ERROR ) {
-        printf( "Error initializing OpenGL! %s\n", gluErrorString( error ) );
-        return false;
-    }
 
   on_screen_mode_ = true;
 
@@ -254,32 +224,46 @@ bool SystemSDL::leaveOnScreenMode(void) {
   return true;
 }
 
-void errorcheck() {
-    int errormsg;
-    if ((errormsg = glGetError()) != GL_NO_ERROR)
-    {
-        printf("Unable to bind texture! SDL Error: %s\n", errormsg);
-        exit(0);
-    }
-}
-
 bool SystemSDL::renderScreen(void)
 {
-    // renderFrame(1374);
     {
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+ 
+        // Set our loaded texture as the current 2D texture (this isn't actually technically necessary since our
+        // texture was never unselected from above, but this is most clear)
+        glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+        // Tell OpenGL that all subsequent drawing operations should try to use the current 2D texture
+        glEnable(GL_TEXTURE_2D);
+
+        glTexImage2D(GL_TEXTURE_2D,
+                0, GL_RGBA, screen_surf_->w, screen_surf_->h,
+                0, GL_BGRA, GL_UNSIGNED_BYTE, screen_surf_->pixels);
+    
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0, 0.0); 
+            glVertex2f(0, 0);
+
+            glTexCoord2f(1, 0.0);
+            glVertex2f(screen_surf_->w, 0.0);
+
+            glTexCoord2f(1, 1);
+            glVertex2f(screen_surf_->w, screen_surf_->h);
+
+            glTexCoord2f(0, 1);
+            glVertex2f(0, screen_surf_->h);
+        glEnd();
+
+
+        // Tell OpenGL that all subsequent drawing operations should NOT try to use the current 2D texture
+        glDisable(GL_TEXTURE_2D);
+
+        // **************************************
+
+#if 0
         glEnable(GL_TEXTURE_2D);
 
         glBindTexture(GL_TEXTURE_2D, screen_texture_);
-        float texw;
-        float texh;
-
-        /*
-        int res1 = SDL_GL_BindTexture(screen_texture_, &texw, &texh);
-
-        if (res1 != 0) {
-            printf("Unable to bind texture! SDL Error: %s\n", SDL_GetError());
-        }
-        */
 
         if(true) {     // smooth?
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -313,13 +297,13 @@ bool SystemSDL::renderScreen(void)
             GLfloat w = (float)screen_surf_->w;
             GLfloat h = (float)screen_surf_->h;
 
-            glTexImage2D(
-                GL_TEXTURE_2D, 0, GL_RGBA, screen_surf_->w, screen_surf_->h, 0, GL_RGBA,
-                GL_UNSIGNED_BYTE, screen_surf_->pixels);
+            glTexImage2D(GL_TEXTURE_2D,
+                0, GL_RGBA, screen_surf_->w, screen_surf_->h,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_->pixels);
 
 
-            w = 100.0f;
-            h = 100.0f;
+            // w = 100.0f;
+            // h = 100.0f;
 
             glBegin(GL_QUADS);
                 glTexCoord2f(0.0, 0.0); 
@@ -344,16 +328,10 @@ bool SystemSDL::renderScreen(void)
         }
 
         glDisable(GL_TEXTURE_2D);
+#endif
 
         glBindTexture(GL_TEXTURE_2D, 0);
-
-        // SDL_GL_UnbindTexture(screen_texture_);
-
     }
-
-
-    // glTranslatef(64,0,0);
-
 
     return true;
 }
@@ -361,6 +339,67 @@ bool SystemSDL::renderScreen(void)
 void SystemSDL::renderCursor() {
     /*** render cursor  ***/
     if (cursor_visible_) {
+        SDL_Rect dst;
+        dst.w = cursor_rect_.w;
+        dst.h = cursor_rect_.h;
+        dst.x = cursor_x_ - cursor_hs_x_;
+        dst.y = cursor_y_ - cursor_hs_y_;
+
+        GLfloat dcx = GLfloat(cursor_rect_.x) / GLfloat(96);
+        GLfloat dcy = GLfloat(cursor_rect_.y) / GLfloat(48);
+
+        GLfloat dcw = (GLfloat(cursor_rect_.x)+GLfloat(cursor_rect_.w)) / GLfloat(96);
+        GLfloat dch = (GLfloat(cursor_rect_.y)+GLfloat(cursor_rect_.h)) / GLfloat(48);
+
+        // Set our loaded texture as the current 2D texture (this isn't actually technically necessary since our
+        // texture was never unselected from above, but this is most clear)
+        glBindTexture(GL_TEXTURE_2D, cursor_texture_);
+
+        // Tell OpenGL that all subsequent drawing operations should try to use the current 2D texture
+        glEnable(GL_TEXTURE_2D);
+    
+        glBegin(GL_QUADS);
+            // glTexCoord2f(0, 0);
+            glTexCoord2f(dcx, dcy);
+            glVertex2f(dst.x, dst.y);
+
+            // glTexCoord2f(1, 0);
+            glTexCoord2f(dcw, dcy);
+            glVertex2f(dst.x + cursor_rect_.w, dst.y);
+
+            // glTexCoord2f(1, 1);
+            glTexCoord2f(dcw, dch);
+            glVertex2f(dst.x + cursor_rect_.w, dst.y + cursor_rect_.h);
+
+            // glTexCoord2f(0, 1);
+            glTexCoord2f(dcx, dch);
+            glVertex2f(dst.x, dst.y + cursor_rect_.h);
+        glEnd();
+
+        // Tell OpenGL that all subsequent drawing operations should NOT try to use the current 2D texture
+        glDisable(GL_TEXTURE_2D);
+    
+
+        glBegin(GL_LINES);
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(1.0f, 0.0f, 0.0f);
+
+            glColor3f(0.0f, 1.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, 1.0f, 0.0f);
+
+            glColor3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glVertex3f(0.0f, 0.0f, 1.0f);
+            glColor3f(1.0f, 1.0f, 1.0f);
+        glEnd();
+    
+        // SDL_GL_SwapWindow(display_window_);
+
+        // //////////////
+
+#if 0
         SDL_Rect dst;
 
         dst.w = cursor_rect_.w;
@@ -374,7 +413,7 @@ void SystemSDL::renderCursor() {
             glPushMatrix();
     	    glTranslatef(dst.x, dst.y, 0);
 
-            glEnable(GL_TEXTURE_2D);
+            // glEnable(GL_TEXTURE_2D);
 
             glBindTexture(GL_TEXTURE_2D, cursor_texture_);
 
@@ -391,6 +430,7 @@ void SystemSDL::renderCursor() {
             }
             */
 
+            /*
             if(true) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -400,9 +440,21 @@ void SystemSDL::renderCursor() {
             }
 
             glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+            */
 
             glBegin(GL_QUADS);
+                glTexCoord2f(0, 0);
+                glVertex3f(cursor_rect_.x, cursor_rect_.y, 0);
+                glTexCoord2f(1, 0);
+                glVertex3f(cursor_rect_.x + cursor_rect_.w, cursor_rect_.y, 0);
+                glTexCoord2f(1, 1);
+                glVertex3f(cursor_rect_.x + cursor_rect_.w, cursor_rect_.y + cursor_rect_.h, 0);
+                glTexCoord2f(0, 1);
+                glVertex3f(cursor_rect_.x, cursor_rect_.y + cursor_rect_.h, 0);
+            glEnd();
 
+            /*
+            glBegin(GL_QUADS);
                 glTexCoord2f(0.0, 0.0); 
                 glVertex2f(cursor_rect_.x, cursor_rect_.y);
 
@@ -414,10 +466,10 @@ void SystemSDL::renderCursor() {
 
                 glTexCoord2f(1.0, 0.0);
                 glVertex2f(cursor_rect_.x + cursor_rect_.w, cursor_rect_.y);
-
             glEnd();
+            */
 
-            glDisable(GL_TEXTURE_2D);
+            // glDisable(GL_TEXTURE_2D);
 
             glGetIntegerv(GL_TEXTURE_BINDING_2D, &whichID);
 
@@ -427,6 +479,7 @@ void SystemSDL::renderCursor() {
 
             glPopMatrix();
         }
+#endif
 
         update_cursor_ = false;
     }
@@ -435,21 +488,10 @@ void SystemSDL::renderCursor() {
 void SystemSDL::updateScreen() {
     if (g_Screen.dirty()|| (cursor_visible_ && update_cursor_)) {
         SDL_LockSurface(temp_surf_);
-#ifdef GP2X
-        const uint8 *pixeldata = g_Screen.pixels();
-        uint8 *screen = (uint8 *) temp_surf_->pixels;
-        for (int j = 0; j < 240; j++)
-            for (int i = 0; i < 320; i++) {
-                int tx = i * GAME_SCREEN_WIDTH / 320;
-                int ty = j * GAME_SCREEN_HEIGHT / 240;
 
-                uint8 c = pixeldata[ty * GAME_SCREEN_WIDTH + tx];
-                screen[j * 320 + i] = c;
-            }
-#else
         memcpy(temp_surf_->pixels, g_Screen.pixels(),
                GAME_SCREEN_WIDTH * GAME_SCREEN_HEIGHT);
-#endif
+
         SDL_UnlockSurface(temp_surf_);
 
         g_Screen.clearDirty();
@@ -466,6 +508,7 @@ void SystemSDL::updateScreen() {
         void *pixels;
         int pitch;
         
+        /*
         SDL_LockTexture(screen_texture_, NULL, &pixels, &pitch);
         SDL_ConvertPixels(screen_surf_->w, screen_surf_->h,
             screen_surf_->format->format,
@@ -473,6 +516,7 @@ void SystemSDL::updateScreen() {
             SDL_PIXELFORMAT_RGBA8888,
             pixels, pitch);
         SDL_UnlockTexture(screen_texture_);
+        */
     
         // SDL_RenderClear(sdlRenderer);
 
@@ -480,18 +524,18 @@ void SystemSDL::updateScreen() {
         /** render on screen **/
         /**********************/
         enterOnScreenMode();
-            /*** render screen  ***/
-            // SDL_RenderCopy(display_renderer_, screen_texture_, NULL, NULL);
-            // renderScreen();
+
+            renderScreen();
 
             renderCursor();
+
         leaveOnScreenMode();
 
 
         // SDL_Flip(screen_surf_);
         // SDL_RenderPresent(display_renderer_);
 
-        glFlush();
+        // glFlush();
 
         SDL_GL_SwapWindow(display_window_);
     }
@@ -843,33 +887,83 @@ SDL_Surface *prepGLTexture(SDL_Surface *surface, GLfloat *texCoords, const bool 
  * cursor_texture_ will be NULL.
  */
 bool SystemSDL::loadCursorSprites() {
-    cursor_rect_.w = cursor_rect_.h = CURSOR_WIDTH;
-
     SDL_Surface *cursor_surf = IMG_Load(File::dataFullPath("cursors/cursors.png").c_str());
-
-    if (!cursor_surf) {
+    if (cursor_surf == NULL) {
         printf("Cannot load cursors image: %s\n", IMG_GetError());
         return false;
     }
 
-    cursor_surf = prepGLTexture(cursor_surf);
+    cursor_rect_.w = cursor_rect_.h = CURSOR_WIDTH;
 
+    // Determine the data format of the surface by seeing how SDL arranges a test pixel.
+    // This probably only works correctly for little-endian machines.
     /*
-    cursor_texture_ = SDL_CreateTextureFromSurface(display_renderer_, cursor_surf);
-    if (!cursor_texture_) {
-        printf("Unable to create texture for cursor! SDL Error: %s\n", SDL_GetError());
+    GLenum gl_mode = GL_RGB;    
+    */
+    GLenum gl_mode;
+    Uint8 test = SDL_MapRGB(cursor_surf->format, 0xAA, 0xBB, 0xCC) & 0xFF;
+    if      (test == 0xAA) gl_mode =         GL_RGB;
+    else if (test == 0xCC) gl_mode = 0x80E0;//GL_BGR;
+    else {
+        printf("Error: \"Loaded surface was neither RGB or BGR!\"");
         return false;
     }
-    */
-
+    if(cursor_surf->format->BytesPerPixel == 4) {
+        gl_mode = GL_RGBA;
+    }
+ 
+    // Generate an array of textures.  We only want one texture (one element array), so trick
+    // it by treating "texture" as array of length one.
     glGenTextures(1, &cursor_texture_);
-    glBindTexture(GL_TEXTURE_2D, cursor_texture_);
 
+    // Select (bind) the texture we just generated as the current 2D texture OpenGL is using/modifying.
+    // All subsequent changes to OpenGL's texturing state for 2D textures will affect this texture.
+    glBindTexture(GL_TEXTURE_2D, cursor_texture_);
+    // Specify the texture's data.  This function is a bit tricky, and it's hard to find helpful documentation.  A summary:
+    //   GL_TEXTURE_2D:    The currently bound 2D texture (i.e. the one we just made)
+    //               0:    The mipmap level.  0, since we want to update the base level mipmap image (i.e., the image itself,
+    //                         not cached smaller copies)
+    //         GL_RGBA:    The internal format of the texture.  This is how OpenGL will store the texture internally (kinda)--
+    //                         it's essentially the texture's type.
+    //         surf->w:    The width of the texture
+    //         surf->h:    The height of the texture
+    //               0:    The border.  Don't worry about this if you're just starting.
+    //        data_fmt:    The format that the *data* is in--NOT the texture!  Our test image doesn't have an alpha channel,
+    //                         so this must be RGB.
+    // GL_UNSIGNED_BYTE:    The type the data is in.  In SDL, the data is stored as an array of bytes, with each channel
+    //                         getting one byte.  This is fairly typical--it means that the image can store, for each channel,
+    //                         any value that fits in one byte (so 0 through 255).  These values are to be interpreted as
+    //                         *unsigned* values (since 0x00 should be dark and 0xFF should be bright).
+    // surface->pixels:    The actual data.  As above, SDL's array of bytes.
+    /*
     glTexImage2D(
         GL_TEXTURE_2D, 0, GL_RGBA, cursor_surf->w, cursor_surf->h, 0, GL_RGBA,
         GL_UNSIGNED_BYTE, cursor_surf->pixels);
-			
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, gl_mode, cursor_surf->w, cursor_surf->h, 0, gl_mode,
+        GL_UNSIGNED_BYTE, cursor_surf->pixels);
+    */
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cursor_surf->w, cursor_surf->h,
+                                0, gl_mode, GL_UNSIGNED_BYTE, cursor_surf->pixels);
+
+    //Set the minification and magnification filters.  In this case, when the texture is minified (i.e., the texture's pixels (texels) are
+    //*smaller* than the screen pixels you're seeing them on, linearly filter them (i.e. blend them together).  This blends four texels for
+    //each sample--which is not very much.  Mipmapping can give better results.  Find a texturing tutorial that discusses these issues
+    //further.  Conversely, when the texture is magnified (i.e., the texture's texels are *larger* than the screen pixels you're seeing
+    //them on), linearly filter them.  Qualitatively, this causes "blown up" (overmagnified) textures to look blurry instead of blocky.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+ 
+    // Unload SDL's copy of the data; we don't need it anymore because OpenGL now stores it in the texture.
     SDL_FreeSurface(cursor_surf);
+
+    // //
+
+    // cursor_surf = prepGLTexture(cursor_surf);
 
     return true;
 }
@@ -885,7 +979,7 @@ int SystemSDL::getMousePos(int *x, int *y) {
 }
 
 void SystemSDL::hideCursor() {
-    if (cursor_texture_ != NULL) {
+    if (cursor_texture_ != 0) {
         cursor_visible_ = false;
     } else {
         // Custom cursor surface doesn't
@@ -895,7 +989,7 @@ void SystemSDL::hideCursor() {
 }
 
 void SystemSDL::showCursor() {
-    if (cursor_texture_ != NULL) {
+    if (cursor_texture_ != 0) {
         cursor_visible_ = true;
     } else {
         // Custom cursor surface doesn't
