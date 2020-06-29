@@ -41,6 +41,7 @@ public:
     void update(const uint8 *data);
 
     void setPalette(const uint8 *pal, int cols = 256);
+    void setPalette(const SDL_Color *pal, int cols = 256);
 
 protected:
     int width_;
@@ -82,6 +83,8 @@ public:
     bool glDirty() { return gl_dirty_; }
     void clearGlDirty() { gl_dirty_ = false; }
 
+    void setPalette(SDL_Color *pal, int cols = 256);
+
     SDL_Surface *temp_surface() { return temp_surf_; }
 
     bool enterOnScreenMode(void);
@@ -122,6 +125,10 @@ protected:
     uint8 *data_logo_, *data_logo_copy_;
     int size_mini_logo_;
     uint8 *data_mini_logo_, *data_mini_logo_copy_;
+
+    Texture *logo_texture_;
+    Texture *logo_mini_texture_;
+    SDL_Color *current_palette_;
 
     Screen();
 

@@ -96,6 +96,10 @@ void Texture::setPalette(const uint8 * pal, int cols) {
     SDL_SetPaletteColors(surface_8bpp_->format->palette, palette, 0, cols);
 }
 
+void Texture::setPalette(const SDL_Color *pal, int cols) {
+    SDL_SetPaletteColors(surface_8bpp_->format->palette, pal, 0, cols);
+}
+
 
 const int Screen::kScreenWidth = 640;
 const int Screen::kScreenHeight = 400;
@@ -108,7 +112,9 @@ Screen::Screen(int width, int height)
 , dirty_(false)
 , gl_dirty_(false)
 , data_logo_(NULL), data_logo_copy_(NULL)
-, data_mini_logo_(NULL), data_mini_logo_copy_(NULL)
+, data_mini_logo_(NULL), data_mini_logo_copy_(NULL),
+logo_texture_(NULL),
+logo_mini_texture_(NULL)
 {
 
     screen_surf_ = NULL;
@@ -135,6 +141,11 @@ Screen::~Screen()
         delete[] data_mini_logo_;
     if (data_mini_logo_copy_)
         delete[] data_mini_logo_copy_;
+
+    if (logo_texture_)
+        delete logo_texture_;
+    if (logo_mini_texture_)
+        delete logo_mini_texture_;
 
     if (screen_texture_)
         glDeleteTextures(1, &screen_texture_);
@@ -320,24 +331,31 @@ void Screen::drawVLine(int x, int y, int length, uint8 color)
     if (length < 1)
         return;
 
+    /*
     uint8 *pixel = pixels_ + y * width_ + x;
     while (length--) {
         *pixel = color;
         pixel += width_;
     }
 
-    glBegin(GL_LINES);
-        glPointSize(3.0);  
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glVertex2f(0.0f, 0.0f);
-        glVertex2f(50.0f, 50.0f);
-
-        glColor3f(1.0f, 1.0f, 1.0f);
-    glEnd();
-
-    glFlush();
-
     dirty_ = true;
+    */
+
+    enterOnScreenMode();
+    {
+        glBegin(GL_LINES);
+            // glLineWidth(5.0);  
+            glColor3f(1.0f, 0.0f, 0.0f);
+
+            glVertex2f(x, y);
+            glVertex2f(x, y + length);
+
+            glColor3f(1.0f, 1.0f, 1.0f);
+        glEnd();
+    }
+    leaveOnScreenMode();
+
+    gl_dirty_ = true;
 }
 
 void Screen::drawHLine(int x, int y, int length, uint8 color)
@@ -370,10 +388,14 @@ void Screen::drawLogo(int x, int y, int logo, int colour, bool mini)
     if (data_logo_ == NULL) {
         data_logo_ = File::loadOriginalFile("mlogos.dat", size_logo_);
         data_logo_copy_ = new uint8[size_logo_];
+        logo_texture_ = new Texture(32, 32);
+        logo_texture_->setPalette(current_palette_);
     }
     if (data_mini_logo_ == NULL) {
         data_mini_logo_ = File::loadOriginalFile("mminlogo.dat", size_mini_logo_);
         data_mini_logo_copy_ = new uint8[size_mini_logo_];
+        logo_mini_texture_ = new Texture(16, 16);
+        logo_mini_texture_->setPalette(current_palette_);
     }
 
     for (int i = 0; i < size_logo_; i++)
@@ -386,12 +408,23 @@ void Screen::drawLogo(int x, int y, int logo, int colour, bool mini)
             data_mini_logo_copy_[i] = colour;
         else
             data_mini_logo_copy_[i] = data_mini_logo_[i];
+
+    /*
     if (mini)
         scale2x(x, y, 16, 16, data_mini_logo_copy_ + logo * 16 * 16, 16);
     else
         scale2x(x, y, 32, 32, data_logo_copy_ + logo * 32 * 32, 32);
 
     dirty_ = true;
+    */
+
+    if (mini) {
+        logo_mini_texture_->update(data_mini_logo_copy_ + logo * 16 * 16);
+        renderTexture(logo_mini_texture_, x, y, 16 * 2, 16 * 2);
+    } else {
+        logo_texture_->update(data_logo_copy_ + logo * 32 * 32);
+        renderTexture(logo_texture_, x, y, 32 * 2, 32 * 2);
+    }
 }
 
 // Taken from SDL_gfx
@@ -496,6 +529,14 @@ int Screen::gameScreenLeftMargin()
 {
     return 129;
 }
+
+
+void Screen::setPalette(SDL_Color *pal, int cols) {
+    current_palette_ = pal;
+
+    SDL_SetPaletteColors(temp_surf_->format->palette, current_palette_, 0, cols);
+}
+
 
 bool Screen::enterOnScreenMode(void) {
   glPushAttrib(GL_TRANSFORM_BIT | GL_VIEWPORT_BIT) ; 
@@ -734,16 +775,20 @@ void Screen::renderTexture(Texture *texture, int x, int y, int width, int height
     
         glBegin(GL_QUADS);
             glTexCoord2f(0.0f, 0.0f); 
-            glVertex2f(0.0f, 0.0f);
+            // glVertex2f(0.0f, 0.0f);
+            glVertex2f(x, y);
 
             glTexCoord2f(1.0f, 0.0f);
-            glVertex2f(width, 0.0f);
+            // glVertex2f(width, 0.0f);
+            glVertex2f(x + width, y);
 
             glTexCoord2f(1.0f, 1.0f);
-            glVertex2f(width, height);
+            // glVertex2f(width, height);
+            glVertex2f(x + width, y + height);
 
             glTexCoord2f(0.0f, 1.0f);
-            glVertex2f(0.0f, height);
+            // glVertex2f(0.0f, height);
+            glVertex2f(x, y + height);
         glEnd();
 
         glDisable(GL_TEXTURE_2D);

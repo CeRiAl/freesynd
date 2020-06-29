@@ -512,8 +512,8 @@ void SystemSDL::setPalette6b3(const uint8 * pal, int cols) {
 #endif
     }
 
-    // SDL_SetColors(temp_surf_, palette, 0, cols);
-    SDL_SetPaletteColors(g_Screen.temp_surface()->format->palette, palette, 0, cols);    
+    // SDL_SetPaletteColors(g_Screen.temp_surface()->format->palette, palette, 0, cols);
+    g_Screen.setPalette(palette, cols);
 }
 
 void SystemSDL::setPalette8b3(const uint8 * pal, int cols) {
@@ -525,8 +525,8 @@ void SystemSDL::setPalette8b3(const uint8 * pal, int cols) {
         palette[i].b = pal[i * 3 + 2];
     }
 
-    // SDL_SetColors(temp_surf_, palette, 0, cols);
-    SDL_SetPaletteColors(g_Screen.temp_surface()->format->palette, palette, 0, cols);
+    // SDL_SetPaletteColors(g_Screen.temp_surface()->format->palette, palette, 0, cols);
+    g_Screen.setPalette(palette, cols);
 }
 
 void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
