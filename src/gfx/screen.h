@@ -31,6 +31,31 @@
 
 #include "common.h"
 
+class Texture {
+public:
+    Texture(int width, int height, GLenum target = GL_TEXTURE_2D, bool smooth = false);
+    ~Texture();
+
+    GLuint textureName() { return texture_name_; }
+
+    void update(const uint8 *data);
+
+    void setPalette(const uint8 *pal, int cols = 256);
+
+protected:
+    int width_;
+    int height_;
+
+    SDL_Surface *surface_8bpp_;
+    SDL_Surface *surface_32bpp_;
+
+    GLenum texture_target_ = GL_TEXTURE_2D;
+    GLuint texture_name_;
+};
+
+
+
+
 /*!
  * Screen class.
  */
@@ -54,20 +79,22 @@ public:
     bool dirty() { return dirty_; }
     void clearDirty() { dirty_ = false; }
 
+    bool glDirty() { return gl_dirty_; }
+    void clearGlDirty() { gl_dirty_ = false; }
+
     SDL_Surface *temp_surface() { return temp_surf_; }
 
     bool enterOnScreenMode(void);
     bool leaveOnScreenMode(void);
     bool renderScreen(void);
 
+    void renderTexture(Texture *texture, int x, int y, int width, int height);
+
     void blit(int x, int y, int width, int height, const uint8 *pixeldata,
             bool flipped = false, int stride = 0);
     void blitRect(int x, int y, int width, int height,
                   const uint8 * pixeldata, bool flipped = false, int stride = 0);
     void scale2x(int x, int y, int width, int height, const uint8 *pixeldata,
-            int stride = 0, bool transp = true);
-
-    void glscale2x(int x, int y, int width, int height, const uint8 *pixeldata,
             int stride = 0, bool transp = true);
 
     void drawVLine(int x, int y, int length, uint8 color);
@@ -90,6 +117,7 @@ protected:
     int height_;
     uint8 *pixels_;
     bool dirty_;
+    bool gl_dirty_;
     int size_logo_;
     uint8 *data_logo_, *data_logo_copy_;
     int size_mini_logo_;

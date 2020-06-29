@@ -28,6 +28,75 @@
 #include "screen.h"
 #include "utils/file.h"
 
+
+Texture::Texture(int width, int height, GLenum target, bool smooth) :
+width_(width),
+height_(height),
+surface_8bpp_(NULL),
+surface_32bpp_(NULL),
+texture_target_(target)
+{
+    GLfloat texParam = smooth ? GL_LINEAR : GL_NEAREST;
+
+    glGenTextures(1, &texture_name_);
+
+    glBindTexture(texture_target_, texture_name_);
+    glTexImage2D(texture_target_, 0,
+                GL_RGBA, width_, height_, 0,
+                GL_BGRA, GL_UNSIGNED_BYTE, (GLvoid*)NULL);
+    glTexParameterf(texture_target_, GL_TEXTURE_MIN_FILTER, texParam);
+    glTexParameterf(texture_target_, GL_TEXTURE_MAG_FILTER, texParam);
+
+    surface_32bpp_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        width_, height_,
+        32, 0, 0, 0, 0);
+
+    surface_8bpp_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        width_, height_,
+        8, 0, 0, 0, 0);
+}
+
+Texture::~Texture()
+{
+    if (texture_name_)
+        glDeleteTextures(1, &texture_name_);
+
+    if (surface_32bpp_)
+        SDL_FreeSurface(surface_32bpp_);
+
+    if (surface_8bpp_)
+        SDL_FreeSurface(surface_8bpp_);
+}
+
+void Texture::update(const uint8 * data)
+{
+    SDL_LockSurface(surface_8bpp_);
+    memcpy(surface_8bpp_->pixels, data, width_ * height_);
+    SDL_UnlockSurface(surface_8bpp_);
+
+    SDL_BlitSurface(surface_8bpp_, NULL, surface_32bpp_, NULL);
+
+
+    glBindTexture(texture_target_, texture_name_);
+    glTexSubImage2D(texture_target_,
+                    0, 0, 0, width_, height_,
+                    GL_BGRA, GL_UNSIGNED_BYTE, surface_32bpp_->pixels);
+    glBindTexture(texture_target_, 0);
+}
+
+void Texture::setPalette(const uint8 * pal, int cols) {
+    static SDL_Color palette[256];
+
+    for (int i = 0; i < cols; ++i) {
+        palette[i].r = pal[i * 3 + 0];
+        palette[i].g = pal[i * 3 + 1];
+        palette[i].b = pal[i * 3 + 2];
+    }
+
+    SDL_SetPaletteColors(surface_8bpp_->format->palette, palette, 0, cols);
+}
+
+
 const int Screen::kScreenWidth = 640;
 const int Screen::kScreenHeight = 400;
 const int Screen::kScreenPanelWidth = 129;
@@ -37,6 +106,7 @@ Screen::Screen(int width, int height)
 , height_(height)
 , pixels_(NULL)
 , dirty_(false)
+, gl_dirty_(false)
 , data_logo_(NULL), data_logo_copy_(NULL)
 , data_mini_logo_(NULL), data_mini_logo_copy_(NULL)
 {
@@ -235,77 +305,6 @@ void Screen::scale2x(int x, int y, int width, int height,
     }
 
     dirty_ = true;
-}
-
-void Screen::glscale2x(int x, int y, int width, int height,
-                     const uint8 * pixeldata, int stride, bool transp)
-{
-    stride = (stride == 0 ? width : stride);
-
-    SDL_LockSurface(ttemp_surf_);
-
-    memcpy(ttemp_surf_->pixels, pixeldata, width * height);
-
-    SDL_UnlockSurface(ttemp_surf_);
-
-    SDL_BlitSurface(ttemp_surf_, NULL, tscreen_surf_, NULL);
-
-    enterOnScreenMode();
-
-    {
-        // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
- 
-        // Set our loaded texture as the current 2D texture (this isn't actually technically necessary since our
-        // texture was never unselected from above, but this is most clear)
-        glBindTexture(GL_TEXTURE_2D, tscreen_texture_);
-
-        // Tell OpenGL that all subsequent drawing operations should try to use the current 2D texture
-        glEnable(GL_TEXTURE_2D);
-
-        glTexImage2D(GL_TEXTURE_2D,
-                0, GL_RGBA, tscreen_surf_->w, tscreen_surf_->h,
-                0, GL_BGRA, GL_UNSIGNED_BYTE, tscreen_surf_->pixels);
-    
-        glBegin(GL_QUADS);
-            glTexCoord2f(0.0, 0.0); 
-            glVertex2f(0, 0);
-
-            glTexCoord2f(1, 0.0);
-            glVertex2f(tscreen_surf_->w, 0.0);
-
-            glTexCoord2f(1, 1);
-            glVertex2f(tscreen_surf_->w, tscreen_surf_->h);
-
-            glTexCoord2f(0, 1);
-            glVertex2f(0, tscreen_surf_->h);
-        glEnd();
-
-        glDisable(GL_TEXTURE_2D);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    leaveOnScreenMode();
-
-    /*
-    for (int j = 0; j < height; ++j) {
-        uint8 *d = pixels_ + (y + j * 2) * width_ + x;
-
-        for (int i = 0; i < width; ++i, d += 2) {
-            uint8 c = *(pixeldata + i);
-            if (c != 255 || !transp) {
-                *(d + 0) = c;
-                *(d + 1) = c;
-                *(d + 0 + width_) = c;
-                *(d + 1 + width_) = c;
-            }
-        }
-
-        pixeldata += stride;
-    }
-
-    dirty_ = true;
-    */
 }
 
 void Screen::drawVLine(int x, int y, int length, uint8 color)
@@ -722,4 +721,35 @@ bool Screen::renderScreen(void)
     leaveOnScreenMode();
 
     return true;
+}
+
+void Screen::renderTexture(Texture *texture, int x, int y, int width, int height)
+{
+    GLuint texture_name = texture->textureName();
+
+    enterOnScreenMode();
+    {
+        glBindTexture(GL_TEXTURE_2D, texture_name);
+        glEnable(GL_TEXTURE_2D);
+    
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0f, 0.0f); 
+            glVertex2f(0.0f, 0.0f);
+
+            glTexCoord2f(1.0f, 0.0f);
+            glVertex2f(width, 0.0f);
+
+            glTexCoord2f(1.0f, 1.0f);
+            glVertex2f(width, height);
+
+            glTexCoord2f(0.0f, 1.0f);
+            glVertex2f(0.0f, height);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    leaveOnScreenMode();
+
+    gl_dirty_ = true;
 }
