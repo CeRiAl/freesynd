@@ -25,6 +25,10 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <SDL.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+
 #include "common.h"
 
 /*!
@@ -42,17 +46,28 @@ public:
     explicit Screen(int width, int height);
     ~Screen();
 
+    void initScreen(void);
+
     void clear(uint8 color = 0);
 
     const uint8 *pixels() const { return pixels_; }
     bool dirty() { return dirty_; }
     void clearDirty() { dirty_ = false; }
 
+    SDL_Surface *temp_surface() { return temp_surf_; }
+
+    bool enterOnScreenMode(void);
+    bool leaveOnScreenMode(void);
+    bool renderScreen(void);
+
     void blit(int x, int y, int width, int height, const uint8 *pixeldata,
             bool flipped = false, int stride = 0);
     void blitRect(int x, int y, int width, int height,
                   const uint8 * pixeldata, bool flipped = false, int stride = 0);
     void scale2x(int x, int y, int width, int height, const uint8 *pixeldata,
+            int stride = 0, bool transp = true);
+
+    void glscale2x(int x, int y, int width, int height, const uint8 *pixeldata,
             int stride = 0, bool transp = true);
 
     void drawVLine(int x, int y, int length, uint8 color);
@@ -81,6 +96,16 @@ protected:
     uint8 *data_mini_logo_, *data_mini_logo_copy_;
 
     Screen();
+
+private:
+    SDL_Surface *screen_surf_;
+    SDL_Surface *tscreen_surf_;
+    SDL_Surface *temp_surf_;
+    SDL_Surface *ttemp_surf_;
+    GLuint screen_texture_;
+    GLuint tscreen_texture_;
+
+    bool on_screen_mode_;
 };
 
 #define g_Screen    Screen::singleton()

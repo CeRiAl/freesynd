@@ -103,10 +103,6 @@ protected:
     int cursor_hs_y_;
 
     SDL_Window *display_window_;
-    SDL_Renderer *display_renderer_;
-    SDL_Surface *screen_surf_;
-    GLuint screen_texture_;
-    SDL_Surface *temp_surf_;
 
     SDL_GLContext gl_context_;
     /*! 
@@ -128,17 +124,9 @@ protected:
     int keyModState_;
 
 private:
-    bool on_screen_mode_;
-
-    void initScreen(void);
     void initCursor(void);
 
     void renderCursor(void);
-    bool renderScreen(void);
-
-    bool enterOnScreenMode(void);
-    bool leaveOnScreenMode(void);
-
 };
 
 #endif

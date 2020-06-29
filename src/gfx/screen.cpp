@@ -40,6 +40,14 @@ Screen::Screen(int width, int height)
 , data_logo_(NULL), data_logo_copy_(NULL)
 , data_mini_logo_(NULL), data_mini_logo_copy_(NULL)
 {
+
+    screen_surf_ = NULL;
+    tscreen_surf_ = NULL;
+    screen_texture_ = 0;
+    tscreen_texture_ = 0;
+    temp_surf_ = NULL;
+    ttemp_surf_ = NULL;
+
     assert(width_ > 0);
     assert(height_ > 0);
 
@@ -57,6 +65,22 @@ Screen::~Screen()
         delete[] data_mini_logo_;
     if (data_mini_logo_copy_)
         delete[] data_mini_logo_copy_;
+
+    if (screen_texture_)
+        glDeleteTextures(1, &screen_texture_);
+
+    if (tscreen_texture_)
+        glDeleteTextures(1, &tscreen_texture_);
+
+    if (temp_surf_)
+        SDL_FreeSurface(temp_surf_);
+    if (ttemp_surf_)
+        SDL_FreeSurface(ttemp_surf_);
+
+    if (tscreen_surf_)
+        SDL_FreeSurface(tscreen_surf_);
+    if (screen_surf_)
+        SDL_FreeSurface(screen_surf_);
 }
 
 void Screen::clear(uint8 color)
@@ -213,6 +237,77 @@ void Screen::scale2x(int x, int y, int width, int height,
     dirty_ = true;
 }
 
+void Screen::glscale2x(int x, int y, int width, int height,
+                     const uint8 * pixeldata, int stride, bool transp)
+{
+    stride = (stride == 0 ? width : stride);
+
+    SDL_LockSurface(ttemp_surf_);
+
+    memcpy(ttemp_surf_->pixels, pixeldata, width * height);
+
+    SDL_UnlockSurface(ttemp_surf_);
+
+    SDL_BlitSurface(ttemp_surf_, NULL, tscreen_surf_, NULL);
+
+    enterOnScreenMode();
+
+    {
+        // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+ 
+        // Set our loaded texture as the current 2D texture (this isn't actually technically necessary since our
+        // texture was never unselected from above, but this is most clear)
+        glBindTexture(GL_TEXTURE_2D, tscreen_texture_);
+
+        // Tell OpenGL that all subsequent drawing operations should try to use the current 2D texture
+        glEnable(GL_TEXTURE_2D);
+
+        glTexImage2D(GL_TEXTURE_2D,
+                0, GL_RGBA, tscreen_surf_->w, tscreen_surf_->h,
+                0, GL_BGRA, GL_UNSIGNED_BYTE, tscreen_surf_->pixels);
+    
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0, 0.0); 
+            glVertex2f(0, 0);
+
+            glTexCoord2f(1, 0.0);
+            glVertex2f(tscreen_surf_->w, 0.0);
+
+            glTexCoord2f(1, 1);
+            glVertex2f(tscreen_surf_->w, tscreen_surf_->h);
+
+            glTexCoord2f(0, 1);
+            glVertex2f(0, tscreen_surf_->h);
+        glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    leaveOnScreenMode();
+
+    /*
+    for (int j = 0; j < height; ++j) {
+        uint8 *d = pixels_ + (y + j * 2) * width_ + x;
+
+        for (int i = 0; i < width; ++i, d += 2) {
+            uint8 c = *(pixeldata + i);
+            if (c != 255 || !transp) {
+                *(d + 0) = c;
+                *(d + 1) = c;
+                *(d + 0 + width_) = c;
+                *(d + 1 + width_) = c;
+            }
+        }
+
+        pixeldata += stride;
+    }
+
+    dirty_ = true;
+    */
+}
+
 void Screen::drawVLine(int x, int y, int length, uint8 color)
 {
     if (x < 0 || x >= width_ || y + length < 0 || y >= height_)
@@ -231,6 +326,17 @@ void Screen::drawVLine(int x, int y, int length, uint8 color)
         *pixel = color;
         pixel += width_;
     }
+
+    glBegin(GL_LINES);
+        glPointSize(3.0);  
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(50.0f, 50.0f);
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+
+    glFlush();
 
     dirty_ = true;
 }
@@ -392,3 +498,228 @@ int Screen::gameScreenLeftMargin()
     return 129;
 }
 
+bool Screen::enterOnScreenMode(void) {
+  glPushAttrib(GL_TRANSFORM_BIT | GL_VIEWPORT_BIT) ; 
+
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();
+  glLoadIdentity();
+
+  glOrtho(0.0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, 0.0, 0.0, 1.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  on_screen_mode_ = true;
+
+  return true;
+}
+
+bool Screen::leaveOnScreenMode(void) {
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+
+  glPopAttrib();
+
+  on_screen_mode_ = false;
+
+  return true;
+}
+
+void Screen::initScreen(void) {
+    // Construct a surface that's in a format close to the texture
+    screen_surf_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        32, 0, 0, 0, 0);
+
+    tscreen_surf_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        32, 0, 0, 0, 0);
+
+    temp_surf_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        8, 0, 0, 0, 0);
+
+    ttemp_surf_ = SDL_CreateRGBSurface(SDL_SWSURFACE,
+        GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+        8, 0, 0, 0, 0);
+
+    glClearColor(0.8, 0.8, 0.8, 1.0);
+    // glEnable(GL_ALPHA_TEST);
+    // glAlphaFunc(GL_GREATER, 0.5);
+    glViewport(0, 0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+
+
+
+    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    glGenTextures(1, &screen_texture_);
+    glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    if(true) {  // _smooth
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+                GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_);
+}
+
+bool Screen::renderScreen(void)
+{
+    SDL_LockSurface(temp_surf_);
+
+    memcpy(temp_surf_->pixels, pixels_,
+            GAME_SCREEN_WIDTH * GAME_SCREEN_HEIGHT);
+
+    SDL_UnlockSurface(temp_surf_);
+
+    clearDirty();
+
+    //SDL_UpdateTexture(screen_texture_, NULL, temp_surf_->pixels, temp_surf_->pitch);
+
+    /*
+    * Blit 8-bit palette surface onto the window surface that's
+    * closer to the texture's format
+    */
+    SDL_BlitSurface(temp_surf_, NULL, screen_surf_, NULL);
+
+    /*
+    // Modify the texture's pixels
+    void *pixels;
+    int pitch;
+
+    SDL_LockTexture(screen_texture_, NULL, &pixels, &pitch);
+    SDL_ConvertPixels(screen_surf_->w, screen_surf_->h,
+        screen_surf_->format->format,
+        screen_surf_->pixels, screen_surf_->pitch,
+        SDL_PIXELFORMAT_RGBA8888,
+        pixels, pitch);
+    SDL_UnlockTexture(screen_texture_);
+    */
+
+    // SDL_RenderClear(sdlRenderer);
+
+    enterOnScreenMode();
+
+    {
+        // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+ 
+        // Set our loaded texture as the current 2D texture (this isn't actually technically necessary since our
+        // texture was never unselected from above, but this is most clear)
+        glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+        // Tell OpenGL that all subsequent drawing operations should try to use the current 2D texture
+        glEnable(GL_TEXTURE_2D);
+
+        glTexImage2D(GL_TEXTURE_2D,
+                0, GL_RGBA, screen_surf_->w, screen_surf_->h,
+                0, GL_BGRA, GL_UNSIGNED_BYTE, screen_surf_->pixels);
+    
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0, 0.0); 
+            glVertex2f(0, 0);
+
+            glTexCoord2f(1, 0.0);
+            glVertex2f(screen_surf_->w, 0.0);
+
+            glTexCoord2f(1, 1);
+            glVertex2f(screen_surf_->w, screen_surf_->h);
+
+            glTexCoord2f(0, 1);
+            glVertex2f(0, screen_surf_->h);
+        glEnd();
+
+
+        // Tell OpenGL that all subsequent drawing operations should NOT try to use the current 2D texture
+        glDisable(GL_TEXTURE_2D);
+
+        // **************************************
+
+#if 0
+        glEnable(GL_TEXTURE_2D);
+
+        glBindTexture(GL_TEXTURE_2D, screen_texture_);
+
+        if(true) {     // smooth?
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        }
+
+        errorcheck();
+
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+        errorcheck();
+
+        static const float mult = 4.0 * sqrtf(2.0);
+        if(on_screen_mode_) {
+            // glClear( GL_COLOR_BUFFER_BIT );
+
+            /*
+            glBegin( GL_QUADS );
+                glVertex2f( -0.5f, -0.5f );
+                glVertex2f(  0.5f, -0.5f );
+                glVertex2f(  0.5f,  0.5f );
+                glVertex2f( -0.5f,  0.5f );
+            glEnd();
+            */
+
+            // glCallList(fullscreen);
+
+            GLfloat w = (float)screen_surf_->w;
+            GLfloat h = (float)screen_surf_->h;
+
+            glTexImage2D(GL_TEXTURE_2D,
+                0, GL_RGBA, screen_surf_->w, screen_surf_->h,
+                0, GL_RGBA, GL_UNSIGNED_BYTE, screen_surf_->pixels);
+
+
+            // w = 100.0f;
+            // h = 100.0f;
+
+            glBegin(GL_QUADS);
+                glTexCoord2f(0.0, 0.0); 
+                glVertex2f(0, 0);
+
+                glTexCoord2f(1, 0.0);
+                glVertex2f(w, 0.0);
+
+                glTexCoord2f(1, 1);
+                glVertex2f(w, h);
+
+                glTexCoord2f(0, 1);
+                glVertex2f(0, h);
+            glEnd();
+
+            errorcheck();
+        } else {
+            glPushMatrix();
+            glScalef(mult, mult, mult);
+            // glCallList(_frame_list_base + id);
+            glPopMatrix();
+        }
+
+        glDisable(GL_TEXTURE_2D);
+#endif
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    leaveOnScreenMode();
+
+    return true;
+}
