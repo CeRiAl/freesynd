@@ -280,9 +280,14 @@ void SystemSDL::renderCursor() {
 }
 
 void SystemSDL::updateScreen() {
-    if (g_Screen.dirty()|| (cursor_visible_ && update_cursor_)) {
-        
+    if (g_Screen.glDirty()) {
+        g_Screen.clearGlDirty();
+        swapWindow();
 
+        return;
+    }
+
+    if (g_Screen.dirty() || (cursor_visible_ && update_cursor_)) {        
         g_Screen.renderScreen();
 
         /**********************/
@@ -292,14 +297,13 @@ void SystemSDL::updateScreen() {
             renderCursor();
         g_Screen.leaveOnScreenMode();
 
-
-        // SDL_Flip(screen_surf_);
-        // SDL_RenderPresent(display_renderer_);
-
-        // glFlush();
-
-        SDL_GL_SwapWindow(display_window_);
+        swapWindow();
     }
+}
+
+void SystemSDL::swapWindow() {
+    // glFlush();
+    SDL_GL_SwapWindow(display_window_);
 }
 
 /*!

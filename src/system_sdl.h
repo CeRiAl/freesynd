@@ -55,6 +55,8 @@ public:
     bool initialize(bool fullscreen);
 
     void updateScreen();
+    void swapWindow();
+
     //! Pumps an event from the event queue
     bool pumpEvents(FS_Event *pEvtOut);
     void delay(int msec);
