@@ -198,6 +198,9 @@ FliPlayer::~FliPlayer() {
         delete[] offscreen_;
         offscreen_ = NULL;
     }
+
+    if (fli_texture_)
+        delete fli_texture_;
 }
 
 void FliPlayer::loadFliData(uint8 *data) {
@@ -227,6 +230,10 @@ void FliPlayer::loadFliData(uint8 *data) {
     offscreen_ = new uint8[fli_info_.width * fli_info_.height];
 
     memset(palette_, 0, sizeof(palette_));
+
+    if (fli_texture_ != NULL)
+        delete fli_texture_;
+    fli_texture_ = new Texture(fli_info_.width, fli_info_.height);
 }
 
 bool FliPlayer::isValidChunk(uint16 type) {
@@ -426,11 +433,15 @@ void FliPlayer::setPalette(uint8 *mem) {
             mem += (change * 3);
         }
     }
+
+    fli_texture_->setPalette(palette_);
 }
 
 void FliPlayer::copyCurrentFrameToScreen() {
-    g_Screen.scale2x(0, 0, fli_info_.width, fli_info_.height, offscreen(),
-                     0, false);
+    // g_Screen.scale2x(0, 0, fli_info_.width, fli_info_.height, offscreen(), 0, false);
+
+    fli_texture_->update(offscreen());
+    g_Screen.renderTexture(fli_texture_, 0, 0, fli_info_.width * 2, fli_info_.height * 2);
 }
 
 bool FliPlayer::play(bool intro, Font *pIntroFont) {
