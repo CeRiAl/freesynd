@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
       "args": [
-        "--mission", "1"
+        "--xmission", "1"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

@@ -22,7 +22,13 @@
 			"fstream": "cpp",
 			"limits": "cpp",
 			"sstream": "cpp",
-			"system_error": "cpp"
+			"system_error": "cpp",
+			"memory_resource": "cpp",
+			"string_view": "cpp",
+			"functional": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"streambuf": "cpp"
 		}
 	}
 }
