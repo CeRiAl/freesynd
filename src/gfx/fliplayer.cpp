@@ -198,9 +198,6 @@ FliPlayer::~FliPlayer() {
         delete[] offscreen_;
         offscreen_ = NULL;
     }
-
-    if (fli_texture_)
-        delete fli_texture_;
 }
 
 void FliPlayer::loadFliData(uint8 *data) {
@@ -230,10 +227,6 @@ void FliPlayer::loadFliData(uint8 *data) {
     offscreen_ = new uint8[fli_info_.width * fli_info_.height];
 
     memset(palette_, 0, sizeof(palette_));
-
-    if (fli_texture_ != NULL)
-        delete fli_texture_;
-    fli_texture_ = new Texture(fli_info_.width, fli_info_.height);
 }
 
 bool FliPlayer::isValidChunk(uint16 type) {
@@ -378,7 +371,7 @@ bool FliPlayer::decodeFrame() {
         switch (cHeader.type) {
         case 4:
             setPalette(fli_data_ + 6);
-            g_System.setPalette8b3(palette_);
+            // g_System.setPalette8b3(palette_);
             break;
         case 7:
             decodeDeltaFLC(fli_data_ + 6);
@@ -434,14 +427,12 @@ void FliPlayer::setPalette(uint8 *mem) {
         }
     }
 
-    fli_texture_->setPalette(palette_);
+    g_Screen.background()->setPalette(palette_);
 }
 
 void FliPlayer::copyCurrentFrameToScreen() {
     // g_Screen.scale2x(0, 0, fli_info_.width, fli_info_.height, offscreen(), 0, false);
-
-    fli_texture_->update(offscreen());
-    g_Screen.renderTexture(fli_texture_, 0, 0, fli_info_.width * 2, fli_info_.height * 2);
+    g_Screen.background()->update(offscreen(), 0, 0, fli_info_.width, fli_info_.height);
 }
 
 bool FliPlayer::play(bool intro, Font *pIntroFont) {
@@ -459,6 +450,8 @@ bool FliPlayer::play(bool intro, Font *pIntroFont) {
         copyCurrentFrameToScreen();
 
         cur_frame++;
+
+        g_Screen.renderBackground();
 
         g_System.updateScreen();
         g_System.delay(1000 / (intro ? 10 : 15));      //fps
