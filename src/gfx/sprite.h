@@ -28,6 +28,8 @@
 
 #include "common.h"
 
+class Texture;
+
 const int TABENTRY_SIZE = 6;
 
 /*!
@@ -43,6 +45,7 @@ class Sprite {
      */
     int stride_;
     uint8 *sprite_data_;
+    Texture *sprite_texture_;
 
 public:
     /*! Id of sprite agent selector 1 in the menu sprite list.*/

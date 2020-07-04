@@ -70,11 +70,14 @@ Sprite::Sprite()
     , height_(0)
     , stride_(0)
     , sprite_data_(NULL)
+    , sprite_texture_(NULL)
 {
 }
 
 Sprite::~Sprite()
 {
+    if (sprite_texture_)
+        delete sprite_texture_;
     if (sprite_data_)
         delete[] sprite_data_;
 
@@ -164,6 +167,9 @@ bool Sprite::loadSprite(uint8 * tabData, uint8 * spriteData, uint32 offset,
     sprite_data_ = new uint8[stride_ * height_];
     memset(sprite_data_, 255, stride_ * height_);
 
+    sprite_texture_ = new Texture(stride_, height_);
+    sprite_texture_->setPalette(g_Screen.palette());
+
     uint8 *currentPixel;
 
     if (rle) {
@@ -223,6 +229,8 @@ bool Sprite::loadSprite(uint8 * tabData, uint8 * spriteData, uint32 offset,
         }
     }
 
+    sprite_texture_->update(sprite_data_);
+
     return true;
 }
 
@@ -233,6 +241,13 @@ void Sprite::draw(int x, int y, int z, bool flipped, bool x2)
     else
         g_Screen.blit(x, y, width_, height_, sprite_data_, flipped,
                       stride_);
+
+    if (x2)
+        g_Screen.renderTexture2x(sprite_texture_, x, y, width_, height_, stride_);
+    else
+        g_Screen.renderTexture(sprite_texture_, x, y, width_, height_, flipped, stride_);
+
+    // g_Screen.renderTexture(sprite_texture_, x, y, width_ * sc, height_ * sc);
 }
 
 void Sprite::data(uint8 * spr_data) const
