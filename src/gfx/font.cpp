@@ -175,6 +175,106 @@ Sprite *Font::getSprite(unsigned char dos_char) {
     return sprites_->sprite(dos_char + offset_);
 }
 
+#if 0
+void Font::initTextureSize(unsigned &texture_width, unsigned &texture_height) {
+    int char_count = 256;
+    int char_width = 0;
+    int char_height = textHeight(false);
+
+    for (int cc = 0; cc < char_count; cc++) {
+        if (range_.in_range(cc) == true) {            
+            int curr_width = textWidth((char *)&cc, false, false);
+            if (char_width < curr_width) char_width = curr_width;
+        }
+    }
+
+    // Increment char width and height by one (safe margin for possible texture filtering)
+    char_width++;
+    char_height++;
+
+    char_width_ = char_width;
+    char_height_ = char_height;
+
+    int char_cols = 32;
+    int char_rows = char_count / char_cols + 1;
+
+    // FIXME: check against GL_MAX_TEXTURE_SIZE;
+    while(texture_width < char_cols * char_width_) texture_width <<= 1;
+    while(texture_height < char_rows * char_height_) texture_height <<= 1;
+
+    // Recalculate actual number of cols and rows
+    char_cols = texture_width / char_width_;
+    char_rows = char_count / char_cols + 1;
+
+    char_cols_ = char_cols;
+    char_rows_ = char_rows;
+}
+
+void Font::initChar(Texture &font_texture, uint8 *data, unsigned char cc, int width, int height) {
+    int x = (cc % char_cols_) * char_width_;
+    int y = (cc / char_cols_) * char_height_;
+
+    printf("  XXX '%c': %i / %i  %ix%i\n", cc, x, y, width, height);
+
+    /*
+    int pos = 0;
+    for (int py = 0; py < height; py++) {
+        for (int px = 0; px < width; px++) {
+            // %#08x
+            printf("%02x ", data[pos]);
+            pos++;
+        }
+        printf("\n");
+    }
+    */
+
+    font_texture.update(data, x, y, width, height);
+}
+
+void Font::generateTexture() {
+    int char_count = 256;
+
+    unsigned texture_width = 1;
+    unsigned texture_height = 1;
+
+    initTextureSize(texture_width, texture_height);
+
+    printf("XXX CHR: %ix%i\n", char_width_, char_height_);
+    printf("XXX TEX: %ix%i\n", texture_width, texture_height);
+    printf("XXX FIN: %i / %i\n", char_rows_, char_cols_);
+
+    font_texture_ = new Texture(texture_width, texture_height);
+
+    // font_texture_->setPalette(palette);
+    font_texture_->setPalette(g_Screen.palette());
+
+    uint32_t texture[texture_width * texture_height];
+    memset(texture, 0, texture_width * texture_height * sizeof(*texture));
+
+    for (int cc = 0; cc < char_count; cc++) {
+        if (range_.in_range(cc) == true) {
+            Sprite *s = getSprite(cc);
+            if (s) {
+                int width = s->width();
+                int height = s->height();
+
+                uint8 *data = new uint8[width * height];
+                s->data(data);
+
+                initChar(*font_texture_, data, cc, width, height);
+            }
+        }
+    }
+
+    /*
+    for(unsigned id = 0; id < char_count; id++) {
+
+        // _data->_req->get(id, pixels, texture_width * sizeof(*texture), _colors);
+    }
+    */    
+}
+#endif
+
 void Font::setSpriteManager(SpriteManager *sprites, int offset, char base, const FontRange& range) {
     sprites_ = sprites;
     offset_ = offset - base;
@@ -307,7 +407,6 @@ void MenuFont::drawText(int x, int y, bool dos, const char *text, bool highlight
             }
 
             s->draw(x, y + y_offset, 0, false, x2);
-            
             x += s->width() * sc - sc;
         }
     }
