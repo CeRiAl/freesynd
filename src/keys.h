@@ -103,29 +103,30 @@ typedef struct Key {
     KeyFunc keyFunc;
     KeyVirtual keyVirt;        /**< Virtual key : KVT_UNKNOWN if not set. */
     uint16 unicode;            /**< Unicode for printable characters. */
+    uint32 keySym;             /**< Symbol for printable characters. */
 } Key;
 
-// A list of macros to ease unicode comparisons (case insensitive)
-#define isLetterA(codePoint) codePoint == 0x0061 || codePoint == 0x0041
-#define isLetterD(codePoint) codePoint == 0x0064 || codePoint == 0x0044 || codePoint == 0x0004
-#define isLetterG(codePoint) codePoint == 0x0067 || codePoint == 0x0047
-#define isLetterH(codePoint) codePoint == 0x0068 || codePoint == 0x0048
-#define isLetterQ(codePoint) codePoint == 0x0071 || codePoint == 0x0051
-#define isLetterP(codePoint) codePoint == 0x0070 || codePoint == 0x0050
+// A list of macros to ease keysym comparisons
+#define isLetterA(keySym) keySym == 0x61
+#define isLetterD(keySym) keySym == 0x64
+#define isLetterG(keySym) keySym == 0x67
+#define isLetterH(keySym) keySym == 0x68
+#define isLetterQ(keySym) keySym == 0x71
+#define isLetterP(keySym) keySym == 0x70
 
-#define K_PLUS    0x002B
-#define K_MINUS    0x002D
-#define K_SPACE    0x0020
+#define K_PLUS      0x2B
+#define K_MINUS     0x2D
+#define K_SPACE     0x20
 
-#define K_DGT_0    0x0030
-#define K_DGT_1    0x0031
-#define K_DGT_2    0x0032
-#define K_DGT_3    0x0033
-#define K_DGT_4    0x0034
-#define K_DGT_5    0x0035
-#define K_DGT_6    0x0036
-#define K_DGT_7    0x0037
-#define K_DGT_8    0x0038
-#define K_DGT_9    0x0039
+#define K_DGT_0     0x30
+#define K_DGT_1     0x31
+#define K_DGT_2     0x32
+#define K_DGT_3     0x33
+#define K_DGT_4     0x34
+#define K_DGT_5     0x35
+#define K_DGT_6     0x36
+#define K_DGT_7     0x37
+#define K_DGT_8     0x38
+#define K_DGT_9     0x39
 
 #endif

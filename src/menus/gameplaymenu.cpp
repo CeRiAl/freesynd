@@ -897,7 +897,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
     bool consumed = true;
 
     // Pause/unpause game
-    if (isLetterP(key.unicode)) {
+    if (isLetterP(key.keySym)) {
         if (paused_) {
             paused_ = false;
         } else {
@@ -928,7 +928,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
 
     // SPACE is pressed when the mission failed or succeeded to return
     // to menu
-    if (key.unicode == K_SPACE) {
+    if (key.keySym == K_SPACE) {
         if (mission_->completed() || mission_->failed()) {
             // Do not display default leaving animation because
             // a success/failed animation will be played
@@ -999,7 +999,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
         uint8 weapon_idx = (uint8) key.keyFunc - (uint8) KFC_F5;
         handleWeaponSelection(weapon_idx, ctrl);
         return true;
-    } else if ((isLetterD(key.unicode)) && ctrl) { // selected agents are killed with 'd'
+    } else if ((isLetterD(key.keySym)) && ctrl) { // selected agents are killed with 'd'
         // save current selection as it will be modified when agents die
         std::vector<PedInstance *> agents_suicide;
         for (SquadSelection::Iterator it = selection_.begin();
@@ -1017,7 +1017,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
 #ifdef _DEBUG
 #if 0
     static int sound_num = 20;
-    if (key.unicode == 'i') {
+    if (key.keySym == 'i') {
      g_App.gameSounds().play((snd::InGameSample)sound_num);
      printf("sn %i\n", sound_num);
      sound_num++;
@@ -1075,43 +1075,43 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
 
 #ifdef ANIM_PLUS_FRAME_VIEW
     // used to see animations by number + frame
-    if (key.unicode == 'a') {
+    if (key.keySym == 'a') {
         qanim--;
         if (qanim < 0)
             qanim = 0;
     }
 
-    if (key.unicode == 's') {
+    if (key.keySym == 's') {
         qanim++;
         if (qanim > 1969)
             qanim = 1969;
     }
 
-    if (key.unicode == 'q') {
+    if (key.keySym == 'q') {
         qanim -= 8;
         if (qanim < 0)
             qanim = 0;
     }
 
-    if (key.unicode == 'w') {
+    if (key.keySym == 'w') {
         qanim += 8;
         if (qanim > 1969)
             qanim = 1969;
     }
 
-    if (key.unicode == 'x') {
+    if (key.keySym == 'x') {
         qframe++;
         if (qframe > 30)
             qframe = 0;
     }
 
-    if (key.unicode == 'z') {
+    if (key.keySym == 'z') {
         qframe--;
         if (qframe < 0)
             qframe = 0;
     }
 
-    if (key.unicode == ' ')
+    if (key.keySym == ' ')
         printf("qanim %i qframe %i\n", qanim, qframe);
 #endif
 

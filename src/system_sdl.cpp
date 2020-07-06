@@ -402,19 +402,14 @@ bool SystemSDL::pumpEvents(FS_Event *pEvtOut) {
                     pEvtOut->type = EVT_KEY_DOWN;
                     Key key;
                     checkKeyCodes(evtIn.key.keysym, key);
-#if _DEBUG
                     key.unicode = 0;
+                    key.keySym = 0;
                     if (key.keyFunc == KFC_UNKNOWN) {
-                        // key.unicode = evtIn.key.keysym.unicode;
-                        printf( "Scancode: 0x%02X", evtIn.key.keysym.scancode );
-                        printf( ", Name: %s", SDL_GetKeyName( evtIn.key.keysym.sym ) );
-                        // printf(", Unicode: " );
-                        // if( evtIn.key.keysym.unicode < 0x80 && evtIn.key.keysym.unicode > 0 ){
-                        //     printf( "%c (0x%04X)\n", (char)evtIn.key.keysym.unicode,
-                        //             evtIn.key.keysym.unicode );
-                        // } else{
-                        //     printf( "? (0x%04X)\n", evtIn.key.keysym.unicode );
-                        // }
+                        key.keySym = evtIn.key.keysym.sym;
+#if _DEBUG
+                        printf( "Scancode: 0x%02X\t", evtIn.key.keysym.scancode );
+                        printf( "Sym: 0x%02X", evtIn.key.keysym.sym );
+                        printf( " (Name: %s )\n", SDL_GetKeyName( evtIn.key.keysym.sym ) );
 #endif
                     }
                     pEvtOut->key.key = key;
@@ -448,6 +443,25 @@ bool SystemSDL::pumpEvents(FS_Event *pEvtOut) {
                     break;
             }
             }
+            break;
+        case SDL_TEXTINPUT:
+            // TODO: Add new text onto the end of our text
+            pEvtOut->type = EVT_KEY_DOWN;
+            Key key;
+            key.keySym = 0;
+            key.unicode = evtIn.text.text[0];
+#if _DEBUG
+            // printf( "Unicode: 0x%02X (Content: '%s')\n", evtIn.text.text[0], evtIn.text.text);
+#endif
+            pEvtOut->key.key = key;
+            pEvtOut->key.keyMods = keyModState_;
+            break;
+        case SDL_TEXTEDITING:
+#if _DEBUG
+            printf("TEXTEDITING!!! composition %s\n", evtIn.edit.text); // Update the composition text.
+            printf("TEXTEDITING!!! cursor %i\n", evtIn.edit.start); // Update the cursor position.
+            printf("TEXTEDITING!!! selection_len %i\n", evtIn.edit.length); // Update the selection length (if any).
+#endif
             break;
         case SDL_MOUSEBUTTONUP:
             pEvtOut->button.type = EVT_MSE_UP;

@@ -186,9 +186,9 @@ int Menu::addOption(int x, int y, int width, int height, const char *text, FontM
     Option *pOption = new Option(this, x, y, width, height, text, getMenuFont(size), to, visible, centered, dark_widget, light_widget);
     actions_.push_back(pOption);
 
-    if (pOption->getHotKey().keyFunc != KFC_UNKNOWN || pOption->getHotKey().unicode != 0) {
+    if (pOption->getHotKey().keyFunc != KFC_UNKNOWN || pOption->getHotKey().keySym != 0) {
         // The option already has an acceleration key
-        registerHotKey(pOption->getHotKey().unicode, pOption->getId());
+        registerHotKey(pOption->getHotKey().keySym, pOption->getId());
     }
 
     return pOption->getId();
@@ -327,13 +327,13 @@ void  Menu::registerHotKey(KeyFunc code, int optId) {
 /*!
  * Adds an acceleration key to the given option so it can be activated by that key.
  * If id is not an option id, then nothing is done.
- * \param unicode The hot key
+ * \param keysym The hot key
  * \param optId The option id
  */
-void  Menu::registerHotKey(uint16 unicode, int optId) {
+void  Menu::registerHotKey(uint32 keysym, int optId) {
     Option *pOption = getOption(optId);
     if (pOption) {
-        HotKey hc(KFC_UNKNOWN, unicode, pOption);
+        HotKey hc(KFC_UNKNOWN, keysym, pOption);
         hotKeys_.push_back(hc);
     }
 }
@@ -368,13 +368,8 @@ void Menu::keyEvent(Key key, const int modKeys)
         // Then look for a mapped key to execute an action
         for (std::list < HotKey >::iterator it = hotKeys_.begin();
                 it != hotKeys_.end(); it++) {
-                    uint16 c = key.unicode;
-                    // Hotkey can only be character from 'A' to 'Z'
-                    if (c >= 'a' && c <= 'z') {
-                        // so uppercase it
-                        c -= 32;
-                    }
-                    if ((*it).key.keyFunc == key.keyFunc && (*it).key.unicode == c) {
+                    uint16 c = key.keySym;
+                    if ((*it).key.keyFunc == key.keyFunc && (*it).key.keySym == c) {
                     Option *opt = (*it).pOption;
                     if (opt->isVisible() && opt->isWidgetEnabled()) {
                         opt->executeAction(modKeys);

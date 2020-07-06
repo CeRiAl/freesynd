@@ -171,7 +171,7 @@ Option::Option(Menu *peer, int x, int y, int width, int height, const char *text
         darkWidget_ = NULL;
         lightWidget_ = NULL;
         hotKey_.keyFunc = KFC_UNKNOWN;
-        hotKey_.unicode = 0;
+        hotKey_.keySym = 0;
 
         // If button label contains a '&' caracter, then the next
         // caracter is the acceleration key for that button
@@ -199,9 +199,9 @@ Option::Option(Menu *peer, int x, int y, int width, int height, const char *text
                     foundAmp = true;
                     continue;
                 }
-            } else if (foundAmp && hotKey_.unicode == 0) {
-                if (cp >= 'A' && cp <= 'z') {
-                    hotKey_.unicode = cp;
+            } else if (foundAmp && hotKey_.keySym == 0) {
+                if (cp >= 'A' && cp <= 'Z') {
+                    hotKey_.keySym = cp;
                 }
             }
             // copy char
@@ -525,6 +525,7 @@ void TextField::draw() {
 
 void TextField::handleCaptureGained() {
     isInEdition_ = true;
+    g_Screen.startTextInput();
     // by default set the caret at the end of the text
     char src[100];
     size_t size = text_.getText().size();
@@ -538,6 +539,7 @@ void TextField::handleCaptureGained() {
 
 void TextField::handleCaptureLost() {
     isInEdition_ = false;
+    g_Screen.stopTextInput();
     caretPosition_ = 0;
     setHighlighted(false);
     redraw();

@@ -101,7 +101,7 @@ public:
     //! Adds a mapping between a Function Key and an Option
     void registerHotKey(KeyFunc key, int optId);
     //! Adds a mapping between a Printable Key and an Option
-    void registerHotKey(uint16 unicode, int optId);
+    void registerHotKey(uint32 keysym, int optId);
 
     //! Does common actions before leaving
     void leave();
@@ -182,9 +182,9 @@ protected:
 protected:
     class HotKey {
     public:
-        HotKey(KeyFunc code, uint16 unicode, Option *pOpt) {
+        HotKey(KeyFunc code, uint32 keysym, Option *pOpt) {
             key.keyFunc = code;
-            key.unicode = unicode;
+            key.keySym = keysym;
             pOption = pOpt;
         }
         Key key;

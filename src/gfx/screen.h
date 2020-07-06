@@ -111,6 +111,16 @@ public:
     void setPixel(int x, int y, uint8 color);
     void drawRect(int x, int y, int width, int height, uint8 color = 0);
 
+    void startTextInput() {
+        if (!SDL_IsTextInputActive())
+            SDL_StartTextInput();
+    }
+
+    void stopTextInput() {
+        if (SDL_IsTextInputActive())
+            SDL_StopTextInput();
+    }
+
     int gameScreenHeight();
     int gameScreenWidth();
     int gameScreenLeftMargin();
