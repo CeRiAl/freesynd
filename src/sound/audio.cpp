@@ -58,6 +58,31 @@ bool Audio::init(EFrequency freq, EFormat fmt, EChannel chan, int chunksize) {
         return true;
     }
 
+    SDL_version compile_version;
+    const SDL_version *link_version = Mix_Linked_Version();
+    SDL_MIXER_VERSION(&compile_version);
+    printf("compiled with SDL_mixer version: %d.%d.%d\n", 
+            compile_version.major,
+            compile_version.minor,
+            compile_version.patch);
+    printf("running with SDL_mixer version: %d.%d.%d\n", 
+            link_version->major,
+            link_version->minor,
+            link_version->patch);
+            
+    // load support for the OGG and MOD sample/music formats
+    int flags = MIX_INIT_OGG | MIX_INIT_MOD | MIX_INIT_MID;
+    int initted = Mix_Init(flags);
+    if (initted & flags != flags) {
+        error("Audio", "init", "Failed to init required ogg and mod support.");
+
+        printf("Mix_Init: Failed to init required ogg and mod support!\n");
+        printf("Mix_Init: %s\n", Mix_GetError());
+        // handle error
+
+        return false;
+    }
+
     // Choosing the frequency
     int frequency;
     switch (freq) {
@@ -116,6 +141,7 @@ bool Audio::quit(void) {
         Mix_HaltMusic();
         Mix_HaltChannel(-1);
         Mix_CloseAudio();
+        Mix_Quit();
         initialized_ = false;
         return true;
     }

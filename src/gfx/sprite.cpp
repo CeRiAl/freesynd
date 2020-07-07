@@ -234,20 +234,16 @@ bool Sprite::loadSprite(uint8 * tabData, uint8 * spriteData, uint32 offset,
     return true;
 }
 
+void Sprite::update(uint8 *data) {
+    sprite_texture_->update(data, 0, 0, width_, height_);
+}
+
 void Sprite::draw(int x, int y, int z, bool flipped, bool x2)
 {
     if (x2)
-        g_Screen.scale2x(x, y, width_, height_, sprite_data_, stride_);
-    else
-        g_Screen.blit(x, y, width_, height_, sprite_data_, flipped,
-                      stride_);
-
-    if (x2)
         g_Screen.renderTexture2x(sprite_texture_, x, y, width_, height_, stride_);
     else
-        g_Screen.renderTexture(sprite_texture_, x, y, width_, height_, flipped, stride_);
-
-    // g_Screen.renderTexture(sprite_texture_, x, y, width_ * sc, height_ * sc);
+        g_Screen.renderTextureB(sprite_texture_, x, y, width_, height_, flipped, stride_);
 }
 
 void Sprite::data(uint8 * spr_data) const

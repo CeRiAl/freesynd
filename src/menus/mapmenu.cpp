@@ -111,7 +111,7 @@ struct BlockDisplay {
  */
 MapMenu::MapMenu(MenuManager * m)
     :  Menu(m, fs_game_menus::kMenuIdMap, fs_game_menus::kMenuIdMain, "mmap.dat", "mmapout.dat"),
-mapblk_data_(NULL), select_tick_count_(0) {
+mapblk_data_(NULL), select_tick_count_(0), map_texture_(NULL) {
     //
     briefButId_ = addOption(17, 347, 128, 25, "#MAP_BRIEF_BUT",
         FontManager::SIZE_2, fs_game_menus::kMenuIdBrief);
@@ -149,6 +149,9 @@ mapblk_data_(NULL), select_tick_count_(0) {
     // Load map block informations
     mapblk_data_ = File::loadOriginalFile("mmapblk.dat", mapblk_size_);
 
+    map_texture_ = new Texture(64, 44);
+    map_texture_->setPalette(g_Screen.palette());
+
     blk_tick_count_ = 0;
     blink_status_ = true;
 }
@@ -156,6 +159,9 @@ mapblk_data_(NULL), select_tick_count_(0) {
 MapMenu::~MapMenu() {
     delete[] mapblk_data_;
     mapblk_data_ = NULL;
+
+    if (map_texture_)
+        delete map_texture_;
 }
 
 /*!
@@ -291,17 +297,14 @@ void MapMenu::drawSelector() {
         g_Session.getLogoColour(), true);
 
     // Draw box enclosing logo
-    uint8 box[18 * 18];
-    memset(box, 255, 18 * 18);
     for (int i = 0; i < 18; i++) {
-        box[i] = 252;
-        box[i + 17 * 18] = 252;
+        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2, 2, 2, 252);
+        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2 + (17 * 2), 2, 2, 252);
     }
     for (int j = 0; j < 18; j++) {
-        box[j * 18] = 252;
-        box[j * 18 + 17] = 252;
+        g_Screen.drawRect(logo_x - 2, logo_y - 2 + (j * 2), 2, 2, 252);
+        g_Screen.drawRect(logo_x - 2 + (17 * 2), logo_y - 2 + (j * 2), 2, 2, 252);
     }
-    g_Screen.scale2x(logo_x - 2, logo_y - 2, 18, 18, box);
 
     // Draw line between country and logobox
     int blk_line_end_x = g_BlocksDisplay[selId].line_end.x;
@@ -351,8 +354,9 @@ void MapMenu::handleRender(DirtyList &dirtyList) {
                     data[j] = 255;
                 else
                     data[j] = g_Session.get_owner_color(blk);
-            g_Screen.scale2x(g_BlocksDisplay[i].pos.x,
-                g_BlocksDisplay[i].pos.y, 64, 44, data, 64);
+            map_texture_->update(data);
+            g_Screen.renderTexture2x(map_texture_,
+                g_BlocksDisplay[i].pos.x, g_BlocksDisplay[i].pos.y, 64, 44);
         }
     }
 

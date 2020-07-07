@@ -33,6 +33,8 @@
 
 #include "keys.h"
 
+class Texture;
+
 SDL_Surface *prepGLTexture(SDL_Surface *surface, GLfloat *texCoords = 0, bool freeSource = true);
 
 //! Implementation of the System interface for SDL.
@@ -111,7 +113,7 @@ protected:
      * A surface that holds all cursors
      * images.
      */
-    GLuint cursor_texture_;
+    Texture *cursor_texture_;
     /*! A rect that identify the part of
      * the cursor surface for the current cursor.*/
     SDL_Rect cursor_rect_;

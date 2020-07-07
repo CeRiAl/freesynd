@@ -112,7 +112,88 @@ bool SdlMixerSound::loadSound(uint8 * soundData, uint32 size)
         Audio::error("Sound", "loadSound", "Failed creating SDL_RW buffer from memory");
         return false;
     }
+    
+
+    SDL_RWops *src = rw;
+    bool freesrc = true;
+
+    Uint8 magic[4];
+    Mix_Chunk *chunk;
+    SDL_AudioSpec wavespec, *loaded;
+    SDL_AudioCVT wavecvt;
+    int samplesize;
+
+    /* rcg06012001 Make sure src is valid */
+    if (!src) {
+        SDL_SetError("Mix_LoadWAV_RW with NULL src");
+        return(NULL);
+    }
+
+    /* Make sure audio has been opened */
+    /*
+    if (!audio_opened) {
+        SDL_SetError("Audio device hasn't been opened");
+        if (freesrc) {
+            SDL_RWclose(src);
+        }
+        return(NULL);
+    }
+    */
+
+    /* Allocate the chunk memory */
+    chunk = (Mix_Chunk *)SDL_malloc(sizeof(Mix_Chunk));
+    if (chunk == NULL) {
+        SDL_SetError("Out of memory");
+        if (freesrc) {
+            SDL_RWclose(src);
+        }
+        return(NULL);
+    }
+
+    /*
+    const char *str = "CREA";
+    size_t len = SDL_strlen(str);
+    if (SDL_RWwrite(rw, str, 1, len) != len) {
+        printf("Couldn't fully write string\n");
+    } else {
+        printf("Wrote %d 1-byte blocks\n", len);
+    }
+    SDL_RWseek(src, -len, RW_SEEK_CUR);
+    */
+
+    /* Find out what kind of audio file this is */
+    if (SDL_RWread(src, magic, 1, 4) != 4) {
+        if (freesrc) {
+            SDL_RWclose(src);
+        }
+        Mix_SetError("Couldn't read first 4 bytes of audio data");
+        return NULL;
+    }
+    /* Seek backwards for compatibility with older loaders */
+    SDL_RWseek(src, -4, RW_SEEK_CUR);
+
+    if (SDL_memcmp(magic, "WAVE", 4) == 0 || SDL_memcmp(magic, "RIFF", 4) == 0) {
+        printf("Load WAVE\n");
+        // loaded = SDL_LoadWAV_RW(src, freesrc, &wavespec, (Uint8 **)&chunk->abuf, &chunk->alen);
+    } else if (SDL_memcmp(magic, "FORM", 4) == 0) {
+        printf("Load AIFF\n");
+        // loaded = Mix_LoadAIFF_RW(src, freesrc, &wavespec, (Uint8 **)&chunk->abuf, &chunk->alen);
+    } else if (SDL_memcmp(magic, "CREA", 4) == 0) {
+        printf("Load VOC\n");
+        // loaded = Mix_LoadVOC_RW(src, freesrc, &wavespec, (Uint8 **)&chunk->abuf, &chunk->alen);
+    } else {
+        // Mix_MusicType music_type = detect_music_type_from_magic(magic);
+        // loaded = Mix_LoadMusic_RW(music_type, src, freesrc, &wavespec, (Uint8 **)&chunk->abuf, &chunk->alen);
+    }
+    if (!loaded) {
+        /* The individual loaders have closed src if needed */
+        SDL_free(chunk);
+        return(NULL);
+    }
+
+
     Mix_Chunk *newsound = Mix_LoadWAV_RW(rw, 1);
+    
 
     if (!newsound) {
         Audio::error("Sound", "loadSound", "Failed loading sound from SDL_RW buffer");

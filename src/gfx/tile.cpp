@@ -37,14 +37,21 @@ Tile::Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set)
     a_pixels_ = new uint8[TILE_WIDTH * TILE_HEIGHT];
     memcpy(a_pixels_, tile_Data, TILE_WIDTH * TILE_HEIGHT);
     not_alpha_ = not_alpha;
+
+    tile_texture_ = new Texture(TILE_WIDTH, TILE_HEIGHT);
+    tile_texture_->setPalette(g_Screen.palette());
+    tile_texture_->update(a_pixels_, true);
 }
 
 Tile::~Tile()
 {
+    if (tile_texture_)
+        delete tile_texture_;
+
     delete[] a_pixels_;
 }
 
-bool Tile::drawTo(uint8 * screen, int swidth, int sheight, int x, int y)
+bool Tile::drawTo(int swidth, int sheight, int x, int y)
 {
     if (x + TILE_WIDTH < 0 || y + TILE_HEIGHT < 0
         || x >= swidth || y >= sheight)
@@ -59,27 +66,24 @@ bool Tile::drawTo(uint8 * screen, int swidth, int sheight, int x, int y)
     int clipped_h = TILE_HEIGHT - (ylow - y);
     int yhigh = ylow + clipped_h >= sheight ? sheight : ylow + clipped_h;
 
-    uint8 *ptr_a_pixels = a_pixels_ + ((TILE_HEIGHT - 1) - (ylow - y)) * TILE_WIDTH;
-    uint8 *ptr_screen = screen + ylow * swidth + xlow;
-    for (int j = ylow; j < yhigh; ++j)
-    {
-        uint8 *cp_ptr_a_pixels = ptr_a_pixels;
-        ptr_a_pixels -= TILE_WIDTH;
-        uint8 *cp_ptr_screen = ptr_screen;
-        ptr_screen += swidth;
-        for (int i = xlow; i < xhigh; ++i) {
-            uint8 c = *cp_ptr_a_pixels++;
-            if (c != 255)
-                *cp_ptr_screen = c;
-            ++cp_ptr_screen;
-        }
-    }
+    g_Screen.renderTexture(tile_texture_, xlow, ylow, clipped_w, clipped_h);
+
+    return true;
+}
+
+bool Tile::drawTo3d(int x, int y, int z) {
+    g_Screen.renderTile(tile_texture_, i_id_, x, y, z);
+
     return true;
 }
 
 bool Tile::drawToScreen(int x, int y)
 {
-    return drawTo((uint8*) g_Screen.pixels(), g_Screen.gameScreenWidth(), g_Screen.gameScreenHeight(), x, y);
+    return drawTo(g_Screen.gameScreenWidth(), g_Screen.gameScreenHeight(), x, y);
+}
+
+bool Tile::drawToScreen3d(int x, int y, int z) {
+    return drawTo3d(x, y, z);
 }
 
 uint8 Tile::getWalkData() {

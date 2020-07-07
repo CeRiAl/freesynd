@@ -147,6 +147,7 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
  public:
     //! Constructor for the class
     GamePlayMinimapRenderer();
+    ~GamePlayMinimapRenderer();
 
     //! Reset the class with a new mission
     void init(Mission *pMission, bool b_scannerEnabled);
@@ -289,6 +290,9 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     Mission *p_mission_;
     /*! The minimap to display.*/
     MiniMap *p_minimap_;
+
+    Texture *minimap_texture_;
+
     /*!
      * Total number of tiles displayed in the minimap.
      * same for width and height.

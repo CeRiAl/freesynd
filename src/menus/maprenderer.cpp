@@ -102,10 +102,12 @@ void MapRenderer::render(const Point2D &viewport) {
                             if (coord_h - viewport.y < 0)
                                 dy = -(coord_h - viewport.y);
                             if (dx < TILE_WIDTH && dy < TILE_HEIGHT) {
-                                p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
+                                // p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
+                                p_tile->drawTo3d(tile_x, tile_y, tile_z);
                             }
                         }
                     }
+
 
                     // draw everything that's on the tile
                     if (tile_z - 1 >= 0) {
@@ -113,7 +115,7 @@ void MapRenderer::render(const Point2D &viewport) {
                         Point2D screenPos = {screen_w - cmx + TILE_WIDTH / 2,
                             coord_h - viewport.y + TILE_HEIGHT / 3 * 2};
 
-                        drawObjectsOnTile(currentTile, screenPos);
+                        // drawObjectsOnTile(currentTile, screenPos);
                     }
                 }
                 --tile_y;

@@ -45,8 +45,6 @@ MenuManager::MenuManager(MenuFactory *pFactory, SoundManager *pGameSounds):
     pGameSounds_ = pGameSounds;
     pFactory_->setMenuManager(this);
     drop_events_ = false;
-    background_ = new uint8[g_Screen.gameScreenWidth() * g_Screen.gameScreenHeight()];
-    memset(background_, 0, g_Screen.gameScreenHeight() * g_Screen.gameScreenWidth());
     needBackground_ = false;
     
     current_ = NULL;
@@ -71,6 +69,9 @@ bool MenuManager::initialize(bool loadIntroFont) {
     bool res = false;
     int size = 0, tabSize = 0;
     uint8 *data, *tabData;
+
+    // load palette
+    setDefaultPalette();
 
     // Loads menu sprites
     LOG(Log::k_FLG_GFX, "MenuManager", "initialize", ("Loading menu sprites ..."))
@@ -136,11 +137,6 @@ bool MenuManager::initialize(bool loadIntroFont) {
  */
 void MenuManager::destroy() {
     LOG(Log::k_FLG_MEM, "MenuManager", "~MenuManager", ("Destruction..."))
-
-    if (background_) {
-        delete[] background_;
-        background_ = NULL;
-    }
 
     if (pIntroFontSprites_) {
         delete pIntroFontSprites_;
@@ -264,7 +260,6 @@ void MenuManager::showMenu(Menu *pMenu) {
 
     // reset background
     needBackground_ = false;
-    memset(background_, 0, g_Screen.gameScreenHeight() * g_Screen.gameScreenWidth());
     dirtyList_.flush();
     pMenu->handleShow();
 
@@ -310,8 +305,6 @@ void MenuManager::leaveMenu(Menu *pMenu) {
  */
 void MenuManager::saveBackground() {
     needBackground_ = true;
-    memcpy(background_, g_Screen.pixels(),
-        g_Screen.gameScreenWidth() * g_Screen.gameScreenHeight());
 }
 
 /*!
@@ -322,7 +315,7 @@ void MenuManager::saveBackground() {
  * \param height Height of the blit rect.
  */
 void MenuManager::blitFromBackground(int x, int y, int width, int height) {
-    g_Screen.blitRect(x, y, width, height, background_, false, g_Screen.gameScreenWidth());
+    g_Screen.renderBackground(x, y, width, height);
 }
 
 /*!
@@ -331,15 +324,19 @@ void MenuManager::blitFromBackground(int x, int y, int width, int height) {
  */
 void MenuManager::renderMenu() {
     if (current_ && !dirtyList_.isEmpty()) {
+        // g_Screen.enterOnScreenMode();
+
         if (needBackground_) {
             for (int i=0; i < dirtyList_.getSize(); i++) {
                 DirtyRect *rect = dirtyList_.getRectAt(i);
-                g_Screen.blitRect(rect->x, rect->y, rect->width, rect->height, background_, false, g_Screen.gameScreenWidth());
+                blitFromBackground(rect->x, rect->y, rect->width, rect->height);
             }
         }
         current_->render(dirtyList_);
         // flush dirty list
-        dirtyList_.flush();
+        // dirtyList_.flush();
+
+        // g_Screen.leaveOnScreenMode();
     }
 }
 

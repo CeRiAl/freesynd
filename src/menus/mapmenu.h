@@ -69,6 +69,8 @@ protected:
     /*! */
     bool blink_status_;
 
+    Texture *map_texture_;
+
     /*! Id of the text widget for time.*/
     int txtTimeId_;
     /*! Id of the text widget for Own label status.*/

@@ -28,7 +28,8 @@
 			"functional": "cpp",
 			"istream": "cpp",
 			"ostream": "cpp",
-			"streambuf": "cpp"
+			"streambuf": "cpp",
+			"memory": "cpp"
 		}
 	}
 }

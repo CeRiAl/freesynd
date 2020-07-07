@@ -424,7 +424,7 @@ GameFont::GameFont() :Font() {}
 void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
     int sc = 1;
     int ox = x;
-    uint8 fromColor = 252;
+    uint8 fromColor = 252;  // 0xFC
     const unsigned char *c = (const unsigned char *)text;
     Sprite *pDef = getSprite('A');
     for (unsigned char cc = decode(c, false); cc; cc = decode(c, false)) {
@@ -464,7 +464,8 @@ void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
                 data[i] = (data[i] == fromColor ? toColor : 255);
 
             // draw modified sprite
-            g_Screen.blit(x, y + y_offset, s->width(), s->height(), data);
+            s->update(data);
+            s->draw(x, y + y_offset, 0);
 
             delete[] data;
 

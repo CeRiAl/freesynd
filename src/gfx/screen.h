@@ -38,7 +38,15 @@ public:
 
     GLuint textureName() { return texture_name_; }
 
-    void update(const uint8 *data);
+    int width() { return width_; }
+    int height() { return height_; }
+
+    void update(const uint8 *data, bool flipped = false);
+    void update(SDL_Surface *src_surface);
+    void update(SDL_Surface *src_surface, int x, int y, int width, int height);
+    void xupdate(const uint8 *data, int x, int y, int width, int height);
+    void update(const uint8 *data, int x, int y, int width, int height);
+    void updateFromFB(int x, int y, int width, int height);
 
     void setPalette(const uint8 *pal, int cols = 256);
     void setPalette(const SDL_Color *pal, int cols = 256);
@@ -76,28 +84,32 @@ public:
 
     void clear(uint8 color = 0);
 
-    const uint8 *pixels() const { return pixels_; }
-    bool dirty() { return dirty_; }
-    void clearDirty() { dirty_ = false; }
-
-    bool glDirty() { return gl_dirty_; }
-    void clearGlDirty() { gl_dirty_ = false; }
-
     void setPalette(SDL_Color *pal, int cols = 256);
+    void getColor(uint8 color, uint8 &r, uint8 &g, uint8 &b);
 
-    SDL_Surface *temp_surface() { return temp_surf_; }
+    SDL_Color *palette() { return current_palette_; }
+
+    Texture *background() { return background_texture_; }
 
     bool enterOnScreenMode(void);
     bool leaveOnScreenMode(void);
+
+    bool initTileVertices(void);
+
+    void renderStart(void);
+    void renderBackground(void);
+    void renderBackground(int x, int y, int width, int height);
     bool renderScreen(void);
 
-    void renderTexture(Texture *texture, int x, int y, int width, int height);
+    void renderTile(Texture *texture, uint8 texture_id, int dst_x, int dst_y, int dst_z, bool smooth = false);
 
-    void blit(int x, int y, int width, int height, const uint8 *pixeldata,
+    void renderTexture(Texture *texture, int dst_x, int dst_y, int dst_width, int dst_height,
+            int src_x, int src_y, int src_width, int src_height, bool flipped = false);
+    void renderTexture(Texture *texture, int dst_x, int dst_y, int dst_width, int dst_height);
+
+    void renderTextureB(Texture *texture, int x, int y, int width, int height,
             bool flipped = false, int stride = 0);
-    void blitRect(int x, int y, int width, int height,
-                  const uint8 * pixeldata, bool flipped = false, int stride = 0);
-    void scale2x(int x, int y, int width, int height, const uint8 *pixeldata,
+    void renderTexture2x(Texture *texture, int x, int y, int width, int height,
             int stride = 0, bool transp = true);
 
     void drawVLine(int x, int y, int length, uint8 color);
@@ -128,17 +140,15 @@ public:
 protected:
     int width_;
     int height_;
-    uint8 *pixels_;
-    bool dirty_;
-    bool gl_dirty_;
     int size_logo_;
-    uint8 *data_logo_, *data_logo_copy_;
+    uint8 *data_logo_;
     int size_mini_logo_;
-    uint8 *data_mini_logo_, *data_mini_logo_copy_;
+    uint8 *data_mini_logo_;
 
+    Texture *background_texture_;
     Texture *logo_texture_;
     Texture *logo_mini_texture_;
-    SDL_Color *current_palette_;
+    SDL_Color current_palette_[256];
 
     Screen();
 
@@ -150,7 +160,29 @@ private:
     GLuint screen_texture_;
     GLuint tscreen_texture_;
 
+    float distance_;
+    float zenith_;
+    float azimuth_;
+    float pan_x_;
+    float pan_y_;
+    float zoom_;
+
+    bool perspective_;
+    bool smooth_;
+
+    bool change_size_;
+    bool change_zoom_;
+    bool change_pan_;
+
     bool on_screen_mode_;
+
+    static constexpr float tile_side_ = 256.0;
+    static constexpr float delta_pan_x_ = 256.0;
+    static constexpr float delta_pan_y_ = 256.0;
+    static constexpr float delta_zoom_ = 0.2;
+
+    static const GLfloat planeValueS_[];
+    static const GLfloat planeValueT_[];
 };
 
 #define g_Screen    Screen::singleton()

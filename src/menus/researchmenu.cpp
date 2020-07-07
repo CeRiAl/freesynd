@@ -270,28 +270,22 @@ void ResearchMenu::handleRender(DirtyList &dirtyList)
     g_Screen.drawLogo(18, 14, g_Session.getLogo(), g_Session.getLogoColour());
 
     if (pSelectedWeapon_) {
-        uint8 ldata[62];
-        memset(ldata, 16, sizeof(ldata));
-        g_Screen.scale2x(502, 318, sizeof(ldata), 1, ldata);
+        g_Screen.drawRect(502, 318, 62 * 2, 2, 16);
 
         menuSprites().drawSpriteXYZ(pSelectedWeapon_->getBigIconId(), 502, 108, 0, false, true);
         drawSelectedWeaponInfos(504, 196);
     }
 
     if (pSelectedMod_) {
-        uint8 ldata[62];
-        memset(ldata, 16, sizeof(ldata));
-        g_Screen.scale2x(502, 318, sizeof(ldata), 1, ldata);
+        g_Screen.drawRect(502, 318, 62 * 2, 2, 16);
 
         drawSelectedModInfos(504, 108);
     }
 
     if (pSelectedRes_) {
-        uint8 ldata[63];
-        memset(ldata, 16, sizeof(ldata));
-        g_Screen.scale2x(18, 102, sizeof(ldata), 1, ldata);
-        g_Screen.scale2x(18, 158, sizeof(ldata), 1, ldata);
-        g_Screen.scale2x(18, 182, sizeof(ldata), 1, ldata);
+        g_Screen.drawRect(18, 102, 63 * 2, 2, 16);
+        g_Screen.drawRect(18, 158, 63 * 2, 2, 16);
+        g_Screen.drawRect(18, 182, 63 * 2, 2, 16);
     }
 
     if (pResForGraph_) {

@@ -365,6 +365,14 @@ bool App::initialize(const std::string& iniPath) {
         return false;
     }
 
+    ///
+    LOG(Log::k_FLG_INFO, "App", "initialize", ("initializing tileset vertices..."))
+    if (!g_Screen.initTileVertices()) {
+        LOG(Log::k_FLG_INFO, "App", "initialize", ("failed to initialize tileset vertices..."))
+        return false;
+    }
+    ///
+
     if (context_->isPlayIntro()) {
         LOG(Log::k_FLG_INFO, "App", "initialize", ("Loading intro sounds..."))
         if (!intro_sounds_.loadSounds(SoundManager::SAMPLES_INTRO)) {
@@ -633,8 +641,12 @@ void App::run(int start_mission) {
             SDL_Delay(30 - diff_ticks);
             continue;
         }
-        menus_.handleTick(diff_ticks);        
+        menus_.handleTick(diff_ticks);
+
+        g_Screen.renderStart();
+
         g_Screen.renderBackground();
+
         menus_.renderMenu();
         lasttick = curtick;
         system_->updateScreen();

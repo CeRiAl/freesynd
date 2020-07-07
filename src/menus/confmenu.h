@@ -70,9 +70,11 @@ protected:
     /*! This array holds the values for drawing a frame
      *  around the ok and cancel button in the sub panels. */
     uint8 butFrameData_[68 * 13];
+    Texture *butFrameTexture_;
     /*! This array holds the values for drawing a frame
      *  around the textfield in the user and company name panels. */
     uint8 tfFrameData_[136 * 13];
+    Texture *tfFrameTexture_;
 
     /*! keep track of the current panel.*/
     EPanel currPanel_;

@@ -431,7 +431,6 @@ void FliPlayer::setPalette(uint8 *mem) {
 }
 
 void FliPlayer::copyCurrentFrameToScreen() {
-    // g_Screen.scale2x(0, 0, fli_info_.width, fli_info_.height, offscreen(), 0, false);
     g_Screen.background()->update(offscreen(), 0, 0, fli_info_.width, fli_info_.height);
 }
 

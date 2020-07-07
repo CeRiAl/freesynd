@@ -119,7 +119,9 @@ bool SoundManager::loadSounds(uint8 * tabData, int tabSize,
             sounds_.push_back(new Sound);
             uint8 *sample = new uint8[soundsize];
             memcpy(sample, soundData, soundsize);
-            //printf("sample rate %x\n", sample[0x1e]);
+
+            printf("sample rate %x, size %i\n", sample[0x1e], sounds_.size());
+            
             // patching wrong sample rate
             if (sounds_.size() == 13)
                 sample[0x1e] = 0x9c;

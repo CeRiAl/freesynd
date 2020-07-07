@@ -85,6 +85,10 @@ Menu(m, fs_game_menus::kMenuIdConf, fs_game_menus::kMenuIdMain, "mconfup.dat", "
         butFrameData_[66 + j * 68] = 16;
     }
 
+    butFrameTexture_ = new Texture(68, 13);
+    butFrameTexture_->setPalette(g_Screen.palette());
+    butFrameTexture_->update(butFrameData_);
+
     // Initialize data for the text field frame
     memset(tfFrameData_, 255, 136 * 13);
 
@@ -97,6 +101,10 @@ Menu(m, fs_game_menus::kMenuIdConf, fs_game_menus::kMenuIdMain, "mconfup.dat", "
         tfFrameData_[4 + j * 136] = 16;
         tfFrameData_[134 + j * 136] = 16;
     }
+
+    tfFrameTexture_ = new Texture(136, 13);
+    tfFrameTexture_->setPalette(g_Screen.palette());
+    tfFrameTexture_->update(tfFrameData_);
 }
 
 ConfMenu::~ConfMenu() {
@@ -129,13 +137,13 @@ void ConfMenu::handleRender(DirtyList &dirtyList) {
         g_Screen.drawLogo(336, 55, tempLogo_, g_Colours[tempColourId_]);
     } else if (currPanel_ == PNL_CMPNM || currPanel_ == PNL_USRNM) {
         // draw a frame around the textfield
-        g_Screen.scale2x(300, 77, 136, 13, tfFrameData_);
+        g_Screen.renderTexture2x(tfFrameTexture_, 300, 77, 136, 13);
     }
 
     if (currPanel_ != PNL_MAIN) {
         // draw frame around ok and cancel buttons
-        g_Screen.scale2x(283, 122, 68, 13, butFrameData_);
-        g_Screen.scale2x(468, 122, 68, 13, butFrameData_);
+        g_Screen.renderTexture2x(butFrameTexture_, 283, 122, 68, 13);
+        g_Screen.renderTexture2x(butFrameTexture_, 468, 122, 68, 13);
     }
 }
 

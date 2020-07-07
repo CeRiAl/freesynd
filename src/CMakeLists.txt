@@ -33,6 +33,7 @@ set (SOURCES
 	gfx/fliplayer.cpp
 	gfx/font.cpp
 	gfx/fontmanager.cpp
+	gfx/gltiles.cpp
 	gfx/screen.cpp
 	gfx/sprite.cpp
 	gfx/spritemanager.cpp
@@ -128,6 +129,7 @@ set(HEADERS
 	gfx/fliplayer.h
 	gfx/font.h
 	gfx/fontmanager.h
+	gfx/gltiles.h
 	gfx/screen.h
 	gfx/sprite.h
 	gfx/spritemanager.h
@@ -229,6 +231,7 @@ if (BUILD_DEV_TOOLS)
 		gfx/fliplayer.cpp
 		gfx/font.cpp
 		gfx/fontmanager.cpp
+		gfx/gltiles.cpp
 		gfx/screen.cpp
 		gfx/sprite.cpp
 		gfx/spritemanager.cpp

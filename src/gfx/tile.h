@@ -44,6 +44,8 @@
 #define TILE_INDEX_SIZE         (SUBTILES_PERtile_ * 4)
 #define TILE_HEADER_LENGTH      (256 * TILE_INDEX_SIZE)
 
+class Texture;
+
 /*!
  * Tile class.
  */
@@ -94,9 +96,11 @@ public:
     uint8 getWalkData();
 
     //! Draws the tile to the given surface
-    bool drawTo(uint8 *screen, int swidth, int sheight, int x, int y);
+    bool drawTo(int swidth, int sheight, int x, int y);
+    bool drawTo3d(int x, int y, int z);
     //! Draws the tile to the screen
     bool drawToScreen(int x, int y);
+    bool drawToScreen3d(int x, int y, int z);
 
     inline bool notTransparent() { return not_alpha_; }
 
@@ -105,6 +109,7 @@ protected:
     uint8 i_id_;
     /*! The pixels that compose the tile.*/
     uint8 *a_pixels_;
+    Texture * tile_texture_;
     /*! A quick flag to tell that all pixel are transparent.*/
     bool not_alpha_;
     /*! The tile type. */

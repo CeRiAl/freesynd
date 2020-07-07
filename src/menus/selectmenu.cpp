@@ -92,27 +92,20 @@ SelectMenu::~SelectMenu()
  * \param y Coordinates of the top left corner
  */
 void SelectMenu::drawAgentSelector(int x, int y) {
-    // First create a transparent sprite
-    uint8 cdata[30 * 33];
     int cwidth = 30;
     int cheight = 33;
-    memset(cdata, 255, sizeof(cdata));
 
     // Draws the upper and lower lines
     for (int i = 0; i < cwidth; i++) {
-        cdata[i] = ((rnd_ + i) % 8 <= 4) ? 252 : 16;
-        cdata[i + (cheight - 1) * cwidth] =
-            ((rnd_ + i) % 8 >= 4) ? 252 : 16;
+        g_Screen.drawRect(x + i * 2, y, 2, 2, ((rnd_ + i) % 8 <= 4) ? 252 : 16);
+        g_Screen.drawRect(x + i * 2, y + (cheight - 1) * 2, 2, 2, ((rnd_ + i) % 8 >= 4) ? 252 : 16);
     }
 
     // Draws the right and left line
     for (int j = 0; j < cheight; j++) {
-        cdata[j * cwidth] = ((rnd_ + j) % 8 >= 4) ? 252 : 16;
-        cdata[j * cwidth + cwidth - 1] = ((rnd_ + j) % 8 <= 4) ? 252 : 16;
+        g_Screen.drawRect(x, y +  j * 2, 2, 2, ((rnd_ + j) % 8 >= 4) ? 252 : 16);
+        g_Screen.drawRect(x + (cwidth - 1) * 2, y + j * 2, 2, 2, ((rnd_ + j) % 8 <= 4) ? 252 : 16);
     }
-
-    // blits the sprite at given position
-    g_Screen.scale2x(x, y, cwidth, cheight, cdata);
 }
 
 void SelectMenu::drawAgent()
@@ -238,7 +231,6 @@ void SelectMenu::drawAgent()
             Weapon *pW = wi->getClass();
             menuSprites().drawSpriteXYZ(pW->getSmallIconId(),
                 pos[i].x, pos[i].y, 0, false, true);
-            uint8 data[3] = {204, 204, 204};
             if (pW->ammo() != -1) {
                 int n = wi->ammoRemaining();
                 if (pW->ammo() == 0)
@@ -247,8 +239,9 @@ void SelectMenu::drawAgent()
                     n *= 24;
                     n /= pW->ammo();
                 }
-                for (int k = 0; k < n; k++)
-                    g_Screen.scale2x(pos[i].x + k + 4, pos[i].y + 22, 1, 3, data);
+                for (int k = 0; k < n; k++) {
+                    g_Screen.drawRect(pos[i].x + k + 4, pos[i].y + 22, 1, 3, 204);
+                }
             }
         }
     }
