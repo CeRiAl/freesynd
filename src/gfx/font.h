@@ -121,6 +121,7 @@ public:
     void drawText(int x, int y, const char *text, uint8 toColor);
 };
 
+#if 0
 class HChar {
 public:
     HChar();
@@ -148,5 +149,6 @@ public:
 protected:
     std::map<char, HChar> characters;
 };
+#endif
 
 #endif

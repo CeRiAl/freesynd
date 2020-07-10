@@ -474,6 +474,7 @@ void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
     }
 }
 
+#if 0
 HChar::HChar():width_(0), height_(0), bits_(0) {
 }
 
@@ -543,3 +544,4 @@ void HFont::drawText(int x, int y, const char *str, uint8 color) {
         str++;
     }
 }
+#endif
