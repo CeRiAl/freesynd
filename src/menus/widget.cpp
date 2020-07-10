@@ -66,9 +66,9 @@ MenuText::MenuText(Menu *peer, int x, int y, int width, const char *text, MenuFo
 
 void MenuText::updateText(const char *text) {
     std::string lbl(text);
-    // Find if string starts with '#' caracter
+    // Find if string starts with '#' character
     if (lbl.find_first_of('#') == 0) {
-        // Erase the # caracter
+        // Erase the # character
         lbl.erase(0, 1);
         // and looks for the message in the langage file
         g_Ctx.getMessage(lbl.c_str(), lbl);
@@ -109,9 +109,9 @@ void MenuText::setTextFormated(const char * format, ...) {
     va_list list;
 
     std::string lbl(format);
-    // Find if string starts with '#' caracter
+    // Find if string starts with '#' character
     if (lbl.find_first_of('#') == 0) {
-        // Erase the # caracter
+        // Erase the # character
         lbl.erase(0, 1);
         // and looks for the message in the langage file
         g_Ctx.getMessage(lbl.c_str(), lbl);
@@ -173,8 +173,8 @@ Option::Option(Menu *peer, int x, int y, int width, int height, const char *text
         hotKey_.keyFunc = KFC_UNKNOWN;
         hotKey_.keySym = 0;
 
-        // If button label contains a '&' caracter, then the next
-        // caracter is the acceleration key for that button
+        // If button label contains a '&' character, then the next
+        // character is the acceleration key for that button
         // only 'a-zA-Z' characters are available
         char src[100];
         size_t size = text_.getText().size();

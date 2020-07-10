@@ -137,7 +137,7 @@ const double PI = 3.141592653589793;
 
 namespace fs_cmn {
 
-    // Those values are the index of the color in the current pallette.
+    // Those values are the index of the color in the current palette.
     /*! Color constant : Black */
     static const uint8 kColorBlack = 0;
     /*! Color constant : Light Green */
