@@ -40,7 +40,7 @@ LoadSaveMenu::LoadSaveMenu(MenuManager * m):Menu(m, fs_game_menus::kMenuIdLdSave
 {
     isCachable_ = false;
     // Title
-    addStatic(0, 40, g_Screen.gameScreenWidth(), "#LS_TITLE", FontManager::SIZE_4, false);
+    addStatic(0, 40, 640, "#LS_TITLE", FontManager::SIZE_4, false);
 
     // Load button
     loadButId_ = addOption(46, 346, 99, 25, "#LS_LOAD_BUT", FontManager::SIZE_2);

@@ -457,7 +457,7 @@ bool FliPlayer::play(bool intro, Font *pIntroFont) {
     }
 
     //clear the backscreen
-    //bzero(Screen::pixels(), GAME_SCREEN_WIDTH * GAME_SCREEN_HEIGHT);
+    //bzero(Screen::pixels(), g_Screen.gameScreenWidth() * g_Screen.gameScreenHeight());
 
     return true;
 }

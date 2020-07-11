@@ -40,7 +40,7 @@ LoadingMenu::LoadingMenu(MenuManager * m):Menu(m, fs_game_menus::kMenuIdLoading,
 {
     isCachable_ = false;
     do_load_ = true;
-    addStatic(0, 180, g_Screen.gameScreenWidth(), "#LDGAME_TITLE", FontManager::SIZE_4, true);
+    addStatic(0, 180, 640, "#LDGAME_TITLE", FontManager::SIZE_4, true);
 }
 
 void LoadingMenu::handleTick(int elapsed)

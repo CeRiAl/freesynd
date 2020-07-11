@@ -50,10 +50,12 @@ public:
     static const int kMouseLeftButton;
     /*! Id of the mouse right button.*/
     static const int kMouseRightButton;
+    static const int kMenuScreenWidth;
+    static const int kMenuScreenHeight;
 
     /*!
-        * Menu constructor.
-        */
+     * Menu constructor.
+     */
     Menu(MenuManager *menuManager, int id, int parentId, 
         const char *showAnim = "", const char *leaveAnim = "");
     virtual ~Menu();
@@ -70,6 +72,14 @@ public:
     const char * getLeaveAnimName() { return leaveAnim_.c_str(); }
     //! Returns true is Menu can be put in cache
     bool isCachable() { return isCachable_; }
+    Rect2D dimensions() { return dimensions_; }
+    void setOffset(int x, int y) {
+        if (dimensions_.width > 0 && dimensions_.height > 0) {
+            dimensions_.x = x;
+            dimensions_.y = y;
+        }
+    }
+    bool scale2x() { return scale2x_; }
 
     //! Returns the sprites used in menus
     SpriteManager &menuSprites();
@@ -213,6 +223,11 @@ protected:
     bool isCachable_;
     /*! Used only in gameplay menu, pauses game*/
     bool paused_;
+
+    /*! Indicates if this menu needs 2x scaling */
+    bool scale2x_;
+    int scale_;
+    Rect2D dimensions_;
 };
 
 #endif

@@ -62,7 +62,7 @@ App::App(bool disable_sound):
     context_(new AppContext),
     session_(new GameSession()),
     game_ctlr_(new GameController),
-    screen_(new Screen(GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT)),
+    screen_(new Screen(Screen::kScreenWidth, Screen::kScreenHeight)),
 #ifdef SYSTEM_SDL
     system_(new SystemSDL()),
 #else

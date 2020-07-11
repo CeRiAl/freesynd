@@ -642,8 +642,8 @@ void PedInstance::setEnergyActivated(bool isActivated) {
 
 bool isOnScreen(int scrollX, int scrollY, int x, int y) {
     return x >= scrollX && y >= scrollY
-            && x < scrollX + GAME_SCREEN_WIDTH - 129
-            && y < scrollY + GAME_SCREEN_HEIGHT;
+            && x < scrollX + g_Screen.gameScreenWidth() - g_Screen.gameScreenLeftMargin()
+            && y < scrollY + g_Screen.gameScreenHeight();
 }
 
 bool getOnScreen(int scrollX, int scrollY, Point2D &scPt, const Point2D &tScPt) {
@@ -665,6 +665,7 @@ bool getOnScreen(int scrollX, int scrollY, Point2D &scPt, const Point2D &tScPt) 
 
 void PedInstance::showPath(int scrollX, int scrollY) {
     Point2D pedScPt;
+    int leftMargin = g_Screen.gameScreenLeftMargin();
     g_App.maps().map(map())->tileToScreenPoint(pos_, &pedScPt);
     pedScPt.y = pedScPt.y - pos_.tz * TILE_HEIGHT/3 + TILE_HEIGHT/3;
 
@@ -688,14 +689,14 @@ void PedInstance::showPath(int scrollX, int scrollY) {
         }
 
         int cl = 11;
-        g_Screen.drawLine(pedScPt.x - scrollX + 129, pedScPt.y - scrollY,
-                pathSp.x - scrollX + 129, pathSp.y - scrollY, cl);
-        g_Screen.drawLine(pedScPt.x - scrollX + 129 - 1, pedScPt.y - scrollY,
-                pathSp.x - scrollX + 129 - 1, pathSp.y - scrollY, cl);
-        g_Screen.drawLine(pedScPt.x - scrollX + 129, pedScPt.y - scrollY - 1,
-                pathSp.x - scrollX + 129, pathSp.y - scrollY - 1, cl);
-        g_Screen.drawLine(pedScPt.x - scrollX + 129 - 1, pedScPt.y - scrollY - 1,
-                pathSp.x - scrollX + 129 - 1, pathSp.y - scrollY - 1, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + leftMargin, pedScPt.y - scrollY,
+                pathSp.x - scrollX + leftMargin, pathSp.y - scrollY, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + leftMargin - 1, pedScPt.y - scrollY,
+                pathSp.x - scrollX + leftMargin - 1, pathSp.y - scrollY, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + leftMargin, pedScPt.y - scrollY - 1,
+                pathSp.x - scrollX + leftMargin, pathSp.y - scrollY - 1, cl);
+        g_Screen.drawLine(pedScPt.x - scrollX + leftMargin - 1, pedScPt.y - scrollY - 1,
+                pathSp.x - scrollX + leftMargin - 1, pathSp.y - scrollY - 1, cl);
 
         pedScPt.x = ox;
         pedScPt.y = oy;

@@ -34,12 +34,6 @@
 #include "utils/singleton.h"
 #include "version.h"
 
-// TODO: Add a configuration scheme to allow setting these during runtime
-#define MENU_SCREEN_WIDTH       320
-#define MENU_SCREEN_HEIGHT      200
-#define GAME_SCREEN_WIDTH       640
-#define GAME_SCREEN_HEIGHT      400
-
 #define STUB_FUNC               printf("STUB: %s\n", __PRETTY_FUNCTION__)
 
 // TODO: Convert these to const int's -- we are using C++, yes? :-)

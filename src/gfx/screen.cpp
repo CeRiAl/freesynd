@@ -220,9 +220,14 @@ void Texture::setPalette(const SDL_Color *pal, int cols) {
 }
 
 
-const int Screen::kScreenWidth = 640;
-const int Screen::kScreenHeight = 400;
+
+
+// /////////////
+
+const int Screen::kScreenWidth = 800; // 640;
+const int Screen::kScreenHeight = 600; // 400;
 const int Screen::kScreenPanelWidth = 129;
+
 const GLfloat Screen::planeValueS_[] = {
     0.5, 
     -0.5,
@@ -494,19 +499,16 @@ void Screen::drawRect(int x, int y, int width, int height, uint8 color) {
     glEnd();
 }
 
-int Screen::gameScreenHeight()
-{
-    return GAME_SCREEN_HEIGHT;
+int Screen::gameScreenHeight() {
+    return kScreenHeight;
 }
 
-int Screen::gameScreenWidth()
-{
-    return GAME_SCREEN_WIDTH;
+int Screen::gameScreenWidth() {
+    return kScreenWidth;
 }
 
-int Screen::gameScreenLeftMargin()
-{
-    return 129;
+int Screen::gameScreenLeftMargin() {
+    return kScreenPanelWidth;
 }
 
 void Screen::getColor(uint8 color, uint8 &r, uint8 &g, uint8 &b) {
@@ -591,8 +593,7 @@ void Screen::initScreen(void) {
     glAlphaFunc(GL_GREATER, 0.5f);
     // glAlphaFunc(GL_GREATER, 0.0f);
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glViewport(0, 0, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-
+    glViewport(0, 0, gameScreenWidth(), gameScreenHeight());
 
     // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
@@ -618,7 +619,7 @@ void Screen::renderStart(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (change_size_) {
-        glViewport (0, 0, kScreenWidth, kScreenHeight);
+        glViewport (0, 0, gameScreenWidth(), gameScreenHeight());
     }
 
 
@@ -631,10 +632,10 @@ void Screen::renderStart(void) {
         glLoadIdentity();
 
         if(perspective_) {
-            gluPerspective(45.0 * zoom_, (float)kScreenWidth / (float)kScreenHeight, 0.0, 10000.0);
+            gluPerspective(45.0 * zoom_, (float)gameScreenWidth() / (float)gameScreenHeight(), 0.0, 10000.0);
         } else {
             GLdouble horizontal_clip = 1800.0 * zoom_;
-            GLdouble vertical_clip = horizontal_clip * (float)kScreenHeight / (float)kScreenWidth;
+            GLdouble vertical_clip = horizontal_clip * (float)gameScreenHeight() / (float)gameScreenWidth();
             glOrtho(-horizontal_clip, horizontal_clip, 
                 -vertical_clip, vertical_clip, 
                 -10000.0, 10000.0);

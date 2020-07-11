@@ -111,7 +111,7 @@ bool SystemSDL::initialize(bool fullscreen) {
         SDL_CreateWindow("FreeSynd",
                          SDL_WINDOWPOS_UNDEFINED,
                          SDL_WINDOWPOS_UNDEFINED,
-                         GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT,
+                         g_Screen.gameScreenWidth(), g_Screen.gameScreenHeight(),
                          SDL_WINDOW_OPENGL);
 
 	printf("Initializing OpenGL context.\n");

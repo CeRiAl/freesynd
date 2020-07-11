@@ -33,7 +33,7 @@ MainMenu::MainMenu(MenuManager * m):Menu(m, fs_game_menus::kMenuIdMain, fs_game_
      "moptout.dat")
 {
     isCachable_ = false;
-    addStatic(0, 40, g_Screen.gameScreenWidth(), "#MAIN_TITLE", FontManager::SIZE_4, false);
+    addStatic(0, 40, 640, "#MAIN_TITLE", FontManager::SIZE_4, false);
 
     int id = addOption(201, 130, 300, 25, "#MAIN_CONF", FontManager::SIZE_3, fs_game_menus::kMenuIdConf, true, false);
     registerHotKey(KFC_F1, id);

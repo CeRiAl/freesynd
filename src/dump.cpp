@@ -14,6 +14,9 @@
 # define snprintf _snprintf
 #endif
 
+#define GAME_SCREEN_WIDTH       640
+#define GAME_SCREEN_HEIGHT      400
+
 class App : public Singleton<App> {
 public:
     App();

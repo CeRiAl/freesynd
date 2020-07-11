@@ -32,7 +32,7 @@ LogoutMenu::LogoutMenu(MenuManager * m):Menu(m, kMenuIdLogout, fs_game_menus::kM
 tick_count_(0)
 {
     isCachable_ = false;
-    addStatic(0, 180, g_Screen.gameScreenWidth(), "#LGOUT_TITLE", FontManager::SIZE_4, true);
+    addStatic(0, 180, 640, "#LGOUT_TITLE", FontManager::SIZE_4, true);
 }
 
 void LogoutMenu::handleTick(int elapsed)
