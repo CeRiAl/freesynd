@@ -433,7 +433,7 @@ TeamListBox::~TeamListBox() {
 void TeamListBox::draw() {
 
     pTitle_->draw();
-    g_Screen.drawRect(xUnderline_, yUnderline_, lUnderline_, 2, 252);
+    g_Screen.drawRect(xUnderline_, yUnderline_, lUnderline_, 2, fs_cmn::kColorUnknown);
 
     int i=0;
     for (std::list < std::string >::iterator it = labels_.begin();

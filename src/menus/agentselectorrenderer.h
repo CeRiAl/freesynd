@@ -125,7 +125,7 @@ private:
             case IPAStim::Adrenaline:
                 return fs_cmn::kColorLightRed;
             case IPAStim::Perception:
-                return fs_cmn::kColorBlue;
+                return fs_cmn::kColorLightBlue;
             case IPAStim::Intelligence:
                 return fs_cmn::kColorLightBrown;
             default:
@@ -141,7 +141,7 @@ private:
             case IPAStim::Adrenaline:
                 return fs_cmn::kColorDarkRed;
             case IPAStim::Perception:
-                return fs_cmn::kColorBlueGrey;
+                return fs_cmn::kColorDarkBlue;
             case IPAStim::Intelligence:
                 return fs_cmn::kColorDarkBrown;
             default:
