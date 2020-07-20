@@ -298,12 +298,12 @@ void MapMenu::drawSelector() {
 
     // Draw box enclosing logo
     for (int i = 0; i < 18; i++) {
-        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2, 2, 2, 252);
-        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2 + (17 * 2), 2, 2, 252);
+        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2, 2, 2, fs_cmn::kColorUnknown);
+        g_Screen.drawRect(logo_x - 2 + (i * 2), logo_y - 2 + (17 * 2), 2, 2, fs_cmn::kColorUnknown);
     }
     for (int j = 0; j < 18; j++) {
-        g_Screen.drawRect(logo_x - 2, logo_y - 2 + (j * 2), 2, 2, 252);
-        g_Screen.drawRect(logo_x - 2 + (17 * 2), logo_y - 2 + (j * 2), 2, 2, 252);
+        g_Screen.drawRect(logo_x - 2, logo_y - 2 + (j * 2), 2, 2, fs_cmn::kColorUnknown);
+        g_Screen.drawRect(logo_x - 2 + (17 * 2), logo_y - 2 + (j * 2), 2, 2, fs_cmn::kColorUnknown);
     }
 
     // Draw line between country and logobox
@@ -312,14 +312,14 @@ void MapMenu::drawSelector() {
     int blk_line_start_x = g_BlocksDisplay[selId].line_start.x;
     int blk_line_start_y = g_BlocksDisplay[selId].line_start.y;
     g_Screen.drawLine(blk_line_start_x, blk_line_start_y, blk_line_end_x,
-                      blk_line_end_y, 252, 5, select_tick_count_ % 10);
+                      blk_line_end_y, fs_cmn::kColorUnknown, 5, select_tick_count_ % 10);
     g_Screen.drawLine(blk_line_start_x, blk_line_start_y - 1,
-                      blk_line_end_x, blk_line_end_y - 1, 252, 5,
+                      blk_line_end_x, blk_line_end_y - 1, fs_cmn::kColorUnknown, 5,
                       select_tick_count_ % 10);
     g_Screen.drawLine(blk_line_start_x, blk_line_start_y, blk_line_end_x,
-                      blk_line_end_y, 4, 5, select_tick_count_ % 10 + 5);
+                      blk_line_end_y, fs_cmn::kColorLightGrey, 5, select_tick_count_ % 10 + 5);
     g_Screen.drawLine(blk_line_start_x, blk_line_start_y - 1,
-                      blk_line_end_x, blk_line_end_y - 1, 4, 5,
+                      blk_line_end_x, blk_line_end_y - 1, fs_cmn::kColorLightGrey, 5,
                       select_tick_count_ % 10 + 5);
 
     // Reset the counter

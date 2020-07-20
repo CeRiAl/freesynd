@@ -772,5 +772,5 @@ void TextField::drawCaret() {
     }
 
     // Draw caret
-    g_Screen.drawRect(x, yCaret_, length, 2, 252);
+    g_Screen.drawRect(x, yCaret_, length, 2, fs_cmn::kColorUnknown);
 }

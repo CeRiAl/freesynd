@@ -122,8 +122,10 @@ void AgentSelectorRenderer::drawIPABar(int agent, IPAStim *stim)
     }
     
     // Draw a vertical white line to mark the dependency level
-    g_Screen.drawVLine(getIpaBarLeftForAgent(agent) + dependency_x,
-                      getIpaBarTop(agent, type), kIpaBarHeight, 12);
+    g_Screen.drawLine(getIpaBarLeftForAgent(agent) + dependency_x,
+                      getIpaBarTop(agent, type),
+                      getIpaBarLeftForAgent(agent) + dependency_x,
+                      getIpaBarTop(agent, type) + kIpaBarHeight, fs_cmn::kColorWhite);
 }
 
 /*!
@@ -152,7 +154,7 @@ void AgentSelectorRenderer::drawSelectorForAgent(size_t agentSlot,
         // draw health bar
         int ydiff = 36 * pAgent->health() / pAgent->startHealth();
         g_Screen.drawRect(topX + 51,
-            topY + 6 + 36 - ydiff, 7, ydiff, 12);
+            topY + 6 + 36 - ydiff, 7, ydiff, fs_cmn::kColorWhite);
 
         //draw animation within selectors
         pAgent->drawSelectorAnim(topX + 32, topY + 38);

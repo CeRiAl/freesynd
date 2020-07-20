@@ -172,8 +172,8 @@ void DebriefMenu::handleRender(DirtyList &dirtyList) {
     g_Screen.drawLogo(18, 14, g_Session.getLogo(), g_Session.getLogoColour());
 
     // Draws separator line between title and statistics
-    g_Screen.drawLine(20, 117, 20 + separatorSize_, 117, 252);
-    g_Screen.drawLine(20, 116, 20 + separatorSize_, 116, 252);
+    g_Screen.drawLine(20, 117, 20 + separatorSize_, 117, fs_cmn::kColorUnknown);
+    g_Screen.drawLine(20, 116, 20 + separatorSize_, 116, fs_cmn::kColorUnknown);
 }
 
 void DebriefMenu::handleLeave() {

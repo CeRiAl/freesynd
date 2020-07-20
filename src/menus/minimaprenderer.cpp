@@ -616,8 +616,8 @@ void GamePlayMinimapRenderer::drawPedestrians(uint8 * a_minimap) {
                 case PedInstance::kPedTypePolice:
                     {
                     // blue circle with a black or col_BlueGrey (blinking)
-                    uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorBlack : fs_cmn::kColorBlueGrey;
-                    drawPedCircle(a_minimap, px, py, fs_cmn::kColorBlue, borderColor);
+                    uint8 borderColor = (mm_timer_ped.state()) ? fs_cmn::kColorBlack : fs_cmn::kColorDarkBlue;
+                    drawPedCircle(a_minimap, px, py, fs_cmn::kColorLightBlue, borderColor);
                     }
                     break;
                 case PedInstance::kPedTypeGuard:

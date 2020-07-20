@@ -187,7 +187,7 @@ bool FliMenu::loadNextFli() {
         if (pData_) {
             fliPlayer_.loadFliData(pData_);
             if (fliPlayer_.hasFrames()) {
-                g_Screen.clear(0);
+                g_Screen.clear(fs_cmn::kColorBlack);
                 // init frame delay counter with max value so first frame is
                 // drawn in the first pass
                 frameDelay_ = desc.frameDelay;

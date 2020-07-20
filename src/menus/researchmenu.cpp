@@ -270,22 +270,22 @@ void ResearchMenu::handleRender(DirtyList &dirtyList)
     g_Screen.drawLogo(18, 14, g_Session.getLogo(), g_Session.getLogoColour());
 
     if (pSelectedWeapon_) {
-        g_Screen.drawRect(502, 318, 62 * 2, 2, 16);
+        g_Screen.drawRect(502, 318, 62 * 2, 2, fs_cmn::kColorDarkGreen);
 
         menuSprites().drawSpriteXYZ(pSelectedWeapon_->getBigIconId(), 502, 108, 0, false, true);
         drawSelectedWeaponInfos(504, 196);
     }
 
     if (pSelectedMod_) {
-        g_Screen.drawRect(502, 318, 62 * 2, 2, 16);
+        g_Screen.drawRect(502, 318, 62 * 2, 2, fs_cmn::kColorDarkGreen);
 
         drawSelectedModInfos(504, 108);
     }
 
     if (pSelectedRes_) {
-        g_Screen.drawRect(18, 102, 63 * 2, 2, 16);
-        g_Screen.drawRect(18, 158, 63 * 2, 2, 16);
-        g_Screen.drawRect(18, 182, 63 * 2, 2, 16);
+        g_Screen.drawRect(18, 102, 63 * 2, 2, fs_cmn::kColorDarkGreen);
+        g_Screen.drawRect(18, 158, 63 * 2, 2, fs_cmn::kColorDarkGreen);
+        g_Screen.drawRect(18, 182, 63 * 2, 2, fs_cmn::kColorDarkGreen);
     }
 
     if (pResForGraph_) {
@@ -302,8 +302,8 @@ void ResearchMenu::handleRender(DirtyList &dirtyList)
             int x = p.hours + 205;
             int y = 350 - (int)(p.percentage *2.4f);
 
-            g_Screen.drawLine(lastX, lastY, x, y, 252);
-            g_Screen.drawLine(lastX - 1, lastY, x - 1, y, 252);
+            g_Screen.drawLine(lastX, lastY, x, y, fs_cmn::kColorUnknown);
+            g_Screen.drawLine(lastX - 1, lastY, x - 1, y, fs_cmn::kColorUnknown);
 
             lastX = x;
             lastY = y;
@@ -311,8 +311,10 @@ void ResearchMenu::handleRender(DirtyList &dirtyList)
 
         // draw projection line
         if (pResForGraph_->getCurrFunding() != 0) {
-            g_Screen.drawLine(lastX, lastY, projectedX, projectedY, 16);
-            g_Screen.drawLine(lastX - 1, lastY, projectedX - 1, projectedY, 16);
+            g_Screen.drawLine(lastX, lastY,
+                projectedX, projectedY, fs_cmn::kColorDarkGreen);
+            g_Screen.drawLine(lastX - 1, lastY,
+                projectedX - 1, projectedY, fs_cmn::kColorDarkGreen);
         }
     }
 }

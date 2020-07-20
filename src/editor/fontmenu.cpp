@@ -43,7 +43,7 @@ void FontMenu::handleShow()
     g_System.useMenuCursor();
     g_System.showCursor();
 
-    g_Screen.clear(0);
+    g_Screen.clear(fs_cmn::kColorBlack);
     menu_manager_->setDefaultPalette();
     displayFont();
 }

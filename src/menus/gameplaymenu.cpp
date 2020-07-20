@@ -296,7 +296,7 @@ void GameplayMenu::handleShow() {
 
     // set graphic palette
     menu_manager_->setPaletteForMission(g_Session.getSelectedBlock().mis_id);
-    g_Screen.clear(0);
+    g_Screen.clear(fs_cmn::kColorBlack);
 
     highlightLeaderMarker();
     updateMarkersPosition();
@@ -403,7 +403,7 @@ void GameplayMenu::handleTick(int elapsed)
 
 void GameplayMenu::handleRender(DirtyList &dirtyList)
 {
-    g_Screen.clear(0);
+    g_Screen.clear(fs_cmn::kColorBlack);
     map_renderer_.render(displayOriginPt_);
     g_Screen.drawRect(0,0, 129, GAME_SCREEN_HEIGHT);
     agt_sel_renderer_.render(selection_, mission_->getSquad());
@@ -912,7 +912,7 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
 
             g_Screen.drawRect(txt_posx - 10, txt_posy - 5,
                 txt_width + 20, txt_height + 10);
-            gameFont()->drawText(txt_posx, txt_posy, str_paused.c_str(), 11);
+            gameFont()->drawText(txt_posx, txt_posy, str_paused.c_str(), fs_cmn::kColorYellow);
             stopShootingEvent();
         }
         return true;
@@ -1187,7 +1187,7 @@ void GameplayMenu::drawMissionHint(int elapsed) {
                 str = getMessage("HINT_HIT_BY_BULLET");
             }
         }
-        txtColor = 14;
+        txtColor = fs_cmn::kColorLightRed;
 
         if (mission_hint_ > 79) {
             mission_hint_ = 0;
@@ -1196,7 +1196,7 @@ void GameplayMenu::drawMissionHint(int elapsed) {
     } else {
 
         inversed = (mission_hint_ % 5) > 2;
-        txtColor = inversed ? 0 : 11;
+        txtColor = inversed ? fs_cmn::kColorBlack : fs_cmn::kColorYellow;
 
         if (mission_) {
             mission_->objectiveMsg(str);
@@ -1218,11 +1218,11 @@ void GameplayMenu::drawMissionHint(int elapsed) {
         }
 
         if (inversed && !text_pw) {
-            g_Screen.drawRect(0, 46 + 44 + 10 + 46 + 44, 128, 12, 11);
+            g_Screen.drawRect(0, 46 + 44 + 10 + 46 + 44, 128, 12, fs_cmn::kColorYellow);
         } else {
             if (text_pw) {
                 str = ((WeaponInstance *)target_)->name();
-                txtColor = inversed ? 14 : 11;
+                txtColor = inversed ? fs_cmn::kColorLightRed : fs_cmn::kColorYellow;
             }
         }
     }
@@ -1285,7 +1285,7 @@ void GameplayMenu::drawWeaponSelectors() {
                         n = 25 * wi->ammoRemaining() / wi->ammo();
 
                     g_Screen.drawRect(32 * i + 3, 46 + 44 + 10 + 46 + 44 + 15 + j * 32 + 23 + 2,
-                        n, 5, 12);
+                        n, 5, fs_cmn::kColorWhite);
                 }
             }
         }

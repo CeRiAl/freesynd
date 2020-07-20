@@ -97,14 +97,22 @@ void SelectMenu::drawAgentSelector(int x, int y) {
 
     // Draws the upper and lower lines
     for (int i = 0; i < cwidth; i++) {
-        g_Screen.drawRect(x + i * 2, y, 2, 2, ((rnd_ + i) % 8 <= 4) ? 252 : 16);
-        g_Screen.drawRect(x + i * 2, y + (cheight - 1) * 2, 2, 2, ((rnd_ + i) % 8 >= 4) ? 252 : 16);
+        g_Screen.drawRect(x + i * 2, y, 2, 2, ((rnd_ + i) % 8 <= 4)
+            ? fs_cmn::kColorUnknown
+            : fs_cmn::kColorDarkGreen);
+        g_Screen.drawRect(x + i * 2, y + (cheight - 1) * 2, 2, 2, ((rnd_ + i) % 8 >= 4)
+            ? fs_cmn::kColorUnknown
+            : fs_cmn::kColorDarkGreen);
     }
 
     // Draws the right and left line
     for (int j = 0; j < cheight; j++) {
-        g_Screen.drawRect(x, y +  j * 2, 2, 2, ((rnd_ + j) % 8 >= 4) ? 252 : 16);
-        g_Screen.drawRect(x + (cwidth - 1) * 2, y + j * 2, 2, 2, ((rnd_ + j) % 8 <= 4) ? 252 : 16);
+        g_Screen.drawRect(x, y +  j * 2, 2, 2, ((rnd_ + j) % 8 >= 4)
+            ? fs_cmn::kColorUnknown
+            : fs_cmn::kColorDarkGreen);
+        g_Screen.drawRect(x + (cwidth - 1) * 2, y + j * 2, 2, 2, ((rnd_ + j) % 8 <= 4)
+            ? fs_cmn::kColorUnknown
+            : fs_cmn::kColorDarkGreen);
     }
 }
 
@@ -240,7 +248,7 @@ void SelectMenu::drawAgent()
                     n /= pW->ammo();
                 }
                 for (int k = 0; k < n; k++) {
-                    g_Screen.drawRect(pos[i].x + k + 4, pos[i].y + 22, 1, 3, 204);
+                    g_Screen.drawRect(pos[i].x + k + 4, pos[i].y + 22, 1, 3, fs_cmn::kColorUnknownWhite);
                 }
             }
         }
@@ -384,33 +392,33 @@ void SelectMenu::handleRender(DirtyList &dirtyList) {
     if (t1) {
         if (t1->isActive()) {
             menuSprites().drawSpriteXYZ(Sprite::MSPR_SELECT_1, 20, 84, 0, false, true);
-            g_Screen.drawRect(68, 88, 6, 36, 204);
+            g_Screen.drawRect(68, 88, 6, 36, fs_cmn::kColorUnknownWhite);
         } else {
-            g_Screen.drawRect(68, 88, 6, 36, 10);
+            g_Screen.drawRect(68, 88, 6, 36, fs_cmn::kColorGrey);
         }
     }
     if (t2) {
         if (t2->isActive()) {
             menuSprites().drawSpriteXYZ(Sprite::MSPR_SELECT_2, 82, 84, 0, false, true);
-            g_Screen.drawRect(132, 88, 6, 36, 204);
+            g_Screen.drawRect(132, 88, 6, 36, fs_cmn::kColorUnknownWhite);
         } else {
-            g_Screen.drawRect(132, 88, 6, 36, 10);
+            g_Screen.drawRect(132, 88, 6, 36, fs_cmn::kColorGrey);
         }
     }
     if (t3) {
         if (t3->isActive()) {
             menuSprites().drawSpriteXYZ(Sprite::MSPR_SELECT_3, 20, 162, 0, false, true);
-            g_Screen.drawRect(68, 166, 6, 36, 204);
+            g_Screen.drawRect(68, 166, 6, 36, fs_cmn::kColorUnknownWhite);
         } else {
-            g_Screen.drawRect(68, 166, 6, 36, 10);
+            g_Screen.drawRect(68, 166, 6, 36, fs_cmn::kColorGrey);
         }
     }
     if (t4) {
         if (t4->isActive()) {
             menuSprites().drawSpriteXYZ(Sprite::MSPR_SELECT_4, 82, 162, 0, false, true);
-            g_Screen.drawRect(132, 166, 6, 36, 204);
+            g_Screen.drawRect(132, 166, 6, 36, fs_cmn::kColorUnknownWhite);
         } else {
-            g_Screen.drawRect(132, 166, 6, 36, 10);
+            g_Screen.drawRect(132, 166, 6, 36, fs_cmn::kColorGrey);
         }
     }
     if (sel_all_) {

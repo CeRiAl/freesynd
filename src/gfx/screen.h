@@ -82,7 +82,7 @@ public:
 
     void initScreen(void);
 
-    void clear(uint8 color = 0);
+    void clear(uint8 color = fs_cmn::kColorBlack);
 
     void setPalette(SDL_Color *pal, int cols = 256);
     void getColor(uint8 color, uint8 &r, uint8 &g, uint8 &b);
@@ -121,7 +121,7 @@ public:
             int off = 0);
 
     void setPixel(int x, int y, uint8 color);
-    void drawRect(int x, int y, int width, int height, uint8 color = 0);
+    void drawRect(int x, int y, int width, int height, uint8 color = fs_cmn::kColorBlack);
 
     void startTextInput() {
         if (!SDL_IsTextInputActive())

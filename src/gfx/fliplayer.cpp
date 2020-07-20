@@ -438,7 +438,7 @@ bool FliPlayer::play(bool intro, Font *pIntroFont) {
     if (!fli_data_)
         return false;
 
-    g_Screen.clear(0);
+    g_Screen.clear(fs_cmn::kColorBlack);
     int cur_frame = 0;
     while (hasFrames()) {
         // Consumes events now so they won't be piled up after the animation

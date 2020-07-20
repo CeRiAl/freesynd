@@ -688,7 +688,7 @@ void PedInstance::showPath(int scrollX, int scrollY) {
             continue;
         }
 
-        int cl = 11;
+        int cl = fs_cmn::kColorYellow;
         g_Screen.drawLine(pedScPt.x - scrollX + leftMargin, pedScPt.y - scrollY,
                 pathSp.x - scrollX + leftMargin, pathSp.y - scrollY, cl);
         g_Screen.drawLine(pedScPt.x - scrollX + leftMargin - 1, pedScPt.y - scrollY,
