@@ -93,6 +93,11 @@ public:
     void saveBackground();
     //! Blit a portion of the background to the current screen
     void blitFromBackground(int x, int y, int width, int height);
+    void renderBackground(void);
+
+    //! Return a pointer to the background texture
+    Texture *background() { return background_texture_; }
+
     /*!
      * Adds a new dirty rectangle
      */
@@ -156,6 +161,9 @@ protected:
     /*! Font manager.*/
     FontManager fonts_;
     SoundManager *pGameSounds_;
+
+    /*! The background of the menu.*/
+    Texture *background_texture_;
 
     /*! Time since last mouse down event without mouseup*/
     int32 since_mouse_down_;

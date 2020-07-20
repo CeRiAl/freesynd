@@ -39,7 +39,8 @@
 
 MenuManager::MenuManager(MenuFactory *pFactory, SoundManager *pGameSounds): 
     dirtyList_(g_Screen.gameScreenWidth(), g_Screen.gameScreenHeight()),
-    menuSprites_(), fonts_()
+    menuSprites_(), fonts_(),
+    background_texture_(NULL)
 {
     pFactory_ = pFactory;
     pGameSounds_ = pGameSounds;
@@ -59,6 +60,9 @@ MenuManager::MenuManager(MenuFactory *pFactory, SoundManager *pGameSounds):
 MenuManager::~MenuManager()
 {
     delete pFactory_;
+
+    if (background_texture_)
+        delete background_texture_;
 }
 
 /*!
@@ -128,6 +132,9 @@ bool MenuManager::initialize(bool loadIntroFont) {
     // Loads fonts
     LOG(Log::k_FLG_GFX, "MenuManager", "initialize", ("Loading fonts ..."))
     res = fonts_.loadFonts(&menuSprites_, pIntroFontSprites_);
+
+    // Initialize background
+    background_texture_ = new Texture(Menu::kMenuScreenWidth, Menu::kMenuScreenHeight);
 
     return res;
 }
@@ -245,6 +252,12 @@ void MenuManager::gotoMenu(int menuId) {
  * \param playAnim True if the intro can be played.
  */
 void MenuManager::showMenu(Menu *pMenu) {
+    g_Screen.setRenderSize(pMenu->dimensions().width, pMenu->dimensions().height);
+
+    if (pMenu->isScreenMode()) {
+        g_Screen.leaveWorldMode();
+    }
+
     if (pMenu->hasShowAnim()) {
         // Stop processing event during menu transitions
         drop_events_ = true;
@@ -284,6 +297,10 @@ void MenuManager::showMenu(Menu *pMenu) {
  * \param playAnim True to play the animation.
  */
 void MenuManager::leaveMenu(Menu *pMenu) {
+    if (pMenu->isScreenMode()) {
+        g_Screen.leaveWorldMode();
+    }
+
     pMenu->leave();
 
     if (pMenu->hasLeaveAnim()) {
@@ -315,7 +332,14 @@ void MenuManager::saveBackground() {
  * \param height Height of the blit rect.
  */
 void MenuManager::blitFromBackground(int x, int y, int width, int height) {
-    g_Screen.renderBackground(x, y, width, height);
+    g_Screen.renderTexture(background_texture_, x, y, width * 2, height * 2);
+}
+
+/*!
+ * Renders the complete background.
+ */
+void MenuManager::renderBackground(void) {
+    blitFromBackground(0, 0, background_texture_->width(), background_texture_->height());
 }
 
 /*!
@@ -323,20 +347,28 @@ void MenuManager::blitFromBackground(int x, int y, int width, int height) {
  * and if it needs to be refreshed.
  */
 void MenuManager::renderMenu() {
-    if (current_ && !dirtyList_.isEmpty()) {
-        // g_Screen.enterOnScreenMode();
 
+    if (current_->isScreenMode()) {
+        g_Screen.leaveWorldMode();
+    }
+
+    // updateOffset();
+    renderBackground();
+
+    if (current_ && !dirtyList_.isEmpty()) {
+        /*
         if (needBackground_) {
             for (int i=0; i < dirtyList_.getSize(); i++) {
                 DirtyRect *rect = dirtyList_.getRectAt(i);
                 blitFromBackground(rect->x, rect->y, rect->width, rect->height);
             }
         }
+        */
+        // renderBackground();
+
         current_->render(dirtyList_);
         // flush dirty list
         // dirtyList_.flush();
-
-        // g_Screen.leaveOnScreenMode();
     }
 }
 
