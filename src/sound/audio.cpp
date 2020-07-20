@@ -73,7 +73,7 @@ bool Audio::init(EFrequency freq, EFormat fmt, EChannel chan, int chunksize) {
     // load support for the OGG and MOD sample/music formats
     int flags = MIX_INIT_OGG | MIX_INIT_MOD | MIX_INIT_MID;
     int initted = Mix_Init(flags);
-    if (initted & flags != flags) {
+    if (initted & (flags != flags)) {
         error("Audio", "init", "Failed to init required ogg and mod support.");
 
         printf("Mix_Init: Failed to init required ogg and mod support!\n");
