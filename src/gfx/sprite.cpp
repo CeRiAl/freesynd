@@ -234,6 +234,24 @@ bool Sprite::loadSprite(uint8 * tabData, uint8 * spriteData, uint32 offset,
     return true;
 }
 
+void Sprite::loadSprite(Sprite *sprite) {
+    width_ = sprite->width_;
+    height_ = sprite->height_;
+    stride_ = sprite->stride_;
+
+    if (sprite_data_)
+        delete[] sprite_data_;
+    if (sprite_texture_)
+        delete sprite_texture_;
+
+    sprite_data_ = new uint8[stride_ * height_];
+    memcpy(sprite_data_, sprite->sprite_data_, stride_ * height_);
+
+    sprite_texture_ = new Texture(stride_, height_);
+    sprite_texture_->setPalette(g_Screen.palette());
+    sprite_texture_->update(sprite_data_);
+}
+
 void Sprite::update(uint8 *data) {
     sprite_texture_->update(data, 0, 0, width_, height_);
 }

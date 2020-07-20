@@ -92,6 +92,7 @@ public:
     void loadSpriteFromPNG(const char *filename);
     bool loadSprite(uint8 *tabData, uint8 *spriteData, uint32 offset,
             bool rle = false);
+    void loadSprite(Sprite *sprite);
     void update(uint8 *data);
     void draw(int x, int y, int z, bool flipped = false, bool x2 = false);
 
