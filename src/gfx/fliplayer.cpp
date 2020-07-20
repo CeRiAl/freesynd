@@ -427,11 +427,12 @@ void FliPlayer::setPalette(uint8 *mem) {
         }
     }
 
-    g_Screen.background()->setPalette(palette_);
+    pManager_->background()->setPalette(palette_);
 }
 
 void FliPlayer::copyCurrentFrameToScreen() {
-    g_Screen.background()->update(offscreen(), 0, 0, fli_info_.width, fli_info_.height);
+    pManager_->background()->update(offscreen(), 0, 0, fli_info_.width, fli_info_.height);
+    pManager_->renderBackground();
 }
 
 bool FliPlayer::play(bool intro, Font *pIntroFont) {
@@ -449,8 +450,6 @@ bool FliPlayer::play(bool intro, Font *pIntroFont) {
         copyCurrentFrameToScreen();
 
         cur_frame++;
-
-        g_Screen.renderBackground();
 
         g_System.updateScreen();
         g_System.delay(1000 / (intro ? 10 : 15));      //fps
