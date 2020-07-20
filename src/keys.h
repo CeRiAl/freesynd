@@ -38,9 +38,10 @@ enum KeyFunc {
 
     // Arrows + Home/End pad
     KFC_UP = 11,
-    KFC_DOWN = 12,
-    KFC_RIGHT = 13,
-    KFC_LEFT = 14,
+    KFC_DOWN = 10,  // 12,
+    KFC_RIGHT = 8,  // 13,
+    KFC_LEFT = 9,   // 14,
+
     KFC_INSERT = 15,
     KFC_HOME = 16,
     KFC_END = 17,
