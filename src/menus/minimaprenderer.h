@@ -291,8 +291,6 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     /*! The minimap to display.*/
     MiniMap *p_minimap_;
 
-    Texture *minimap_texture_;
-
     /*!
      * Total number of tiles displayed in the minimap.
      * same for width and height.
@@ -320,6 +318,8 @@ class GamePlayMinimapRenderer : public MinimapRenderer, GameEventListener {
     fs_utils::BoolTimer mm_timer_ped;
     /*! Timer for the signal.*/
     fs_utils::Timer mm_timer_signal;
+
+    Texture *minimap_bitmap_;
 };
 
 #endif  // MENUS_MINIMAPRENDERER_H_

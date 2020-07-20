@@ -216,18 +216,18 @@ void BriefMinimapRenderer::render(uint16 screen_x, uint16 screen_y) {
  */
 GamePlayMinimapRenderer::GamePlayMinimapRenderer() :
     mm_timer_weap(300, false), mm_timer_ped(260, false),
-    mm_timer_signal(250), minimap_texture_(NULL) {
+    mm_timer_signal(250), minimap_bitmap_(NULL) {
     p_mission_ = NULL;
     handleClearSignal();
     g_gameCtrl.addListener(this, GameEvent::kMission);
 
-    minimap_texture_ = new Texture(kMiniMapSizePx, kMiniMapSizePx);
-    minimap_texture_->setPalette(g_Screen.palette());
+    minimap_bitmap_ = new Texture(kMiniMapSizePx, kMiniMapSizePx);
+    minimap_bitmap_->setPalette(g_Screen.palette());
 }
 
 GamePlayMinimapRenderer::~GamePlayMinimapRenderer() {
-    if (minimap_texture_)
-        delete minimap_texture_;
+    if (minimap_bitmap_)
+        delete minimap_bitmap_;
 }
 
 /*!
@@ -502,8 +502,8 @@ void GamePlayMinimapRenderer::render(uint16 screen_x, uint16 screen_y) {
     }
 
     // Draw the minimap on the screen
-    minimap_texture_->update(minimap_final_layer);
-    g_Screen.renderTexture(minimap_texture_, screen_x, screen_y, kMiniMapSizePx, kMiniMapSizePx);
+    minimap_bitmap_->update(minimap_final_layer);
+    g_Screen.renderTexture(minimap_bitmap_, screen_x, screen_y, kMiniMapSizePx, kMiniMapSizePx);
 }
 
 void GamePlayMinimapRenderer::drawVehicles(uint8 *a_minimap) {
