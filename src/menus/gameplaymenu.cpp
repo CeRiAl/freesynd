@@ -52,11 +52,15 @@ const int GameplayMenu::kMiniMapScreenY = 46 + 44 + 10 + 46 + 44 + 15 + 2 * 32 +
 GameplayMenu::GameplayMenu(MenuManager *m) :
 Menu(m, fs_game_menus::kMenuIdGameplay, fs_game_menus::kMenuIdDebrief, "", "mscrenup.dat"),
 tick_count_(0), last_animate_tick_(0), last_motion_tick_(0),
-last_motion_x_(320), last_motion_y_(240), mission_hint_ticks_(0),
-mission_hint_(0), mission_(NULL), selection_(),
+mission_hint_ticks_(0), mission_hint_(0), mission_(NULL), selection_(),
 target_(NULL),
 mm_renderer_(), warningTimer_(20000)
 {
+    width_ = g_Screen.gameScreenWidth();
+    height_ = g_Screen.gameScreenHeight();
+    last_motion_x_ = g_Screen.gameScreenWidth() / 2;
+    last_motion_y_ = g_Screen.gameScreenHeight() / 2;
+    isScreenMode_ = false;
     displayOriginPt_.x = 0;
     displayOriginPt_.y = 0;
     scroll_x_ = 0;
@@ -248,8 +252,8 @@ void GameplayMenu::initWorldCoords()
     Point2D start;
     mission_->get_map()->tileToScreenPoint(p_leader->tileX(),
         p_leader->tileY(), mission_->mmax_z_ + 1, 0, 0, &start);
-    start.x -= (GAME_SCREEN_WIDTH - 129) / 2;
-    start.y -= GAME_SCREEN_HEIGHT / 2;
+    start.x -= (g_Screen.gameScreenWidth() - g_Screen.gameScreenLeftMargin()) / 2;
+    start.y -= g_Screen.gameScreenHeight() / 2;
 
     if (start.x < 0)
         start.x = 0;
@@ -405,7 +409,7 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
 {
     g_Screen.clear(fs_cmn::kColorBlack);
     map_renderer_.render(displayOriginPt_);
-    g_Screen.drawRect(0,0, 129, GAME_SCREEN_HEIGHT);
+    g_Screen.drawRect(0, 0, g_Screen.gameScreenLeftMargin(), g_Screen.gameScreenHeight());
     agt_sel_renderer_.render(selection_, mission_->getSquad());
     drawSelectAllButton();
     drawMissionHint(0);
@@ -425,12 +429,12 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
     for (int i = 1756; i < g_App.gameSprites().spriteCount(); i++) {
         Sprite *s = g_App.gameSprites().sprite(i);
 
-        if (y + s->height() > GAME_SCREEN_HEIGHT) {
+        if (y + s->height() > g_Screen.gameScreenHeight()) {
             printf("last sprite %i\n", i - 1);
             break;
         }
 
-        if (x + s->width() > GAME_SCREEN_WIDTH) {
+        if (x + s->width() > g_Screen.gameScreenWidth()) {
             x = 0;
             y += my;
             my = 0;
@@ -444,7 +448,8 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
 #endif
     // this is used in combination with keys
 #ifdef ANIM_PLUS_FRAME_VIEW
-    g_App.gameSprites().drawFrame(qanim, qframe, 320, 200);
+    g_App.gameSprites().drawFrame(qanim, qframe,
+        g_Screen.gameScreenWidth() / 2, g_Screen.gameScreenHeight() / 2);
 #endif
 
     if (g_System.debugMode()) {
@@ -482,8 +487,8 @@ void GameplayMenu::handleLeave()
     tick_count_ = 0;
     last_animate_tick_ = 0;
     last_motion_tick_ = 0;
-    last_motion_x_ = 320;
-    last_motion_y_ = 240;
+    last_motion_x_ = g_Screen.gameScreenWidth() / 2;
+    last_motion_y_ = g_Screen.gameScreenHeight() / 2;
     mission_hint_ticks_ = 0;
     mission_hint_ = 0;
     displayOriginPt_.x = 0;
@@ -527,18 +532,20 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
 
     if (last_motion_x_ < 5) {
         scroll_x_ = - SCROLL_STEP;
-    } else if (last_motion_x_ > GAME_SCREEN_WIDTH - 5) {
+    } else if (last_motion_x_ > g_Screen.gameScreenWidth() - 5) {
         scroll_x_ = SCROLL_STEP;
     }
 
     if (last_motion_y_ < 5) {
         scroll_y_ = - SCROLL_STEP;
-    } else if (last_motion_y_ > GAME_SCREEN_HEIGHT - 5) {
+    } else if (last_motion_y_ > g_Screen.gameScreenHeight() - 5) {
         scroll_y_ = SCROLL_STEP;
     }
 
     bool inrange = false;
     target_ = NULL;
+
+    int leftMargin = g_Screen.gameScreenLeftMargin();
 
     if (x > 128) {
 #ifdef _DEBUG
@@ -555,8 +562,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y - (1 + p->tileZ()) * TILE_HEIGHT/3
                     - (p->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
-                    x - 129 + displayOriginPt_.x < px + 21 && y + displayOriginPt_.y < py + 34)
+                if (x - leftMargin + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - leftMargin + displayOriginPt_.x < px + 21 && y + displayOriginPt_.y < py + 34)
                 {
                     // mouse pointer is on the object, so it's the new target
                     target_ = p;
@@ -575,8 +582,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int px = scPt.x - 20;
                 int py = scPt.y - 10 - v->tileZ() * TILE_HEIGHT/3;
 
-                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
-                    x - 129 + displayOriginPt_.x < px + 40 && y + displayOriginPt_.y < py + 32)
+                if (x - leftMargin + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - leftMargin + displayOriginPt_.x < px + 40 && y + displayOriginPt_.y < py + 32)
                 {
                     target_ = v;
                     inrange = selection_.isTargetInRange(mission_, target_);
@@ -595,8 +602,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y + 4 - w->tileZ() * TILE_HEIGHT/3
                     - (w->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
-                    x - 129 + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
+                if (x - leftMargin + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - leftMargin + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
                 {
                     target_ = w;
                     break;
@@ -615,8 +622,8 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
                 int py = scPt.y + 4 - s->tileZ() * TILE_HEIGHT/3
                     - (s->offZ() * TILE_HEIGHT/3) / 128;
 
-                if (x - 129 + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
-                    x - 129 + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
+                if (x - leftMargin + displayOriginPt_.x >= px && y + displayOriginPt_.y >= py &&
+                    x - leftMargin + displayOriginPt_.x < px + 20 && y + displayOriginPt_.y < py + 15)
                 {
                     target_ = s;
                     break;
@@ -643,7 +650,7 @@ void GameplayMenu::handleMouseMotion(int x, int y, int state, const int modKeys)
             g_System.usePointerYellowCursor();
     }
 
-    if (x < 129 && isPlayerShooting_) {
+    if (x < leftMargin && isPlayerShooting_) {
         stopShootingEvent();
     }
 
@@ -668,7 +675,9 @@ bool GameplayMenu::handleMouseDown(int x, int y, int button, const int modKeys)
     if (paused_)
         return true;
 
-    if (x < 129) {
+    int leftMargin = g_Screen.gameScreenLeftMargin();
+
+    if (x < leftMargin) {
         bool ctrl = false;  // Is control button pressed
         if (modKeys & KMD_CTRL) {
             ctrl = true;
@@ -771,7 +780,9 @@ void GameplayMenu::updateIPALevelMeters(int elapsed)
 }
 
 void GameplayMenu::handleClickOnMap(int x, int y, int button, const int modKeys) {
-    TilePoint mapPt = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - 129,
+    int leftMargin = g_Screen.gameScreenLeftMargin();
+
+    TilePoint mapPt = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - leftMargin,
                     displayOriginPt_.y + y);
 #ifdef _DEBUG
     if ((modKeys & KMD_ALT) != 0) {
@@ -846,6 +857,7 @@ void GameplayMenu::handleClickOnMinimap(int x, int y) {
  * \return True if location has been set.
  */
 bool GameplayMenu::getAimedAt(int x, int y, WorldPoint *pLocWToSet) {
+    int leftMargin = g_Screen.gameScreenLeftMargin();
     bool locationSet = false;
 
     if (target_) {
@@ -856,7 +868,7 @@ bool GameplayMenu::getAimedAt(int x, int y, WorldPoint *pLocWToSet) {
         locationSet = true;
     } else {
         // Player is shooting on the ground
-        TilePoint mapLocT = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - 129,
+        TilePoint mapLocT = mission_->get_map()->screenToTilePoint(displayOriginPt_.x + x - leftMargin,
                     displayOriginPt_.y + y);
         mapLocT.tz = 0;
         if (mission_->getShootableTile(&mapLocT)) {
@@ -906,9 +918,9 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
             std::string str_paused = getMessage("GAME_PAUSED");
             MenuFont *font_used = getMenuFont(FontManager::SIZE_1);
             int txt_width = font_used->textWidth(str_paused.c_str(), false);
-            int txt_posx = Screen::kScreenWidth / 2 - txt_width / 2;
+            int txt_posx = g_Screen.gameScreenWidth() / 2 - txt_width / 2;
             int txt_height = font_used->textHeight(false);
-            int txt_posy = Screen::kScreenHeight / 2 - txt_height / 2;
+            int txt_posy = g_Screen.gameScreenHeight() / 2 - txt_height / 2;
 
             g_Screen.drawRect(txt_posx - 10, txt_posy - 5,
                 txt_width + 20, txt_height + 10);

@@ -588,12 +588,12 @@ void App::run(int start_mission) {
     int nx = 0, ny = 0, my = 0;
     for (int i = 0; i < tabSize / 6; i++) {
         Sprite *s = menu_sprites_.sprite(i);
-        if (nx + s->width() >= GAME_SCREEN_WIDTH) {
+        if (nx + s->width() >= screen_->gameScreenWidth()) {
             nx = 0;
             ny += my;
             my = 0;
         }
-        if (ny + s->height() > GAME_SCREEN_HEIGHT)
+        if (ny + s->height() > screen_->gameScreenHeight())
             break;
         s->draw(nx, ny, 0);
         system_->updateScreen();
