@@ -252,7 +252,7 @@ void MenuManager::gotoMenu(int menuId) {
  * \param playAnim True if the intro can be played.
  */
 void MenuManager::showMenu(Menu *pMenu) {
-    g_Screen.setRenderSize(pMenu->dimensions().width, pMenu->dimensions().height);
+    g_Screen.setRenderSize(pMenu->width(), pMenu->height());
 
     if (pMenu->isScreenMode()) {
         g_Screen.leaveWorldMode();
