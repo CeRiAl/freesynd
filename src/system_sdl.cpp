@@ -52,6 +52,9 @@ SystemSDL::SystemSDL(int depth) {
     display_window_ = NULL;
     gl_context_ = NULL;
     cursor_texture_ = NULL;
+#if _DEBUG
+    debug_mode_ = false;
+#endif
 }
 
 SystemSDL::~SystemSDL() {
@@ -276,6 +279,15 @@ bool SystemSDL::pumpEvents(FS_Event *pEvtOut) {
                     break;
                 } // end switch
             } // end case SDL_KEYDOWN
+
+#if _DEBUG
+            if (isLetterD(pEvtOut->key.key.keySym) && (pEvtOut->key.keyMods & KMD_ALT)) {
+                debug_mode_ = !debug_mode_;
+
+                printf( "Debug mode now: %s\n", debug_mode_ ? "ON" : "OFF" );
+            }
+#endif
+
             break;
         case SDL_KEYUP:
             {

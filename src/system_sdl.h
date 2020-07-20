@@ -83,6 +83,10 @@ public:
         return keyModState_;
     }
 
+#if _DEBUG
+    bool debugMode() { return debug_mode_; }
+#endif
+
 protected:
     //! Loads the graphic file that contains the cursor sprites.
     bool loadCursorSprites();
@@ -128,6 +132,10 @@ protected:
     int keyModState_;
 
 private:
+#if _DEBUG
+    bool debug_mode_;
+#endif
+
     void initCursor(void);
 
     void renderCursor(void);

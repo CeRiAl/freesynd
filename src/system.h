@@ -110,6 +110,10 @@ struct System : public Singleton<System> {
     virtual void usePickupCursor() = 0;
     virtual int getKeyModState() = 0;
 
+#if _DEBUG
+    virtual bool debugMode() = 0;
+#endif
+
 };
 
 #define g_System    System::singleton()
