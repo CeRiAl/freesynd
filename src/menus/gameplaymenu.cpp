@@ -446,27 +446,27 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
 #ifdef ANIM_PLUS_FRAME_VIEW
     g_App.gameSprites().drawFrame(qanim, qframe, 320, 200);
 #endif
-#endif
 
-#ifdef TRACK_FPS
-    char tmp[100];
-    static int current_time = 0;
-    static int last_time = 0;
-    static float fps = 0;
-    static int frame = 0;
+    if (g_System.debugMode()) {
+        char tmp[100];
+        static int current_time = 0;
+        static int last_time = 0;
+        static float fps = 0;
+        static int frame = 0;
 
-    current_time = g_System.getTicks();
+        current_time = g_System.getTicks();
 
-    int elapsed = current_time - last_time;
-    frame++;
+        int elapsed = current_time - last_time;
+        frame++;
 
-    if (elapsed > 1000) {
-        fps = (float) frame / ((float) elapsed / 1000.0f);
-        frame = 0;
-        last_time = current_time;
+        if (elapsed > 1000) {
+            fps = (float) frame / ((float) elapsed / 1000.0f);
+            frame = 0;
+            last_time = current_time;
+        }
+        sprintf(tmp, "FPS : %.2f FRAMES PER SEC", fps);
+        gameFont()->drawText(10, g_Screen.gameScreenHeight() - 15, tmp, fs_cmn::kColorLightRed);
     }
-    sprintf(tmp, "FPS : %.2f FRAMES PER SEC", fps);
-    gameFont()->drawText(10, Screen::kScreenHeight - 15, tmp, 14);
 #endif
 }
 
