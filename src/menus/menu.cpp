@@ -43,7 +43,8 @@ const int Menu::kMenuScreenHeight = 200;
 
 Menu::Menu(MenuManager * menuManager, int id, int parentId, 
     const char *showAnim, const char *leaveAnim) :
-    showAnim_(showAnim), leaveAnim_(leaveAnim)
+    showAnim_(showAnim), leaveAnim_(leaveAnim),
+    width_(kMenuScreenWidth), height_(kMenuScreenHeight)
 {
     id_ = id;
     parentId_ = parentId;
@@ -74,7 +75,7 @@ SpriteManager & Menu::menuSprites() {
  * Adds a dirty rect the size of the menu.
  */
 void Menu::needRendering() {
-    menu_manager_->addRect(dimensions_.x, dimensions_.y, dimensions_.width, dimensions_.height);
+    menu_manager_->addRect(0, 0, width_, height_);
 }
 
 /*!
@@ -404,9 +405,6 @@ void Menu::keyEvent(Key key, const int modKeys)
  */
 void Menu::mouseMotionEvent(int x, int y, int state, const int modKeys)
 {
-    x = x - dimensions_.x;
-    y = y - dimensions_.y;
-
     handleMouseMotion(x, y, state, modKeys);
 
     // Check focus is lost for currently focused widget
@@ -454,9 +452,6 @@ void Menu::mouseMotionEvent(int x, int y, int state, const int modKeys)
  */
 void Menu::mouseDownEvent(int x, int y, int button, const int modKeys)
 {
-    x = x - dimensions_.x;
-    y = y - dimensions_.y;
-
     // First pass the event to the menu
     if (handleMouseDown(x, y, button, modKeys)) {
         // Menu has processed the event, so don't pass it to widget
@@ -489,9 +484,6 @@ void Menu::mouseDownEvent(int x, int y, int button, const int modKeys)
  */
 void Menu::mouseUpEvent(int x, int y, int button, const int modKeys)
 {
-    x = x - dimensions_.x;
-    y = y - dimensions_.y;
-
     handleMouseUp(x, y, button, modKeys);
 }
 

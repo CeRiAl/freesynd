@@ -72,14 +72,8 @@ public:
     const char * getLeaveAnimName() { return leaveAnim_.c_str(); }
     //! Returns true is Menu can be put in cache
     bool isCachable() { return isCachable_; }
-    Rect2D dimensions() { return dimensions_; }
-    void setOffset(int x, int y) {
-        if (dimensions_.width > 0 && dimensions_.height > 0) {
-            dimensions_.x = x;
-            dimensions_.y = y;
-        }
-    }
-    bool scale2x() { return scale2x_; }
+    int width() { return width_; }
+    int height() { return height_; }
 
     //! Returns the sprites used in menus
     SpriteManager &menuSprites();
@@ -224,10 +218,8 @@ protected:
     /*! Used only in gameplay menu, pauses game*/
     bool paused_;
 
-    /*! Indicates if this menu needs 2x scaling */
-    bool scale2x_;
-    int scale_;
-    Rect2D dimensions_;
+    int width_;
+    int height_;
 };
 
 #endif
