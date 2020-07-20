@@ -53,9 +53,8 @@ Menu::Menu(MenuManager * menuManager, int id, int parentId,
     pCaptureInput_ = NULL;
     isCachable_ = true;
     paused_ = false;
-    scale2x_ = true;
-    scale_ = 2;
-    dimensions_ = { 0, 0, kMenuScreenWidth, kMenuScreenHeight };
+
+    isScreenMode_ = true;
 }
 
 Menu::~Menu() {

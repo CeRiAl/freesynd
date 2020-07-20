@@ -72,6 +72,7 @@ public:
     const char * getLeaveAnimName() { return leaveAnim_.c_str(); }
     //! Returns true is Menu can be put in cache
     bool isCachable() { return isCachable_; }
+    bool isScreenMode() { return isScreenMode_; }
     int width() { return width_; }
     int height() { return height_; }
 
@@ -218,6 +219,7 @@ protected:
     /*! Used only in gameplay menu, pauses game*/
     bool paused_;
 
+    bool isScreenMode_;
     int width_;
     int height_;
 };

@@ -150,14 +150,8 @@ void SystemSDL::renderCursor() {
 }
 
 void SystemSDL::updateScreen() {
-
-    // Render game
-    // g_Screen.renderGame();
-
     // Render cursor
     renderCursor();
-
-    // g_Screen.renderScreen();
 
     // Swap buffer
     swapWindow();
