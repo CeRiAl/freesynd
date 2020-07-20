@@ -431,7 +431,7 @@ Sprite *GameFont::getSprite(unsigned char dos_char, uint8 color) {
     if (range_.in_range(dos_char) == false) {
         // use '?' as default character.
         if (range_.in_range('?') == true) {
-            return &color_sprites['?'];
+            return &color_sprites[(int)'?'];
         } else {
             // NULL causes the missing glyph to be skipped.
             // no space will be consumed on-screen.
