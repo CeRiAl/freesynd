@@ -46,7 +46,7 @@ public:
     void update(SDL_Surface *src_surface, int x, int y, int width, int height);
     void xupdate(const uint8 *data, int x, int y, int width, int height);
     void update(const uint8 *data, int x, int y, int width, int height);
-    void updateFromFB(int x, int y, int width, int height);
+    void updateRect(const uint8 *data, int x, int y, int width, int height);
 
     void setPalette(const uint8 *pal, int cols = 256);
     void setPalette(const SDL_Color *pal, int cols = 256);
@@ -63,6 +63,21 @@ protected:
 };
 
 
+class TileTexture {
+public:
+    static const int kTextureWidth;
+    static const int kTextureHeight;
+
+    TileTexture(uint8_t *texture, const SDL_Color *palette, bool smooth = false);
+    ~TileTexture();
+
+    GLuint textureName() { return texture_name_; }
+
+protected:
+    uint32_t *tile_texture_;
+
+    GLuint texture_name_;
+};
 
 
 /*!
@@ -89,34 +104,34 @@ public:
 
     SDL_Color *palette() { return current_palette_; }
 
-    Texture *background() { return background_texture_; }
-
-    bool enterOnScreenMode(void);
-    bool leaveOnScreenMode(void);
+    bool enterWorldMode(void);
+    bool leaveWorldMode(void);
 
     bool initTileVertices(void);
 
     void renderStart(void);
-    void renderBackground(void);
-    void renderBackground(int x, int y, int width, int height);
     bool renderScreen(void);
 
-    void renderTile(Texture *texture, uint8 texture_id, int dst_x, int dst_y, int dst_z, bool smooth = false);
+    void renderTile(TileTexture *tile_texture, uint8 texture_id, int dst_x, int dst_y, int dst_z, bool smooth = false);
 
     void renderTexture(Texture *texture, int dst_x, int dst_y, int dst_width, int dst_height,
             int src_x, int src_y, int src_width, int src_height, bool flipped = false);
     void renderTexture(Texture *texture, int dst_x, int dst_y, int dst_width, int dst_height);
 
-    void renderTextureB(Texture *texture, int x, int y, int width, int height,
-            bool flipped = false, int stride = 0);
-    void renderTexture2x(Texture *texture, int x, int y, int width, int height,
-            int stride = 0, bool transp = true);
+    void renderBitmap(Texture *texture, int x, int y, int width, int height,
+            int stride = 0, bool flipped = false, bool transp = true);
+    void renderBitmap2x(Texture *texture, int x, int y, int width, int height,
+            int stride = 0, bool flipped = false, bool transp = true);
+    void renderBitmap2x(Texture *texture, int dst_x, int dst_y, int dst_width, int dst_height,
+                        int src_x, int src_y, int src_width, int src_height,
+                        int stride = 0, bool flipped = false, bool transp = true);
 
     void drawVLine(int x, int y, int length, uint8 color);
     void drawHLine(int x, int y, int length, uint8 color);
 
-    int numLogos();
-    void drawLogo(int x, int y, int logo, int colour, bool mini = false);
+    int numLogos() { return num_logos_; }
+    void initLogos(const std::string& filename, Texture *&logos_bitmap, int logo_size);
+    void drawLogo(int x, int y, int logo, int color, bool mini = false);
     void drawLine(int x1, int y1, int x2, int y2, uint8 color, int skip = 0,
             int off = 0);
 
@@ -133,33 +148,84 @@ public:
             SDL_StopTextInput();
     }
 
+    void resize(unsigned width, unsigned height) {
+        width_ = width;
+        height_ = height;
+        change_size_ = true;
+    }
+
+    void panZoom(int delta_x, int delta_y, int delta_z) {
+        if (delta_x != 0) {
+            pan_x_ += (delta_x * delta_pan_x_);
+            change_pan_ = true;
+        }
+        if (delta_y != 0) {
+            pan_y_ += (delta_y * delta_pan_y_);
+            change_pan_ = true;
+        }
+        if (delta_z != 0) {
+            zoom_ += (delta_z * delta_zoom_);
+            change_zoom_ = true;
+        }
+
+        printf("panZooom: %f x %f x %f\n", pan_x_, pan_y_, zoom_);
+    }
+
+    void setPanZoom(int pan_x, int pan_y, int zoom) {
+        pan_x_ = pan_x;
+        pan_y_ = pan_y;
+        zoom_ = zoom;
+
+        change_pan_ = true;
+        change_zoom_ = true;
+    }
+
+    void perspective(bool enable) {
+        perspective_ = enable;
+        change_zoom_ = true;
+    }
+
+    void smooth(bool enable) {
+        smooth_ = enable;
+    }
+
     int gameScreenHeight();
     int gameScreenWidth();
     int gameScreenLeftMargin();
 
+    void setRenderSize(int width, int height) {
+        render_width_ = width;
+        render_height_ = height;
+
+        if (width > 0 && height > 0) {
+            int x = (gameScreenWidth() - width) / 2;
+            int y = (gameScreenHeight() - height) / 2;
+            if (x >= 0 && y >= 0) {
+                render_offset_ = { x, y };
+            }
+        } else {
+            render_offset_ = { 0, 0 };
+        }
+    }
+
+    Point2D renderOffset() { return render_offset_; }
+
 protected:
     int width_;
     int height_;
-    int size_logo_;
-    uint8 *data_logo_;
-    int size_mini_logo_;
-    uint8 *data_mini_logo_;
 
-    Texture *background_texture_;
-    Texture *logo_texture_;
-    Texture *logo_mini_texture_;
     SDL_Color current_palette_[256];
+
+    Point2D render_offset_;
+    int num_logos_;
+    Texture *logos_bitmap_;
+    Texture *logos_mini_bitmap_;
 
     Screen();
 
 private:
-    SDL_Surface *screen_surf_;
-    SDL_Surface *tscreen_surf_;
-    SDL_Surface *temp_surf_;
-    SDL_Surface *ttemp_surf_;
-    GLuint screen_texture_;
-    GLuint tscreen_texture_;
-
+    int render_width_;
+    int render_height_;
     float distance_;
     float zenith_;
     float azimuth_;
@@ -174,7 +240,7 @@ private:
     bool change_zoom_;
     bool change_pan_;
 
-    bool on_screen_mode_;
+    bool world_mode_;
 
     static constexpr float tile_side_ = 256.0;
     static constexpr float delta_pan_x_ = 256.0;

@@ -259,9 +259,9 @@ void Sprite::update(uint8 *data) {
 void Sprite::draw(int x, int y, int z, bool flipped, bool x2)
 {
     if (x2)
-        g_Screen.renderTexture2x(sprite_texture_, x, y, width_, height_, stride_);
+        g_Screen.renderBitmap2x(sprite_texture_, x, y, width_, height_, stride_, flipped);
     else
-        g_Screen.renderTextureB(sprite_texture_, x, y, width_, height_, flipped, stride_);
+        g_Screen.renderBitmap(sprite_texture_, x, y, width_, height_, stride_, flipped);
 }
 
 void Sprite::data(uint8 * spr_data) const

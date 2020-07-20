@@ -330,23 +330,23 @@ bool SystemSDL::pumpEvents(FS_Event *pEvtOut) {
             break;
         case SDL_MOUSEBUTTONUP:
             pEvtOut->button.type = EVT_MSE_UP;
-            pEvtOut->button.x = evtIn.button.x;
-            pEvtOut->button.y = cursor_y_ = evtIn.button.y;
+            pEvtOut->button.x = evtIn.button.x - g_Screen.renderOffset().x;
+            pEvtOut->button.y = cursor_y_ = evtIn.button.y - g_Screen.renderOffset().y;
             pEvtOut->button.button = evtIn.button.button;
             pEvtOut->button.keyMods = keyModState_;
             break;
         case SDL_MOUSEBUTTONDOWN:
             pEvtOut->button.type = EVT_MSE_DOWN;
-            pEvtOut->button.x = evtIn.button.x;
-            pEvtOut->button.y = cursor_y_ = evtIn.button.y;
+            pEvtOut->button.x = evtIn.button.x - g_Screen.renderOffset().x;
+            pEvtOut->button.y = cursor_y_ = evtIn.button.y - g_Screen.renderOffset().y;
             pEvtOut->button.button = evtIn.button.button;
             pEvtOut->button.keyMods = keyModState_;
             break;
         case SDL_MOUSEMOTION:
             update_cursor_ = true;
             pEvtOut->motion.type = EVT_MSE_MOTION;
-            pEvtOut->motion.x = cursor_x_ = evtIn.motion.x;
-            pEvtOut->motion.y = cursor_y_ = evtIn.motion.y;
+            pEvtOut->motion.x = cursor_x_ = evtIn.motion.x - g_Screen.renderOffset().x;
+            pEvtOut->motion.y = cursor_y_ = evtIn.motion.y - g_Screen.renderOffset().y;
             pEvtOut->motion.state = evtIn.motion.state;
             pEvtOut->motion.keyMods = keyModState_;
             break;
@@ -411,14 +411,12 @@ void SystemSDL::setPalette8b3(const uint8 * pal, int cols) {
 }
 
 void SystemSDL::setColor(uint8 index, uint8 r, uint8 g, uint8 b) {
-    static SDL_Color color;
+    SDL_Color *palette = g_Screen.palette();
 
-    color.r = r;
-    color.g = g;
-    color.b = b;
-
-    // SDL_SetColors(temp_surf_, &color, index, 1);
-    // FIXME!!
+    palette[index].r = r;
+    palette[index].g = g;
+    palette[index].b = b;
+    palette[index].a = 255;
 }
 
 /* Quick utility function for texture creation */

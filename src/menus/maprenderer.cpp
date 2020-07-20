@@ -86,6 +86,7 @@ void MapRenderer::render(const Point2D &viewport) {
                 }
                 int screen_w = (pMap_->maxX() + (tile_x - tile_y)) * (TILE_WIDTH / 2);
                 int coord_h = ((pMap_->maxZ() + tile_x + tile_y) - (tile_z - 1)) * (TILE_HEIGHT / 3);
+                // if (true || screen_w >= viewport.x - TILE_WIDTH * 2
                 if (screen_w >= viewport.x - TILE_WIDTH * 2
                     && screen_w + TILE_WIDTH * 2 < cmw
                     && coord_h >= viewport.y - TILE_HEIGHT * 2
@@ -98,14 +99,85 @@ void MapRenderer::render(const Point2D &viewport) {
                     if (tile_z < pMap_->maxZ()) {
                         Tile *p_tile = pMap_->getTileAt(tile_x, tile_y, tile_z);
                         if (p_tile->notTransparent()) {
+
+                            /*
                             int dx = 0, dy = 0;
                             if (screen_w - viewport.x < 0)
                                 dx = -(screen_w - viewport.x);
                             if (coord_h - viewport.y < 0)
                                 dy = -(coord_h - viewport.y);
                             if (dx < TILE_WIDTH && dy < TILE_HEIGHT) {
-                                // p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
+                                if (coord_h - viewport.y < 130) {
+                                    // Only for top part
+                                    p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
+                                }
+                            }
+                            */
+
+                            // if ((coord_h - viewport.y) > 130) {
+                                // Only for bottom part
                                 p_tile->drawTo3d(tile_x, tile_y, tile_z);
+                            // }
+                        }
+                    }
+
+                    /*
+                    // draw everything that's on the tile
+                    if (tile_z - 1 >= 0) {
+                        TilePoint currentTile(tile_x, tile_y, tile_z - 1);
+                        Point2D screenPos = {screen_w - cmx + TILE_WIDTH / 2,
+                            coord_h - viewport.y + TILE_HEIGHT / 3 * 2};
+
+                        drawObjectsOnTile(currentTile, screenPos);
+                    }
+                    */
+                }
+                --tile_y;
+            }
+            --tile_z;
+        }
+    }
+
+    g_Screen.leaveWorldMode();
+
+    for (int inc = 0; inc < zr; ++inc) {
+        int ye = sh + inc;
+        int ys = ye - pMap_->maxZ() - 2;
+        int tile_z = pMap_->maxZ() + 1;  // the Z coord of the next tile to draw
+        for (int yb = ys; yb < ye; ++yb) {
+            if (yb < 0 || yb < sh || yb >= shm) {
+                --tile_z;
+                continue;
+            }
+            int tile_y = yb;  // The Y coord of the tile to draw
+            for (int tile_x = sw; tile_y >= chky && tile_x < pMap_->maxX(); ++tile_x) {
+                if (tile_x < 0 || tile_y >= pMap_->maxY()) {
+                    --tile_y;
+                    continue;
+                }
+                int screen_w = (pMap_->maxX() + (tile_x - tile_y)) * (TILE_WIDTH / 2);
+                int coord_h = ((pMap_->maxZ() + tile_x + tile_y) - (tile_z - 1)) * (TILE_HEIGHT / 3);
+
+                // Only for top part
+                bool show = coord_h - viewport.y < halfHeight;
+
+                if (show && screen_w >= viewport.x - TILE_WIDTH * 2
+                    && screen_w + TILE_WIDTH * 2 < cmw
+                    && coord_h >= viewport.y - TILE_HEIGHT * 2
+                    && coord_h + TILE_HEIGHT * 2 < cmh) {
+
+                    // draw a tile
+                    if (tile_z < pMap_->maxZ()) {
+                        Tile *p_tile = pMap_->getTileAt(tile_x, tile_y, tile_z);
+                        if (p_tile->notTransparent()) {
+
+                            int dx = 0, dy = 0;
+                            if (screen_w - viewport.x < 0)
+                                dx = -(screen_w - viewport.x);
+                            if (coord_h - viewport.y < 0)
+                                dy = -(coord_h - viewport.y);
+                            if (dx < TILE_WIDTH && dy < TILE_HEIGHT) {
+                                p_tile->drawToScreen(screen_w - cmx, coord_h - viewport.y);
                             }
                         }
                     }
@@ -117,7 +189,7 @@ void MapRenderer::render(const Point2D &viewport) {
                         Point2D screenPos = {screen_w - cmx + TILE_WIDTH / 2,
                             coord_h - viewport.y + TILE_HEIGHT / 3 * 2};
 
-                        // drawObjectsOnTile(currentTile, screenPos);
+                        drawObjectsOnTile(currentTile, screenPos);
                     }
                 }
                 --tile_y;
@@ -125,6 +197,22 @@ void MapRenderer::render(const Point2D &viewport) {
             --tile_z;
         }
     }
+
+    /*
+    g_Screen.enterWorldMode();
+    for (int mz = pMap_->maxZ(); mz > 0; mz--) {
+        for (int my = 0; my < pMap_->maxY(); my++) {
+            for (int mx = 0; mx < pMap_->maxX(); mx++) {
+                Tile *p_tile = pMap_->getTileAt(mx, my, mz);
+                if (p_tile->notTransparent()) {
+                    p_tile->drawTo3d(mx, my, mz);
+                }
+                // printf("XYZ: %ix%ix%i\n", mx, my, mz);
+            }   
+        }
+    }
+    g_Screen.leaveWorldMode();
+    */
 
     freeUnreleasedResources();
 

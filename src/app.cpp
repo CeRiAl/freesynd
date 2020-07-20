@@ -582,7 +582,7 @@ void App::waitForKeyPress() {
  * \param start_mission Mission id used to start the application in debug mode
  * In standard mode start_mission is always -1.
  */
-void App::run(int start_mission) {
+void App::run(int start_mission) {    
 #if 0
     system_->updateScreen();
     int nx = 0, ny = 0, my = 0;
@@ -641,15 +641,19 @@ void App::run(int start_mission) {
             SDL_Delay(30 - diff_ticks);
             continue;
         }
-        menus_.handleTick(diff_ticks);
 
+        // //////////////
         g_Screen.renderStart();
+        // //////////////
 
-        g_Screen.renderBackground();
+        menus_.handleTick(diff_ticks);
 
         menus_.renderMenu();
         lasttick = curtick;
+
+        // //////////////
         system_->updateScreen();
+        // //////////////
     }
 }
 

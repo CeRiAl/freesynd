@@ -41,10 +41,15 @@ Tile::Tile(uint8 id_set, uint8 *tile_Data, bool not_alpha, EType type_set)
     tile_texture_ = new Texture(TILE_WIDTH, TILE_HEIGHT);
     tile_texture_->setPalette(g_Screen.palette());
     tile_texture_->update(a_pixels_, true);
+
+    tile_texture_3d_ = new TileTexture(a_pixels_, g_Screen.palette());
 }
 
 Tile::~Tile()
 {
+    if (tile_texture_3d_)
+        delete tile_texture_3d_;
+
     if (tile_texture_)
         delete tile_texture_;
 
@@ -72,7 +77,7 @@ bool Tile::drawTo(int swidth, int sheight, int x, int y)
 }
 
 bool Tile::drawTo3d(int x, int y, int z) {
-    g_Screen.renderTile(tile_texture_, i_id_, x, y, z);
+    g_Screen.renderTile(tile_texture_3d_, i_id_, x, y, z);
 
     return true;
 }

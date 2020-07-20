@@ -282,6 +282,12 @@ void GameplayMenu::initWorldCoords()
         mission_->mmax_z_ + 1, 0, 0, &msp);
     displayOriginPt_.x = msp.x;
     displayOriginPt_.y = msp.y;
+
+    // g_Screen.setPanZoom();
+    // pan_x_(-2000),
+    // pan_y_(-18000),
+    // panZooom: -8144.000000 x -21584.000000 x 1.000000
+    g_Screen.setPanZoom(-8144.0f, -21584.0f, 1.0f);
 }
 
 /*!
@@ -409,6 +415,9 @@ void GameplayMenu::handleRender(DirtyList &dirtyList)
 {
     g_Screen.clear(fs_cmn::kColorBlack);
     map_renderer_.render(displayOriginPt_);
+
+    g_Screen.leaveWorldMode();
+
     g_Screen.drawRect(0, 0, g_Screen.gameScreenLeftMargin(), g_Screen.gameScreenHeight());
     agt_sel_renderer_.render(selection_, mission_->getSquad());
     drawSelectAllButton();
@@ -984,18 +993,26 @@ bool GameplayMenu::handleUnknownKey(Key key, const int modKeys) {
     else if (key.keyVirt == KVT_NUMPAD4) {
         selectAgent(3, ctrl);
     } else if (key.keyFunc == KFC_LEFT) { // Scroll the map to the left
-        scroll_x_ = -SCROLL_STEP;
+        // scroll_x_ = -SCROLL_STEP;
+        g_Screen.panZoom(-1, 0, 0);
     } else if (key.keyFunc == KFC_RIGHT) { // Scroll the map to the right
-        scroll_x_ = SCROLL_STEP;
+        // scroll_x_ = SCROLL_STEP;
+        g_Screen.panZoom(1, 0, 0);
     } else if (key.keyFunc == KFC_UP) { // Scroll the map to the top
-        scroll_y_ = -SCROLL_STEP;
+        // scroll_y_ = -SCROLL_STEP;
+        g_Screen.panZoom(0, -1, 0);
     } else if (key.keyFunc == KFC_DOWN) { // Scroll the map to the bottom
-        scroll_y_ = SCROLL_STEP;
+        // scroll_y_ = SCROLL_STEP;
+        g_Screen.panZoom(0, 1, 0);
     } else if (key.keyFunc == KFC_F1) { // Music Control
-        g_App.music().toggleMusic();
+        // g_App.music().toggleMusic();
+        g_Screen.panZoom(0, 0, 1);
     } else if (key.keyFunc == KFC_F2) { // Sound Control
-        g_App.gameSounds().toggleSound();
+        // g_App.gameSounds().toggleSound();
+        g_Screen.panZoom(0, 0, -1);
     }
+
+    // panZoom(int delta_x, int delta_y, int delta_z)
 
 #ifdef _DEBUG
     else if (key.keyFunc == KFC_F3) {

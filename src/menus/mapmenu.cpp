@@ -355,7 +355,7 @@ void MapMenu::handleRender(DirtyList &dirtyList) {
                 else
                     data[j] = g_Session.get_owner_color(blk);
             map_texture_->update(data);
-            g_Screen.renderTexture2x(map_texture_,
+            g_Screen.renderBitmap2x(map_texture_,
                 g_BlocksDisplay[i].pos.x, g_BlocksDisplay[i].pos.y, 64, 44);
         }
     }

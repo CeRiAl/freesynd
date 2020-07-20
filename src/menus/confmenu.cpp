@@ -137,13 +137,13 @@ void ConfMenu::handleRender(DirtyList &dirtyList) {
         g_Screen.drawLogo(336, 55, tempLogo_, g_Colours[tempColourId_]);
     } else if (currPanel_ == PNL_CMPNM || currPanel_ == PNL_USRNM) {
         // draw a frame around the textfield
-        g_Screen.renderTexture2x(tfFrameTexture_, 300, 77, 136, 13);
+        g_Screen.renderBitmap2x(tfFrameTexture_, 300, 77, 136, 13);
     }
 
     if (currPanel_ != PNL_MAIN) {
         // draw frame around ok and cancel buttons
-        g_Screen.renderTexture2x(butFrameTexture_, 283, 122, 68, 13);
-        g_Screen.renderTexture2x(butFrameTexture_, 468, 122, 68, 13);
+        g_Screen.renderBitmap2x(butFrameTexture_, 283, 122, 68, 13);
+        g_Screen.renderBitmap2x(butFrameTexture_, 468, 122, 68, 13);
     }
 }
 

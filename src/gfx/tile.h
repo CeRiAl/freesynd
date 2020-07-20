@@ -45,6 +45,7 @@
 #define TILE_HEADER_LENGTH      (256 * TILE_INDEX_SIZE)
 
 class Texture;
+class TileTexture;
 
 /*!
  * Tile class.
@@ -109,7 +110,8 @@ protected:
     uint8 i_id_;
     /*! The pixels that compose the tile.*/
     uint8 *a_pixels_;
-    Texture * tile_texture_;
+    Texture *tile_texture_;
+    TileTexture *tile_texture_3d_;
     /*! A quick flag to tell that all pixel are transparent.*/
     bool not_alpha_;
     /*! The tile type. */
