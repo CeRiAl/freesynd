@@ -133,29 +133,46 @@ namespace fs_cmn {
 
     // Those values are the index of the color in the current palette.
     /*! Color constant : Black */
-    static const uint8 kColorBlack = 0;
+    static const uint8 kColorBlack = 0; 
+    /*! Color constant : Dark Foo (?) */
+    static const uint8 kColorDarkFoo = 1;
+    /*! Color constant : Dark Grey */
+    static const uint8 kColorDarkGrey = 2; 
     /*! Color constant : Light Green */
     static const uint8 kColorLightGreen = 3;
-    /*! Color constant : Light grey */
+    /*! Color constant : Light Grey */
     static const uint8 kColorLightGrey = 4;
     /*! Color constant : Dark Brown */
     static const uint8 kColorDarkBrown = 5;
     /*! Color constant : Dark Red */
     static const uint8 kColorDarkRed = 6;
-    /*! Color constant : Blue Grey */
-    static const uint8 kColorBlueGrey = 7;
+    /*! Color constant : Dark Blue */
+    static const uint8 kColorDarkBlue = 7;
+    /*! Color constant : Light Black (?) */
+    static const uint8 kColorLightBlack = 8;
+    /*! Color constant : Foo (?) */
+    static const uint8 kColorFoo = 9;
+    /*! Color constant : Grey */
+    static const uint8 kColorGrey = 10;
     /*! Color constant : Yellow */
     static const uint8 kColorYellow = 11;
     /*! Color constant : White */
     static const uint8 kColorWhite = 12;
     /*! Color constant : Light Brown */
     static const uint8 kColorLightBrown = 13;
-    /*! Color constant : Light Red */
+    /*! Color constant : Light Red / Orange */
     static const uint8 kColorLightRed = 14;
-    /*! Color constant : Blue */
-    static const uint8 kColorBlue = 15;
+    /*! Color constant : Light Blue */
+    static const uint8 kColorLightBlue = 15;
     /*! Color constant : Dark Green */
     static const uint8 kColorDarkGreen = 16;
+
+    /*! Color constant : Unknown White (?) */
+    static const uint8 kColorUnknownWhite = 204;
+    /*! Color constant : Unknown (?) */
+    static const uint8 kColorUnknown = 252;
+    /*! Color constant : Transparent */
+    static const uint8 kColorTransparent = 255;
 
     /*!
      * Turn bits given by mask on in the given bitfield.
@@ -197,6 +214,16 @@ inline void boxify(int &left, int &width, int x1, int x2)
 struct Point2D {
     int x;
     int y;
+};
+
+/*!
+ * A structure to store a rectangle defined with 2 coordinates plus width and height.
+ */
+struct Rect2D {
+    int x;
+    int y;
+    int width;
+    int height;
 };
 
 #endif
