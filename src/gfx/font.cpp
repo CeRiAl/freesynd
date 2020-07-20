@@ -412,19 +412,89 @@ void MenuFont::drawText(int x, int y, bool dos, const char *text, bool highlight
     }
 }
 
-GameFont::GameFont() :Font() {}
+GameFont::GameFont() : Font() {}
+
+Sprite *GameFont::getSprite(unsigned char dos_char, uint8 color) {
+    Sprite *color_sprites = NULL;
+
+    for (int col_idx = 0; col_idx < sizeof(font_colors_); col_idx++) {
+        if (font_colors_[col_idx] == color) {
+            color_sprites = colored_sprites_[col_idx];
+            break;
+        }
+    }
+
+    if (color_sprites == NULL) {
+        return NULL;
+    }
+
+    if (range_.in_range(dos_char) == false) {
+        // use '?' as default character.
+        if (range_.in_range('?') == true) {
+            return &color_sprites['?'];
+        } else {
+            // NULL causes the missing glyph to be skipped.
+            // no space will be consumed on-screen.
+            return NULL;
+        }
+    }
+
+    return &color_sprites[dos_char];
+}
+
+void GameFont::setSpriteManager(SpriteManager *sprites, int offset, char base, const std::string& valid_chars) {
+    sprites_ = sprites;
+    offset_ = offset - base;
+    range_ = FontRange(valid_chars);
+
+    int char_count = 256;
+    uint8 from_color = fs_cmn::kColorUnknown;
+
+    for (int color = 0; color < sizeof(font_colors_); color++) {
+        colored_sprites_[color] = new Sprite[char_count];;
+        assert(colored_sprites_[color]);
+    }
+
+    for (int cc = 0; cc < char_count; cc++) {
+        if (range_.in_range(cc)) {
+            Sprite *s = getSprite(cc);
+            if (s) {
+                int data_size = s->width() * s->height();
+                uint8 *data = new uint8[data_size];
+
+                for (int color = 0; color < sizeof(font_colors_); color++) {
+                    s->data(data);
+
+                    // Change original color to the specified color
+                    for (int i = 0; i < data_size; i++)
+                        data[i] = (data[i] == from_color ? font_colors_[color] : 255);
+
+                    Sprite *color_s = &colored_sprites_[color][cc];
+
+                    color_s->loadSprite(s);
+                    color_s->update(data);
+                }
+
+                delete[] data;
+            }
+        }
+    }
+}
 
 /*!
  * Draw text at the given position. Text will have the specified color.
  * \param x X location
  * \param y Y location
  * \param text The text to draw. It must be in UTF-8.
- * \param toColor The color used to draw the text.
+ * \param color The color used to draw the text.
  */
-void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
+void GameFont::drawText(int x, int y, const char *text, uint8 color) {
+    assert(color == fs_cmn::kColorBlack ||
+           color == fs_cmn::kColorYellow ||
+           color == fs_cmn::kColorLightRed);
+
     int sc = 1;
     int ox = x;
-    uint8 fromColor = 252;  // 0xFC
     const unsigned char *c = (const unsigned char *)text;
     Sprite *pDef = getSprite('A');
     for (unsigned char cc = decode(c, false); cc; cc = decode(c, false)) {
@@ -443,8 +513,9 @@ void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
             y += textHeight() - sc;
             continue;
         }
-        // get the sprite for the caracter
-        Sprite *s = getSprite(cc);
+
+        // get the colored sprite for the character
+        Sprite *s = getSprite(cc, color);
         if (s) {
             int y_offset = 0;
             // Add some offset correct for special caracters as ':' '.' ',' '-'
@@ -456,92 +527,8 @@ void GameFont::drawText(int x, int y, const char *text, uint8 toColor) {
                 y_offset = (pDef->height() *sc)/2 - (getSprite('/')->height() * sc) / 2;
             }
 
-            uint8 *data = new uint8[s->width() * s->height()];
-            s->data(data);
-
-            // Change original color to the specified color
-            for (int i = 0; i < s->width() * s->height(); i++)
-                data[i] = (data[i] == fromColor ? toColor : 255);
-
-            // draw modified sprite
-            s->update(data);
             s->draw(x, y + y_offset, 0);
-
-            delete[] data;
-
             x += s->width() * sc - sc;
         }
     }
 }
-
-#if 0
-HChar::HChar():width_(0), height_(0), bits_(0) {
-}
-
-HChar::~HChar() {
-    if (bits_)
-        delete[] bits_;
-}
-
-void HChar::set(int w, int h, uint8 *data) {
-    width_ = w;
-    height_ = h;
-    if (data) {
-        int stride = w < 9 ? 1 : 2;
-        bits_ = new bool[width_ * height_];
-        for (int y = 0; y < height_; y++) {
-            for (int x = 0; x < width_; x++) {
-                if (data[y * stride + (x / 8)] & (128 >> (x % 8)))
-                    bits_[width_ * y + x] = true;
-                else
-                    bits_[width_ * y + x] = false;
-            }
-        }
-    }
-}
-
-int HChar::draw(int x, int y, uint8 color) {
-    if (bits_) {
-        for (int j = 0; j < height_; j++) {
-            for (int i = 0; i < width_; i++) {
-                if (bits_[width_ * j + i])
-                    g_Screen.setPixel(x + i, y + j, color);
-            }
-        }
-    }
-    return width_;
-}
-
-HFont::HFont() {
-
-}
-
-HFont::~HFont() {
-
-}
-
-void HFont::load() {
-    int size;
-    uint8 *data = File::loadOriginalFile("hfnt01.dat", size);
-    for (int i = 0; i < 128; i++) {
-        if (data[i * 5] || data[i * 5 + 1]) {
-            if (data[i * 5] == 0xff && data[i * 5 + 1] == 0xff)
-                characters[i].set(data[i * 5 + 2], data[i * 5 + 3], NULL);
-            else
-                characters[i].set(data[i * 5 + 2], data[i * 5 + 3],
-                                  data +
-                                  (data[i * 5] | (data[i * 5 + 1] << 8)));
-        }
-    }
-    delete[] data;
-}
-
-void HFont::drawText(int x, int y, const char *str, uint8 color) {
-    while (*str) {
-        if (characters.find(*str) != characters.end())
-            x += characters[*str].draw(x, y, color);
-
-        str++;
-    }
-}
-#endif

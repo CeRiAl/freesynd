@@ -117,38 +117,24 @@ class GameFont : public Font {
 public:
     GameFont();
 
+    void setSpriteManager(SpriteManager *sprites, int offset, char base, const std::string& valid_chars);
+
     //! draw a UTF-8 text at the given position with the given color
-    void drawText(int x, int y, const char *text, uint8 toColor);
-};
-
-#if 0
-class HChar {
-public:
-    HChar();
-    ~HChar();
-
-    void set(int w, int h, uint8 *data);
-
-    int draw(int x, int y, uint8 color);
+    void drawText(int x, int y, const char *text, uint8 color);
 
 protected:
-    int width_;
-    int height_;
-    bool *bits_;
-};
-
-class HFont {
-public:
-    HFont();
-    ~HFont();
-
-    void load();
-
-    void drawText(int x, int y, const char *str, uint8 color);
+    using Font::getSprite;
+    //! returns the sprite with the given color
+    virtual Sprite *getSprite(unsigned char dos_char, uint8 color);
 
 protected:
-    std::map<char, HChar> characters;
+    uint8 font_colors_[3] = {
+        fs_cmn::kColorBlack,
+        fs_cmn::kColorYellow,
+        fs_cmn::kColorLightRed
+    };
+
+    Sprite *(colored_sprites_)[3];
 };
-#endif
 
 #endif
