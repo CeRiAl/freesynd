@@ -329,7 +329,7 @@ public:
     virtual ~ListBox();
 
     //! Draw the widget on screen
-    void draw(); 
+    void draw();
 
     //! Callback method to respond to mouse motion event
     void handleMouseMotion(int x, int y, int state, const int modKeys);
@@ -364,7 +364,7 @@ public:
     ~TeamListBox();
 
     //! Draw the widget on screen
-    void draw(); 
+    void draw();
 
     //! Callback method to respond to mouse motion event
     void handleMouseMotion(int x, int y, int state, const int modKeys);

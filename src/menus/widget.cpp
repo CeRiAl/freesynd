@@ -359,7 +359,7 @@ void ListBox::handleModelChanged() {
 
 //! Draw the widget on screen
 void ListBox::draw() {
-    int i=0;
+    int i = 0;
     for (std::list < std::string >::iterator it = labels_.begin();
          it != labels_.end(); it++, i++) {
              pFont_->drawText(getX(), getY() + i * 12, (*it).c_str(), focusedLine_ == i);
